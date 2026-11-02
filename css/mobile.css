@@ -296,3 +296,8 @@ header {
 @media (max-width: 640px) {
   header { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
 }
+
+/* Celular: aviso "Atenção" vai para baixo, para não cobrir os botões */
+@media (max-width: 640px) {
+  .warning-toast { top: auto; bottom: calc(52px + env(safe-area-inset-bottom)); }
+}

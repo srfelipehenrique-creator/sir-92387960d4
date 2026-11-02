@@ -106,7 +106,7 @@ function unpinModule(modalId) {
 }
 
 /* ── Montar módulo na tela ── */
-function _mountModule(modalId) {
+function _mountModule(modalId, isRestore = false) {
   const tool = PINNABLE[modalId];
   if (!tool) return;
 
@@ -157,6 +157,10 @@ function _mountModule(modalId) {
 
   /* Inicializa o conteúdo da ferramenta */
   tool.onPin?.();
+
+  /* Ao abrir o app (restauração), não rola a página nem mostra aviso:
+     só quando você fixa um módulo agora */
+  if (isRestore) return;
 
   /* Scrolla até o novo módulo */
   setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
@@ -260,5 +264,5 @@ function initPinnedSystem() {
 
 /* Restaura módulos fixados na sessão anterior (deve rodar após initHistorico resolver) */
 function restorePinnedModules() {
-  getPinnedList().forEach(id => _mountModule(id));
+  getPinnedList().forEach(id => _mountModule(id, true));
 }

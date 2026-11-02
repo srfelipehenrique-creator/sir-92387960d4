@@ -206,7 +206,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v8';
+const SIR_APP_VERSION = 'v9';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
@@ -224,6 +224,10 @@ function _addAreasToToolGrid() {
   bar.closest('.header-actions')?.classList.add('has-tool-areas');
   if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [b.querySelector('[data-lucide]')] });
 }
+
+/* O app sempre abre no topo, com os botões à vista */
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+window.addEventListener('load', () => window.scrollTo(0, 0));
 
 document.addEventListener('DOMContentLoaded', () => {
   applyLayoutClass(); renderV2Bar();
