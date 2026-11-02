@@ -132,3 +132,7 @@ header {
   .modal-content { max-height: 100dvh !important; height: 100dvh; border-radius: 0 !important; }
   .v2-cell { height: 44px; }
 }
+
+/* Modo "Só minhas áreas": total das suas áreas ocupa a linha toda */
+.v2-kpis-mine { grid-template-columns: 1fr; }
+.v2-kpis-mine .v2-kpi-btn { font-size: 26px; }

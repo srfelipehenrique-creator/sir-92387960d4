@@ -11,8 +11,23 @@ const LS_V2_SCOPE = 'sir_v2_scope';    // 'all' | 'mine'
 function _lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
 function _lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
+/* Celular/tablet (tela de toque): por padrão mostra só as suas áreas */
+const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+
 function getLayout()  { return _lsGet(LS_LAYOUT, 'v2'); }
-function getV2Scope() { return _lsGet(LS_V2_SCOPE, 'all'); }
+function getV2Scope() { return _lsGet(LS_V2_SCOPE, IS_TOUCH ? 'mine' : 'all'); }
+
+/* Ao salvar "Minhas Áreas" no celular, o painel passa a mostrar só elas.
+   As demais voltam quando você tocar em "Todas as áreas". */
+if (typeof saveSettings === 'function') {
+  const _saveSettingsOrig = saveSettings;
+  saveSettings = function (onSaved) {
+    return _saveSettingsOrig(function () {
+      if (IS_TOUCH && getUserSavedAreas().length) _lsSet(LS_V2_SCOPE, 'mine');
+      if (onSaved) onSaved();
+    });
+  };
+}
 
 /* Guarda a renderização original para o modo clássico */
 const _renderDashboardClassic = renderDashboard;
@@ -88,15 +103,23 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
   const scope   = hasMine ? getV2Scope() : 'all';
 
   /* ── Faixa de totais ── */
-  let kpis = _v2Kpi('Total RRE', 'ALL', ralRes.total, recRes.total, false);
+  let kpiMine = '';
   if (hasMine) {
     _buildMyAreasModalData(areas);
-    const mRal = areas.reduce((s, cf) => s + (ralR && getFlatCFData(ralR)[cf] || 0), 0);
-    const mRec = areas.reduce((s, cf) => s + (recR && getFlatCFData(recR)[cf] || 0), 0);
-    kpis += _v2Kpi('Minhas áreas', 'MY_AREAS_V2', mRal, mRec, true);
+    const fRal = getFlatCFData(ralR), fRec = getFlatCFData(recR);
+    const mRal = areas.reduce((s, cf) => s + (fRal[cf] || 0), 0);
+    const mRec = areas.reduce((s, cf) => s + (fRec[cf] || 0), 0);
+    kpiMine = _v2Kpi('Minhas áreas', 'MY_AREAS_V2', mRal, mRec, true);
   }
-  for (const rn of Object.keys(REGIONS))
-    kpis += _v2Kpi(rn, rn, ralR[rn].total, recR[rn].total, false);
+  let kpis;
+  if (scope === 'mine') {
+    /* Só as suas áreas: totais das regiões ficam ocultos */
+    kpis = kpiMine;
+  } else {
+    kpis = _v2Kpi('Total RRE', 'ALL', ralRes.total, recRes.total, false) + kpiMine;
+    for (const rn of Object.keys(REGIONS))
+      kpis += _v2Kpi(rn, rn, ralR[rn].total, recR[rn].total, false);
+  }
 
   /* ── Regiões ── */
   let regions = '';
@@ -117,7 +140,7 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
   }
 
   document.getElementById('main-grid').innerHTML =
-    `<div class="v2-kpis">${kpis}</div><div class="v2-regions">${regions}</div>`;
+    `<div class="v2-kpis${scope === 'mine' ? ' v2-kpis-mine' : ''}">${kpis}</div><div class="v2-regions">${regions}</div>`;
 
   document.querySelectorAll('#main-grid .animate-num').forEach(el => {
     const v = parseInt(el.getAttribute('data-val'), 10);
