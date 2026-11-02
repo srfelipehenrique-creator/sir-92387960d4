@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIR">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#141416">
+<link rel="manifest" href="../assets/manifest.json">
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<title>SIR · Acesso</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
+
+  :root {
+    --accent: #6366f1;
+    --accent-glow: rgba(99,102,241,0.3);
+    --bg: #141416;
+    --panel: #1c1c1f;
+    --elevated: #28282c;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.14);
+    --text: #e2e2e2;
+    --text-soft: rgba(226,226,226,0.72);
+    --text-muted: rgba(226,226,226,0.42);
+    --text-dim: rgba(226,226,226,0.2);
+    --red: #ef4444;
+    --ease-out: cubic-bezier(0.16,1,0.3,1);
+    --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 110%, rgba(99,102,241,0.06) 0%, transparent 60%);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Partículas de fundo ── */
+  .bg-grid {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 40%, transparent 100%);
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  @keyframes gridPulse { 0%,100%{opacity:.4} 50%{opacity:.7} }
+
+  /* ── Card central ── */
+  .lock-card {
+    position: relative; z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 20px;
+    padding: 48px 44px 40px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    animation: cardIn 0.7s var(--ease-out) both;
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform: translateY(28px) scale(0.96); }
+  }
+
+  /* ── Brand ── */
+  .lock-logo {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin-bottom: 40px;
+  }
+  .lock-logo-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--accent), rgba(99,102,241,0.6));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 28px var(--accent-glow);
+  }
+  .lock-logo-icon svg { width: 28px; height: 28px; fill: none; }
+  .lock-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 4px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #e2e2e2 0%, rgba(226,226,226,0.5) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .lock-subtitle {
+    font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px;
+    text-transform: uppercase; font-weight: 500;
+  }
+
+  /* ── Formulário ── */
+  .lock-label {
+    display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 8px;
+  }
+
+  .lock-input-wrap {
+    position: relative; margin-bottom: 6px;
+    border-radius: 10px; overflow: hidden;
+    border: 1.5px solid var(--line-strong);
+    background: var(--elevated);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .lock-input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  }
+  .lock-input-wrap.error {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100%{ transform:translateX(0); }
+    20%    { transform:translateX(-6px); }
+    40%    { transform:translateX(6px); }
+    60%    { transform:translateX(-4px); }
+    80%    { transform:translateX(4px); }
+  }
+
+  .lock-key-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); pointer-events: none;
+    display: flex; align-items: center;
+  }
+  .lock-key-icon svg { width: 16px; height: 16px; }
+
+  .lock-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; font-weight: 700; letter-spacing: 3px;
+    padding: 14px 44px 14px 42px; height: 52px;
+  }
+  .lock-input::placeholder { color: var(--text-dim); letter-spacing: 2px; font-weight: 400; font-size: 13px; }
+
+  .lock-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 4px;
+    display: flex; align-items: center;
+    transition: color 0.15s;
+  }
+  .lock-toggle:hover { color: var(--text-soft); }
+  .lock-toggle svg { width: 16px; height: 16px; }
+
+  .lock-error {
+    font-size: 11px; color: var(--red); margin-bottom: 14px; height: 16px;
+    display: flex; align-items: center; gap: 5px;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .lock-error.show { opacity: 1; }
+
+  /* ── Botão ── */
+  .lock-btn {
+    width: 100%; height: 52px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 10px; font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer;
+    position: relative; overflow: hidden;
+    box-shadow: 0 6px 24px var(--accent-glow);
+    transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .lock-btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 10px 32px var(--accent-glow); }
+  .lock-btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+  .lock-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .lock-btn .btn-text { transition: opacity 0.2s; }
+  .lock-btn .btn-loader { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+  .lock-btn.loading .btn-text { opacity: 0; }
+  .lock-btn.loading .btn-loader { opacity: 1; }
+
+  .loader-ring {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Sucesso ── */
+  .lock-success {
+    position: absolute; inset: 0; border-radius: 20px;
+    background: var(--panel);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .lock-success.show { opacity: 1; pointer-events: auto; }
+  .success-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(34,197,94,0.12); border: 2px solid rgba(34,197,94,0.4);
+    display: flex; align-items: center; justify-content: center;
+    animation: successPop 0.5s var(--ease-spring);
+  }
+  @keyframes successPop { from { transform: scale(0.5); opacity:0; } }
+  .success-icon svg { width: 26px; height: 26px; color: #22c55e; }
+  .success-text { font-size: 14px; font-weight: 600; color: var(--text-soft); }
+  .success-sub  { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Footer ── */
+  .lock-footer {
+    margin-top: 28px; text-align: center;
+    font-size: 10px; color: var(--text-dim); letter-spacing: 0.8px;
+  }
+
+  /* ── PWA banner ── */
+  .pwa-banner {
+    margin-top: 16px; padding: 11px 14px;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 10px; display: none; align-items: center; gap: 10px;
+    animation: fadeIn 0.4s ease;
+  }
+  .pwa-banner.show { display: flex; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } }
+  .pwa-banner-text { flex: 1; font-size: 11px; color: var(--text-soft); line-height: 1.5; }
+  .pwa-banner-text strong { color: var(--text); display: block; font-size: 12px; margin-bottom: 2px; }
+  .btn-pwa-install {
+    padding: 7px 13px; background: var(--accent); color: #fff; border: none;
+    border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    transition: filter 0.15s;
+  }
+  .btn-pwa-install:hover { filter: brightness(1.1); }
+
+  /* Celular: margem lateral, áreas seguras e sem zoom no iOS ao digitar */
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  @media (max-width: 480px) {
+    .lock-card { width: calc(100% - 32px); padding: 36px 24px 30px; }
+  }
+  @media (pointer: coarse) { .lock-input { font-size: 16px; } }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<div class="lock-card" id="lock-card">
+
+  <!-- Sucesso -->
+  <div class="lock-success" id="lock-success">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div class="success-text">Acesso liberado</div>
+    <div class="success-sub">Carregando o dashboard...</div>
+  </div>
+
+  <!-- Brand -->
+  <div class="lock-logo">
+    <div class="lock-logo-icon">
+      <svg viewBox="0 0 512 512">
+        <rect x="60" y="290" width="80" height="162" rx="8" fill="rgba(255,255,255,0.9)"/>
+        <rect x="176" y="200" width="80" height="252" rx="8" fill="rgba(255,255,255,0.75)"/>
+        <rect x="292" y="130" width="80" height="322" rx="8" fill="rgba(255,255,255,0.6)"/>
+        <rect x="408" y="60"  width="44" height="392" rx="8" fill="rgba(255,255,255,0.4)"/>
+        <path d="M60 290 L216 200 L332 130 L452 60" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <span class="lock-brand">SIR · Dashboard</span>
+    <span class="lock-subtitle">COP REDE FIBRA RJ/ES</span>
+  </div>
+
+  <!-- Form -->
+  <label class="lock-label" for="lock-key">Chave de acesso</label>
+
+  <div class="lock-input-wrap" id="input-wrap">
+    <span class="lock-key-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="7.5" cy="15.5" r="5.5"/>
+        <path d="M21 2l-9.6 9.6M15.5 7.5l2 2"/>
+      </svg>
+    </span>
+    <input type="password" id="lock-key" class="lock-input" placeholder="Digite a chave..." autocomplete="off" autofocus maxlength="32">
+    <button class="lock-toggle" id="toggle-vis" onclick="toggleVisibility()" type="button" title="Mostrar/ocultar">
+      <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="lock-error" id="lock-error">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/>
+    </svg>
+    Chave incorreta. Tente novamente.
+  </div>
+
+  <button class="lock-btn" id="lock-btn" onclick="tryAccess()">
+    <span class="btn-text">Acessar</span>
+    <span class="btn-loader"><div class="loader-ring"></div></span>
+  </button>
+
+  <!-- Banner PWA (aparece após autenticação bem sucedida se disponível) -->
+  <div class="pwa-banner" id="pwa-banner">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round">
+      <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><path d="M18 2v4h4"/>
+    </svg>
+    <div class="pwa-banner-text">
+      <strong>Instalar como app</strong>
+      Acesse o SIR Dashboard diretamente pelo atalho, sem abrir o navegador.
+    </div>
+    <button class="btn-pwa-install" onclick="installPWA()">Instalar</button>
+  </div>
+
+  <div class="lock-footer">
+    Uso exclusivo interno — COP REDE
+  </div>
+
+</div>
+
+<script>
+  /* Verificação por hash SHA-256 — a chave nunca aparece em texto no código */
+  const _h = [
+    '329acaf5', 'd0f68075', 'ccc1e62c', 'ea32157d',
+    'b54a9ffe', '29e1c1d5', '90c81ac9', '158a1a13'
+  ].join('');
+
+  const _s  = 'sir_auth_v1';
+  const _r  = '../index.html';
+
+  let deferredInstall = null;
+  let eyeOpen = false;
+
+  if (localStorage.getItem(_s) === 'granted') location.replace(_r);
+
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; });
+
+  async function _digest(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function toggleVisibility() {
+    const inp = document.getElementById('lock-key');
+    const ico = document.getElementById('eye-icon');
+    eyeOpen = !eyeOpen;
+    inp.type = eyeOpen ? 'text' : 'password';
+    ico.innerHTML = eyeOpen
+      ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
+      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  }
+
+  document.getElementById('lock-key').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryAccess();
+    if (e.key !== 'Enter') clearError();
+  });
+
+  function clearError() {
+    document.getElementById('lock-error').classList.remove('show');
+    document.getElementById('input-wrap').classList.remove('error');
+  }
+
+  async function tryAccess() {
+    const btn = document.getElementById('lock-btn');
+    const raw = document.getElementById('lock-key').value.trim();
+
+    if (!raw) return;
+
+    btn.disabled = true;
+    btn.classList.add('loading');
+    clearError();
+
+    /* Hash do que o usuário digitou — comparado com o hash armazenado */
+    const [inputHash] = await Promise.all([
+      _digest(raw),
+      new Promise(r => setTimeout(r, 480))
+    ]);
+
+    if (inputHash !== _h) {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      document.getElementById('lock-error').classList.add('show');
+      document.getElementById('input-wrap').classList.add('error');
+      document.getElementById('lock-key').value = '';
+      document.getElementById('lock-key').focus();
+      return;
+    }
+
+    /* ── Autenticado ── */
+    localStorage.setItem(_s, 'granted');
+
+    /* Mostra overlay de sucesso */
+    document.getElementById('lock-success').classList.add('show');
+
+    /* Tenta iniciar instalação PWA antes de redirecionar */
+    if (deferredInstall) {
+      try {
+        document.getElementById('pwa-banner').classList.add('show');
+        /* Aguarda o usuário interagir (ou timeout de 3s) e redireciona */
+        await new Promise(r => setTimeout(r, 3000));
+      } catch(e) {}
+    }
+
+    location.replace(_r);
+  }
+
+  async function installPWA() {
+    if (!deferredInstall) return;
+    const btn = document.querySelector('.btn-pwa-install');
+    btn.textContent = 'Instalando...'; btn.disabled = true;
+    const { outcome } = await deferredInstall.prompt().then(() => deferredInstall.userChoice);
+    deferredInstall = null;
+    if (outcome === 'accepted') {
+      btn.textContent = '✓ Instalado!';
+    } else {
+      location.replace(_r);
+    }
+  }
+</script>
+</body>
+</html>

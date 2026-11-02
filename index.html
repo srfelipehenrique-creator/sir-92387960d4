@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#141416">
+<link rel="icon" href="https://www.svgrepo.com/show/502412/sale.svg" sizes="any" type="image/svg+xml">
+<link rel="manifest" href="assets/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIR">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<script>
+  /* Gate — redireciona para lock.html se não autenticado */
+  if (localStorage.getItem('sir_auth_v1') !== 'granted') {
+    location.replace('pages/lock.html');
+  }
+</script>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/layout-v2.css">
+<link rel="stylesheet" href="css/mobile.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<title>SIR · Dashboard</title>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-actions">
+      <!-- Botões configuráveis — renderizados por personalizacao.js -->
+      <div id="header-action-btns"></div>
+
+      <button class="btn-settings btn-settings-areas" onclick="openSettings()">
+        <i data-lucide="layers"></i>
+        Minhas Áreas
+      </button>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="status-flash" id="status-flash">ATUALIZADO</span>
+    <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
+      <i data-lucide="cloud-sync"></i>
+    </button>
+    <button class="btn-settings btn-icon" onclick="openPersonalizacao()" title="Configurações" aria-label="Configurações" style="background:transparent;border-color:transparent;">
+      <i data-lucide="settings"></i>
+    </button>
+    <!-- Mantido oculto para compatibilidade com a lógica de PWA install -->
+    <button id="btn-pwa-install" onclick="triggerPWAInstall()" style="display:none;" aria-hidden="true"></button>
+    <div id="countdown">Sincronizando...</div>
+    <div id="last-update" title="Horário da última atualização">Última atualização: --:--:--</div>
+    <div class="pulse-dot" id="status-dot"></div> 
+  </div>
+</header>
+
+<div class="warning-toast" id="warning-toast">
+  <div class="toast-label">Atenção</div>
+  <div class="toast-msg">
+    Este dashboard ainda não contabiliza RECs associadas dentro de RALs.
+    Lembre-se de que a quantidade real de RECs pode estar divergente do exibido no painel.
+  </div>
+  <button class="toast-close" onclick="dismissToast()" aria-label="Fechar">&times;</button>
+  <div class="toast-progress" id="toast-progress"></div>
+</div>
+
+<div class="page-shell">
+  <section class="inbox-section" id="inbox-section">
+    <div class="inbox-header">
+      <div class="inbox-title-wrap">
+        <div class="inbox-title">Novas Entradas</div>
+        <div class="inbox-badge" id="inbox-count">0</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-inbox-toggle" id="btn-inbox-ack-all" onclick="acknowledgeAllInboxItems()" style="display:none;">Marcar Tudo</button>
+        <button class="btn-inbox-toggle" id="btn-inbox-toggle" onclick="toggleInboxBody()">Ocultar</button>
+      </div>
+    </div>
+    <div class="inbox-body-wrap" id="inbox-body-wrap">
+      <div class="inbox-cols">
+
+        <!-- RAL -->
+        <div class="inbox-col">
+          <div class="inbox-col-header">
+            <span class="inbox-col-title">RAL</span>
+            <span class="inbox-section-count" id="inbox-count-ral">0</span>
+          </div>
+          <div class="inbox-entries" id="inbox-tbody-ral"></div>
+          <div id="inbox-empty-ral" class="inbox-empty">Nenhuma nova RAL nas suas áreas.</div>
+        </div>
+
+        <!-- Divisor -->
+        <div class="inbox-col-divider"></div>
+
+        <!-- REC -->
+        <div class="inbox-col">
+          <div class="inbox-col-header">
+            <span class="inbox-col-title">REC</span>
+            <span class="inbox-section-count" id="inbox-count-rec">0</span>
+          </div>
+          <div class="inbox-entries" id="inbox-tbody-rec"></div>
+          <div id="inbox-empty-rec" class="inbox-empty">Nenhuma nova REC nas suas áreas.</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div id="v2-bar"></div>
+  <div class="v2-dash-col">
+    <main id="main-grid"></main>
+    <div class="pinned-modules-area" id="pinned-modules-area"></div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span class="footer-brand">Desenvolvido para uso interno do COP REDE FIBRA RJ/ES.</span>
+  <button class="footer-ql-trigger" id="footer-ql-trigger"
+          onclick="openQualidade()" title="RALs de Qualidade em tela"
+          aria-label="Abrir painel de RALs de Qualidade">
+    <i data-lucide="shield-alert" class="footer-ql-icon"></i>
+    <span class="footer-ql-lbl">qualidade</span>
+    <span class="footer-ql-count" id="footer-ql-count"></span>
+  </button>
+</div>
+
+<!-- MODAL TORPEDOS -->
+<div class="modal-overlay" id="torpedo-modal" onclick="closeTorpedos()">
+  <div class="modal-content" style="max-width:1080px;max-height:90vh;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Gerenciador de Torpedos</div>
+      <div class="modal-tools">
+        <button class="btn-pin-modal" data-pin-modal="torpedo-modal" onclick="pinModule('torpedo-modal')" title="Fixar na tela principal"><i data-lucide="pin"></i></button>
+        <button class="modal-close-btn" onclick="closeTorpedos()">&times;</button>
+      </div>
+    </div>
+    <div class="torpedo-modal-body">
+      <div class="torpedo-sidebar">
+        <button class="btn-torpedo-new" onclick="criarNovoTorpedo()">+ Novo Evento</button>
+        <div class="torpedo-list" id="torpedo-list"></div>
+      </div>
+      <div class="torpedo-main">
+        <div class="torpedo-form-empty" id="torpedo-form-empty">Selecione ou crie um evento na barra lateral.</div>
+        <div class="torpedo-form-wrap" id="torpedo-form-wrap" style="display:none;">
+          <div class="torpedo-notepad-wrap">
+            <div class="torpedo-notepad" id="torpedo-notepad" oninput="salvarDadosTorpedo()">
+              <div class="tline"><strong>COP REDE INFORMA:</strong></div>
+              <div class="tline">🟡 ROMPIMENTO DE FIBRA REDE EMPRESARIAL</div>
+              <div class="tline">💥 Impacto: REC <span id="tf_rec" contenteditable="true"></span> RAL <span id="tf_ral" contenteditable="true"></span></div>
+              <div class="tline">⚠️Grupo: CLUSTER <span id="tf_cluster" contenteditable="true"></span></div>
+              <div class="tline">🌎Cidade: <span id="tf_cidade" contenteditable="true"></span></div>
+              <div class="tline">📝REC/RAL (Referência): <span id="tf_ref" contenteditable="true"></span></div>
+              <div class="tline">✍🏼Designação (Referência): <span id="tf_desig" contenteditable="true"></span></div>
+              <div class="tline">🕒Horário de Abertura: <span id="tf_hab" contenteditable="true"></span></div>
+              <div class="tline">⏳Horário de Recebimento no COP: <span id="tf_hrec" contenteditable="true"></span></div>
+              <div class="tline">🕒Horário de Acionamento Técnico: <span id="tf_haci" contenteditable="true"></span></div>
+              <div class="tline">✍🏼Motivo do Prejuízo: <span id="tf_motivo" contenteditable="true"></span></div>
+              <div class="tline">📜Status: <span id="tf_status" contenteditable="true"></span></div>
+              <div class="tline">⌛Previsão: <span id="tf_prev" contenteditable="true"></span></div>
+              <div class="tline">🔎Causa: <span id="tf_causa" contenteditable="true"></span></div>
+              <div class="tline">🕓Esert4h: <span id="tf_e4" contenteditable="true"></span>%</div>
+              <div class="tline">🕕Esert6h: <span id="tf_e6" contenteditable="true"></span>%</div>
+              <div class="tline">🕕Horário Fechamento: <span id="tf_hf" contenteditable="true"></span></div>
+            </div>
+          </div>
+          <div class="sla-calc-panel" id="sla-calc-panel" style="display:none;">
+            <div class="sla-calc-title">Calculadora Esert</div>
+            <div class="sla-calc-rows">
+              <div class="sla-calc-section">
+                <div class="sla-calc-label">Esert6h — RAL (6h)</div>
+                <div class="sla-calc-fields">
+                  <label>Total</label>
+                  <input class="sla-calc-input" id="sc_ral_total" type="number" min="0" oninput="calcSlaPanel()" placeholder="0">
+                  <label>Fora do prazo</label>
+                  <input class="sla-calc-input" id="sc_ral_fora" type="number" min="0" oninput="calcSlaPanel()" placeholder="0">
+                </div>
+                <div class="sla-calc-result" id="sc_ral_result">—</div>
+              </div>
+              <div class="sla-calc-section">
+                <div class="sla-calc-label">Esert4h — REC (4h)</div>
+                <div class="sla-calc-fields">
+                  <label>Total</label>
+                  <input class="sla-calc-input" id="sc_rec_total" type="number" min="0" oninput="calcSlaPanel()" placeholder="0">
+                  <label>Fora do prazo</label>
+                  <input class="sla-calc-input" id="sc_rec_fora" type="number" min="0" oninput="calcSlaPanel()" placeholder="0">
+                </div>
+                <div class="sla-calc-result" id="sc_rec_result">—</div>
+              </div>
+            </div>
+            <div class="sla-calc-footer">
+              <button class="btn-sla-apply" onclick="aplicarSlaAoTorpedo()">Aplicar ao Torpedo</button>
+            </div>
+          </div>
+          <div class="torpedo-actions">
+            <div class="torpedo-timer-badge" id="torpedo-timer-badge">—</div>
+            <div>
+              <button id="btn-torpedo-calc" class="btn-torpedo-calc" onclick="toggleSlaCalc()">Calc SLA</button>
+              <button id="btn-torpedo-copiar" class="btn-torpedo-copy" onclick="copiarTorpedo()">COPIAR</button>
+              <button id="btn-torpedo-encerrar" class="btn-torpedo-close" onclick="encerrarTorpedo()">EXCLUIR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MÁSCARAS -->
+<div class="modal-overlay" id="mascaras-modal" onclick="closeMascaras()">
+  <div class="modal-content" style="max-width:900px;max-height:84vh;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Gerador de Máscaras</div>
+      <div class="modal-tools">
+        <button class="btn-pin-modal" data-pin-modal="mascaras-modal" onclick="pinModule('mascaras-modal')" title="Fixar na tela principal"><i data-lucide="pin"></i></button>
+        <button class="modal-close-btn" onclick="closeMascaras()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0;flex:1;overflow:hidden;display:flex;">
+      <div class="mascaras-body">
+        <div class="mascaras-left">
+          <div class="mascaras-section">
+            <div class="mascaras-section-title">Operador</div>
+            <div class="mascaras-field">
+              <label>Nome do Analista</label>
+              <input type="text" id="m_userName" class="mascaras-input nome-input" placeholder="Digite seu nome"
+                     oninput="salvarNomeMascara(); atualizarPreviewMascara()">
+            </div>
+            <div class="mascaras-field">
+              <label>Visualização da Máscara</label>
+              <div class="mascaras-preview">
+                <span class="mascaras-preview-text" id="m_preview">@@ DD/MM HH:MM NOME:</span>
+                <button class="btn-mascaras primary" onclick="copiarMascaraVazia()" title="Copiar máscara base">⎘</button>
+              </div>
+            </div>
+          </div>
+          <div class="mascaras-section" style="flex:1;">
+            <div class="mascaras-section-title">Nova Variação</div>
+            <input type="text" id="m_newVariation" class="mascaras-input" placeholder="Cole aqui o novo complemento...">
+            <button class="btn-mascaras" onclick="adicionarMascaraVariacao()" style="width:100%;">+ Adicionar</button>
+          </div>
+        </div>
+        <div class="mascaras-right">
+          <div class="mascaras-chips-title">Máscaras Rápidas — clique para copiar instantaneamente</div>
+          <div class="mascaras-chips" id="m_chips"></div>
+          <div class="mascaras-field">
+            <label>Texto Personalizado (adicionado à base)</label>
+            <textarea id="m_customText" class="mascaras-textarea"
+                      placeholder="Digite o complemento da nota aqui...&#10;(Enter para copiar)"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-mascaras primary" onclick="copiarMascaraCustom()" style="flex:1;">Copiar com Texto</button>
+            <button class="btn-mascaras" onclick="limparMascaraCustom()">Limpar</button>
+          </div>
+          <div class="mascaras-last">Último copiado: <span id="m_lastCopied">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CENTRAL DE SCRIPTS -->
+<div class="modal-overlay" id="scripts-modal" onclick="closeScripts()">
+  <div class="modal-content" style="max-width:900px;max-height:82vh;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Textos Prontos</div>
+      <div class="modal-tools">
+        <button class="btn-pin-modal" data-pin-modal="scripts-modal" onclick="pinModule('scripts-modal')" title="Fixar na tela principal"><i data-lucide="pin"></i></button>
+        <button class="modal-close-btn" onclick="closeScripts()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0;flex:1;overflow:hidden;display:flex;">
+      <div class="scripts-modal-body">
+        <div class="scripts-form-panel">
+          <div class="scripts-panel-title">Registrar texto</div>
+          <div class="scripts-field">
+            <label>Identificação</label>
+            <input type="text" id="scripts-nome" class="scripts-input" placeholder="Ex: Email de liberação" autocomplete="off">
+          </div>
+          <div class="scripts-field">
+            <label>Categoria <span style="color:var(--text-dim);font-weight:400;text-transform:none;">(opcional)</span></label>
+            <input type="text" id="scripts-categoria" class="scripts-input" placeholder="Ex: NOC, Cliente, Email..." autocomplete="off">
+          </div>
+          <div id="scripts-edit-badge" style="display:none;" class="scripts-edit-badge">Modo edição ativo</div>
+          <div class="scripts-field">
+            <label>Conteúdo</label>
+            <textarea id="scripts-texto" class="scripts-textarea" placeholder="Caros, favor liberar o acesso..."></textarea>
+          </div>
+          <button class="btn-scripts-save" id="btn-scripts-save" onclick="saveScript()">Salvar</button>
+          <button class="scripts-cancel-edit" id="btn-scripts-cancel" onclick="cancelEditScript()" style="display:none;">Cancelar Edição</button>
+          <div class="scripts-hint">Shift + Enter para salvar</div>
+        </div>
+        <div class="scripts-grid-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="scripts-panel-title">Registros salvos</div>
+          </div>
+          <div class="scripts-search-wrap">
+            <input type="text" id="scripts-search" class="scripts-search-inp" placeholder="Filtrar por nome..." autocomplete="off" oninput="renderScriptsGrid()">
+          </div>
+          <div class="scripts-cat-row" id="scripts-cats"></div>
+          <div class="scripts-grid" id="scripts-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BANCO DE HISTÓRICOS -->
+<div class="modal-overlay" id="historico-modal" onclick="closeHistorico()">
+  <div class="modal-content" style="max-width:960px;max-height:84vh;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Banco de Históricos</div>
+      <div class="modal-tools">
+        <button class="btn-historico-export" id="btn-hist-export" onclick="exportarHistoricos()">Exportar ZIP</button>
+        <button class="btn-pin-modal" data-pin-modal="historico-modal" onclick="pinModule('historico-modal')" title="Fixar na tela principal"><i data-lucide="pin"></i></button>
+        <button class="modal-close-btn" onclick="closeHistorico()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0;flex:1;overflow:hidden;display:flex;">
+      <div class="historico-body">
+        <div class="historico-form-panel">
+          <div class="historico-panel-title">Registrar Histórico</div>
+          <div class="historico-field">
+            <label>Designação (Título)</label>
+            <input type="text" id="hist-designacao" class="historico-input" placeholder="Ex: MANUTENÇÃO BX1 - 01/06" autocomplete="off">
+          </div>
+          <div class="historico-field">
+            <label>Observação</label>
+            <input type="text" id="hist-observacao" class="historico-input" placeholder="Informação adicional..." autocomplete="off">
+          </div>
+          <div class="historico-field">
+            <label>Texto</label>
+            <textarea id="hist-texto" class="historico-textarea" placeholder="Digite o conteúdo do histórico..."></textarea>
+          </div>
+          <button class="btn-historico-save" onclick="salvarHistorico()">Salvar</button>
+          <div class="historico-hint">Shift + Enter para salvar</div>
+        </div>
+        <div class="historico-list-panel">
+          <div class="historico-search-bar">
+            <input type="text" id="hist-search" placeholder="Filtrar por designação..." autocomplete="off" oninput="renderHistoricoList()">
+          </div>
+          <div class="historico-list-header">
+            <span class="historico-panel-title">Registros salvos</span>
+            <span class="historico-count" id="hist-count">0</span>
+          </div>
+          <div class="historico-list" id="hist-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TICKETS -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div class="modal-title" id="modal-title">Detalhes</div>
+        <button id="copy-desig-btn" class="copy-btn" onclick="copyDesignations()" style="display:none;">Copiar Designações</button>
+      </div>
+      <div class="modal-tools">
+        <button class="modal-csv-btn" id="btn-modal-csv" onclick="exportModalCSV()" title="Exportar CSV">CSV ↓</button>
+        <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-filter-bar" id="modal-filter-bar">
+      <input type="text" id="modal-filter-input" class="modal-filter-input" placeholder="Filtrar tickets..." autocomplete="off" oninput="filterModalTable()">
+      <span class="modal-filter-count" id="modal-filter-count"></span>
+    </div>
+    <div class="modal-body" id="modal-body-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="color-cycle-col" title="Clique para marcar"></th>
+            <th>CF</th>
+            <th>Ticket</th>
+            <th>Designação</th>
+            <th class="sortable" id="th-abertura" data-sort-col="abertura" onclick="sortModalTable('abertura')">Abertura <span class="sort-icon">↓</span></th>
+            <th class="sla-col">Prazo SLA</th>
+            <th class="sortable" id="col-extra-header" data-sort-col="extra" onclick="sortModalTable('extra')">Detalhe <span class="sort-icon">↕</span></th>
+            <th class="obs-cell">Nota</th>
+            <th class="obs-status-col">OBS</th>
+          </tr>
+        </thead>
+        <tbody id="modal-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SETTINGS -->
+<div class="modal-overlay" id="settings-modal" onclick="closeSettings()">
+  <div class="modal-content areas-modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Minhas Áreas</div>
+      <button class="modal-close-btn" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-body areas-modal-body">
+
+      <!-- Seleções rápidas -->
+      <div class="areas-presets-section">
+        <div class="areas-section-label">Seleções rápidas</div>
+        <div class="areas-presets-row" id="presets-row">
+          <span class="presets-empty">Nenhuma seleção salva.</span>
+        </div>
+        <div id="preset-name-form-wrap"></div>
+      </div>
+
+      <!-- CFs por região -->
+      <div class="areas-cf-list" id="settings-cf-list"></div>
+
+      <!-- Rodapé -->
+      <div class="areas-footer">
+        <div class="areas-footer-left">
+          <button class="btn-areas-secondary" onclick="deselectAll()">Limpar tudo</button>
+          <button class="btn-areas-secondary" onclick="startSavePreset()">+ Salvar seleção</button>
+        </div>
+        <button class="btn-save-settings" onclick="applySettings()">Aplicar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TIMER FLUTUANTE -->
+<div class="timer-float" id="timer-float">
+  <div class="timer-float-header" id="timer-drag-handle">
+    <div class="timer-mode-tabs">
+      <button class="tmtab tmtab-active" id="tab-crono"  onclick="switchTimerMode('cronometro')">Cronômetro</button>
+      <button class="tmtab"              id="tab-timer"  onclick="switchTimerMode('temporizador')">Temporizador</button>
+    </div>
+    <button class="timer-float-close-btn" onclick="toggleTimerFloat()" title="Fechar">×</button>
+  </div>
+  <div class="timer-float-body">
+
+    <!-- CRONÔMETRO -->
+    <div id="timer-crono-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-controls">
+        <button class="timer-btn t-start" id="timer-start-btn" onclick="timerStartPause()">Iniciar</button>
+        <button class="timer-btn t-reset" onclick="timerReset()">Reset</button>
+      </div>
+    </div>
+
+    <!-- TEMPORIZADOR -->
+    <div id="timer-cd-body" style="display:none;">
+      <div class="timer-cd-setup" id="timer-cd-setup">
+        <div class="timer-cd-unit">
+          <button class="timer-adj" onclick="adjustCountdown(60)">▲</button>
+          <span class="timer-cd-val" id="cd-min-val">10</span>
+          <button class="timer-adj" onclick="adjustCountdown(-60)">▼</button>
+        </div>
+        <span class="timer-cd-sep-lbl">:</span>
+        <div class="timer-cd-unit">
+          <button class="timer-adj" onclick="adjustCountdown(1)">▲</button>
+          <span class="timer-cd-val" id="cd-sec-val">00</span>
+          <button class="timer-adj" onclick="adjustCountdown(-1)">▼</button>
+        </div>
+      </div>
+      <div class="timer-display" id="timer-cd-display" style="display:none;">10:00</div>
+      <div class="timer-cd-hint">Alerta automático ao atingir zero</div>
+      <div class="timer-controls" style="margin-top:8px;">
+        <button class="timer-btn t-start" id="timer-cd-start-btn" onclick="timerCdStartPause()">Iniciar</button>
+        <button class="timer-btn t-reset" onclick="timerCdReset()">Reset</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL SIGLAS -->
+<div class="modal-overlay" id="siglas-modal" onclick="closeSiglas()">
+  <div class="modal-content siglas-modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Consulta de Siglas</div>
+      <div class="modal-tools">
+        <button class="btn-pin-modal" data-pin-modal="siglas-modal" onclick="pinModule('siglas-modal')" title="Fixar na tela principal"><i data-lucide="pin"></i></button>
+        <button class="modal-close-btn" onclick="closeSiglas()">&times;</button>
+      </div>
+    </div>
+    <div class="siglas-modal-body">
+      <iframe id="siglas-iframe" class="siglas-iframe" src="" title="Buscador de Siglas"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BACKUP -->
+<div class="modal-overlay" id="backup-modal" onclick="closeBackupModal()">
+  <div class="modal-content" style="max-width:520px;" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Backup de Dados</div>
+      <button class="modal-close-btn" onclick="closeBackupModal()">&times;</button>
+    </div>
+    <div class="backup-body">
+
+      <div>
+        <div class="backup-section-title">Dados armazenados localmente</div>
+        <div class="backup-stats" id="backup-info">
+          <div class="backup-stat"><span>Carregando...</span><strong>—</strong></div>
+        </div>
+      </div>
+
+      <div class="backup-actions">
+        <div class="backup-section-title">Exportar backup</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+          Salva todas as configurações, scripts, históricos, torpedos, máscaras, checklists e preferências em um arquivo JSON.
+        </p>
+        <button class="btn-backup-export" id="btn-export-backup" onclick="exportBackup()">
+          ⬇ Exportar Backup Completo
+        </button>
+      </div>
+
+      <div class="backup-actions">
+        <div class="backup-section-title">Restaurar backup</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+          Selecione um arquivo de backup previamente exportado para restaurar seus dados.
+        </p>
+        <div class="backup-import-area">
+          <div class="backup-file-row">
+            <label class="backup-file-choose" for="backup-file-input">Escolher arquivo</label>
+            <input type="file" id="backup-file-input" accept=".json" style="display:none;" onchange="handleBackupFileSelect()">
+            <span id="backup-file-label">Nenhum arquivo selecionado</span>
+          </div>
+          <button class="btn-backup-import" id="btn-import-backup" onclick="importBackup()" disabled>
+            ↺ Restaurar Backup
+          </button>
+          <p class="backup-warn">⚠ A restauração sobrescreve os dados atuais e recarrega a página.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIGURAÇÕES -->
+<div class="modal-overlay" id="personalizacao-modal" onclick="cancelPersonalizacao()">
+  <div class="modal-content cfg-modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Configurações</div>
+      <button class="modal-close-btn" onclick="cancelPersonalizacao()">&times;</button>
+    </div>
+
+    <div class="modal-body cfg-modal-body">
+
+      <!-- APARÊNCIA -->
+      <div class="cfg-section">
+        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Aparência</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </div>
+        <div class="cfg-section-bd">
+          <div class="cfg-row">
+            <div class="cfg-row-label">Tema de cor</div>
+            <div class="theme-swatches" id="theme-swatches"></div>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-row-label">Densidade do painel</div>
+            <div class="density-row">
+              <button class="density-btn" id="density-normal"  onclick="setDensity('normal')">Padrão</button>
+              <button class="density-btn" id="density-compact" onclick="setDensity('compact')">Compacto</button>
+            </div>
+          </div>
+          <div class="cfg-row" style="margin-bottom:0">
+            <div class="cfg-row-label">Modo de exibição dos CFs</div>
+            <div class="view-mode-grid">
+              <button class="view-mode-btn vmode-active" data-view-mode="cards"   onclick="setViewMode('cards')">
+                <span class="view-mode-icon">▦</span>
+                <span class="view-mode-label">Cards</span>
+              </button>
+              <button class="view-mode-btn" data-view-mode="bars"    onclick="setViewMode('bars')">
+                <span class="view-mode-icon">▮</span>
+                <span class="view-mode-label">Barras</span>
+              </button>
+              <button class="view-mode-btn" data-view-mode="bubbles" onclick="setViewMode('bubbles')">
+                <span class="view-mode-icon">◎</span>
+                <span class="view-mode-label">Bolhas</span>
+              </button>
+              <button class="view-mode-btn" data-view-mode="heatmap" onclick="setViewMode('heatmap')">
+                <span class="view-mode-icon">▣</span>
+                <span class="view-mode-label">Calor</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRA DE FERRAMENTAS -->
+      <div class="cfg-section">
+        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Barra de Ferramentas</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </div>
+        <div class="cfg-section-bd">
+          <div class="toolbar-editor-list" id="toolbar-editor-list"></div>
+          <p class="tbar-hint">✓ mostrar / ocultar botões por categoria</p>
+        </div>
+      </div>
+
+      <!-- ACESSIBILIDADE -->
+      <div class="cfg-section">
+        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Acessibilidade</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </div>
+        <div class="cfg-section-bd">
+          <div class="cfg-toggle-row">
+            <div class="cfg-toggle-info">
+              <span class="cfg-toggle-label">Alerta sonoro</span>
+              <span class="cfg-toggle-desc">Notificação ao receber novas entradas no inbox</span>
+            </div>
+            <button class="cfg-toggle-btn" onclick="toggleSound(); syncCfgToggles();" aria-label="Alerta sonoro">
+              <span class="cfg-toggle-track" id="cfg-sound-track"><span class="cfg-toggle-thumb"></span></span>
+            </button>
+          </div>
+          <div class="cfg-toggle-row">
+            <div class="cfg-toggle-info">
+              <span class="cfg-toggle-label">Alto Contraste</span>
+              <span class="cfg-toggle-desc">Aumenta o contraste para melhor legibilidade</span>
+            </div>
+            <button class="cfg-toggle-btn" onclick="toggleContrast(); syncCfgToggles();" aria-label="Alto Contraste">
+              <span class="cfg-toggle-track" id="cfg-contrast-track"><span class="cfg-toggle-thumb"></span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SISTEMA -->
+      <div class="cfg-section">
+        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Aplicativo</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </div>
+        <div class="cfg-section-bd">
+          <div class="cfg-action-row">
+            <button class="cfg-action-btn" id="cfg-pwa-btn" onclick="triggerPWAInstall()">
+              <i data-lucide="download"></i>
+              Instalar como aplicativo
+            </button>
+          </div>
+          <p class="cfg-section-note">Disponível apenas quando suportado pelo navegador e sistema operacional.</p>
+        </div>
+      </div>
+
+      <!-- DADOS -->
+      <div class="cfg-section">
+        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Dados</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </div>
+        <div class="cfg-section-bd">
+          <div class="cfg-action-row">
+            <button class="cfg-action-btn" onclick="exportBackup()">
+              <i data-lucide="upload"></i>
+              Exportar backup completo
+            </button>
+            <button class="cfg-action-btn" onclick="openBackupModal()">
+              <i data-lucide="hard-drive-download"></i>
+              Restaurar backup
+            </button>
+          </div>
+          <p class="cfg-section-note">O backup inclui scripts, histórico, torpedos, máscaras e preferências.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pers-footer">
+      <button class="btn-pers-cancel" onclick="cancelPersonalizacao()">Fechar</button>
+      <button class="btn-pers-save"   onclick="savePersonalizacao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RALs DE QUALIDADE -->
+<div class="modal-overlay" id="qualidade-modal" onclick="closeQualidade()">
+  <div class="modal-content ql-modal-content" onclick="event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="ql-header-left">
+        <div class="modal-title">RALs de Qualidade</div>
+        <span class="ql-header-sub">Acompanhamento e análise de circuitos / trechos</span>
+      </div>
+      <div class="modal-tools">
+        <button class="modal-close-btn" onclick="closeQualidade()">&times;</button>
+      </div>
+    </div>
+
+    <div class="ql-body">
+      <!-- Sidebar de CFs -->
+      <div class="ql-sidebar" id="ql-sidebar"></div>
+      <!-- Área de cards -->
+      <div class="ql-cards-area" id="ql-cards-area"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ACTION TOASTS -->
+<div class="action-toasts" id="action-toasts"></div>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner">
+  📡 Modo offline — exibindo último snapshot válido. Verifique sua conexão.
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/persistence.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/inbox.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/torpedos.js"></script>
+<script src="js/mascaras.js"></script>
+<script src="js/scripts.js"></script>
+<script src="js/historico.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/data-loader.js"></script>
+<script src="js/layout-v2.js"></script>
+<script src="js/backup.js"></script>
+<script src="js/siglas.js"></script>
+<script src="js/personalizacao.js"></script>
+<script src="js/pinned.js"></script>
+<script src="js/qualidade.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
