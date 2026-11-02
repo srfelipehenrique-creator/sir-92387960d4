@@ -205,4 +205,38 @@ function applyLayoutClass() {
   document.body.classList.toggle('layout-v2', getLayout() === 'v2');
 }
 
-document.addEventListener('DOMContentLoaded', () => { applyLayoutClass(); renderV2Bar(); });
+/* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
+const SIR_APP_VERSION = 'v8';
+
+/* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
+   Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
+function _addAreasToToolGrid() {
+  const bar = document.querySelector('#header-action-btns .tool-bar-grouped');
+  if (!bar || bar.querySelector('.tool-areas-btn')) return;
+  const b = document.createElement('button');
+  b.className = 'tool-group-btn tool-areas-btn';
+  b.type = 'button';
+  b.title = 'Minhas Áreas';
+  b.setAttribute('aria-label', 'Minhas Áreas');
+  b.setAttribute('onclick', 'openSettings()');
+  b.innerHTML = '<i data-lucide="layers"></i><span>Minhas Áreas</span>';
+  bar.appendChild(b);
+  bar.closest('.header-actions')?.classList.add('has-tool-areas');
+  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [b.querySelector('[data-lucide]')] });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  applyLayoutClass(); renderV2Bar();
+
+  if (typeof renderToolbarButtons === 'function') {
+    const _rtbOrig = renderToolbarButtons;
+    renderToolbarButtons = function () { const r = _rtbOrig.apply(this, arguments); _addAreasToToolGrid(); return r; };
+  }
+
+  const footer = document.querySelector('.page-footer');
+  if (footer && !document.getElementById('app-version')) {
+    const v = document.createElement('span');
+    v.id = 'app-version'; v.textContent = 'SIR ' + SIR_APP_VERSION;
+    footer.insertBefore(v, footer.lastElementChild);
+  }
+});

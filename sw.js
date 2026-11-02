@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v7';
+const CACHE_NAME   = 'sir-v8';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -42,17 +42,18 @@ const SHELL_ASSETS = [
 
 /* Fica na raiz da pasta para controlar index.html e pages/ */
 
-/* Install — pre-cache all shell assets */
+/* Install — pré-carrega ignorando o cache HTTP (sempre a versão nova) */
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(SHELL_ASSETS))
+      .then(cache => Promise.all(SHELL_ASSETS.map(u =>
+        cache.add(new Request(u, { cache: 'reload' })).catch(() => {})
+      )))
       .then(() => self.skipWaiting())
-      .catch(err => console.warn('[SW] Pre-cache failed:', err))
   );
 });
 
-/* Activate — purge old caches */
+/* Activate — apaga caches antigos e assume as páginas abertas */
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -61,28 +62,44 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* Fetch strategy:
-   - GitHub raw CSVs → network-only (IDB snapshot handles offline)
-   - Everything else → cache-first, update cache in background */
+/* Estratégia:
+   - CSVs do GitHub raw → só rede (o app tem o snapshot offline no IndexedDB)
+   - Arquivos do próprio app → REDE PRIMEIRO (sempre a versão mais nova);
+     sem internet, usa a cópia guardada
+   - Bibliotecas externas (ícones, zip, fontes) → cache primeiro */
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = e.request.url;
-  if (url.startsWith('chrome-extension') || url.startsWith('data:')) return;
-
-  /* CSV sources: let the network handle it; IDB fallback is in the app */
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = req.url;
+  if (!url.startsWith('http')) return;
   if (url.includes('raw.githubusercontent.com')) return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const networkFetch = fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && resp.type !== 'opaque') {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => null);
+  const sameOrigin = new URL(url).origin === self.location.origin;
 
-      return cached || networkFetch.then(r => r || Response.error());
-    })
+  if (sameOrigin) {
+    e.respondWith(
+      fetch(req, { cache: 'no-cache' })
+        .then(resp => {
+          if (resp && resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(req, clone));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(req, { ignoreSearch: true })
+          .then(r => r || caches.match('index.html'))
+          .then(r => r || Response.error()))
+    );
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(cached => cached || fetch(req).then(resp => {
+      if (resp && (resp.ok || resp.type === 'opaque')) {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(req, clone));
+      }
+      return resp;
+    }))
   );
 });

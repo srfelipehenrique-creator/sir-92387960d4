@@ -246,38 +246,51 @@ header {
 @media (max-width: 640px) { #modal-overlay .btn-copy-all { padding: 6px 8px; } }
 
 /* ══ Celular/tablet: todas as ferramentas visíveis numa grade (sem rolar) ══
-   Torpedos, Máscaras, Qualidade, Textos, Histórico, Siglas, Timer + Minhas Áreas */
-@media (max-width: 640px), (pointer: coarse) and (max-width: 1100px) {
-  header { position: static; }
-  .header-left { width: 100%; }
-  .header-actions {
-    display: grid !important; width: 100%;
-    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-    gap: 6px;
-  }
-  #header-action-btns, .header-actions .tool-bar-grouped { display: contents; }
-  .header-actions .tool-group-sep { display: none; }
+   Torpedos, Máscaras, Qualidade, Textos, Histórico, Siglas, Timer + Minhas Áreas.
+   A grade é a própria barra (.tool-bar-grouped); o botão Minhas Áreas é
+   colocado dentro dela por layout-v2.js. */
+.tool-areas-btn { display: none !important; }   /* no computador, usa o botão original */
+#app-version { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); margin-left: auto; margin-right: 10px; }
 
-  .header-actions .tool-group-btn,
-  .header-actions .btn-settings-areas {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    height: 52px; min-height: 52px; padding: 4px 2px; margin: 0;
-    background: var(--bg-elevated); border: 1px solid var(--line-strong) !important;
+@media (max-width: 640px), (pointer: coarse) and (max-width: 1100px) {
+  header { position: static !important; flex-direction: column; align-items: stretch; }
+  .header-left, .header-actions { width: 100%; min-width: 0; }
+  .header-actions { display: block !important; }
+
+  #header-action-btns {
+    display: block !important; width: 100%;
+    overflow: visible !important; flex: none !important;
+  }
+  #header-action-btns .tool-bar-grouped {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px; width: 100%; height: auto !important;
+    background: none !important; border: 0 !important; border-radius: 0; overflow: visible !important;
+  }
+  #header-action-btns .tool-group-sep { display: none !important; }
+
+  #header-action-btns .tool-group-btn {
+    display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    width: 100%; min-width: 0; height: 52px !important; padding: 4px 2px !important; margin: 0;
+    background: var(--bg-elevated) !important; border: 1px solid var(--line-strong) !important;
     border-radius: var(--r-sm); color: var(--text-soft);
-    font-size: 10.5px; font-weight: 600; letter-spacing: .2px; text-transform: none;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .header-actions .tool-group-btn i,
-  .header-actions .tool-group-btn svg,
-  .header-actions .btn-settings-areas svg { width: 18px; height: 18px; }
-  .header-actions .tool-group-btn:active,
-  .header-actions .btn-settings-areas:active { background: var(--accent-soft); color: var(--accent); }
-  .header-actions .btn-settings-areas {
-    border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
-    color: var(--text-main);
-  }
+  #header-action-btns .tool-group-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  #header-action-btns .tool-group-btn i,
+  #header-action-btns .tool-group-btn svg { width: 18px !important; height: 18px !important; }
+  #header-action-btns .tool-group-btn:active { background: var(--accent-soft) !important; color: var(--accent); }
 
-  .header-right { width: 100%; justify-content: space-between; padding-top: 2px; }
+  .tool-areas-btn { display: flex !important; border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; color: var(--text-main) !important; }
+  .header-actions.has-tool-areas .btn-settings-areas { display: none !important; }
+  .header-actions:not(.has-tool-areas) .btn-settings-areas { width: 100%; margin-top: 6px; min-height: 40px; }
+
+  .header-right { width: 100%; justify-content: space-between; padding-top: 6px; }
+}
+/* Celular deitado / tablet: 8 botões numa linha */
+@media (pointer: coarse) and (min-width: 641px) and (max-width: 1100px) {
+  #header-action-btns .tool-bar-grouped { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {

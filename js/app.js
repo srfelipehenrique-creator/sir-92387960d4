@@ -2,7 +2,16 @@
 
 /* Register Service Worker (only works on http/https, silently ignored on file://) */
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW:', e));
+  const _hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then(reg => reg.update())
+    .catch(e => console.warn('SW:', e));
+  /* Quando uma versão nova assume, recarrega uma vez para aplicar na hora */
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!_hadSW || window.__sirReloaded) return;
+    window.__sirReloaded = true;
+    location.reload();
+  });
 }
 
 function applySettings() {
