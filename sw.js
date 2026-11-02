@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v4';
+const CACHE_NAME   = 'sir-v5';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -20,6 +20,7 @@ const SHELL_ASSETS = [
   'js/persistence.js',
   'js/dashboard.js',
   'js/modal.js',
+  'js/whatsapp-copy.js',
   'js/inbox.js',
   'js/settings.js',
   'js/torpedos.js',

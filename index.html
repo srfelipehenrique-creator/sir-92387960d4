@@ -361,6 +361,7 @@
         <button id="copy-desig-btn" class="copy-btn" onclick="copyDesignations()" style="display:none;">Copiar Designações</button>
       </div>
       <div class="modal-tools">
+        <button class="modal-csv-btn btn-copy-all" id="btn-modal-copy-all" onclick="copyAllWA(this)" title="Copiar todos os tickets da lista (respeita o filtro) para enviar no WhatsApp">Copiar todos</button>
         <button class="modal-csv-btn" id="btn-modal-csv" onclick="exportModalCSV()" title="Exportar CSV">CSV ↓</button>
         <button class="modal-close-btn" onclick="closeModal()">&times;</button>
       </div>
@@ -382,6 +383,7 @@
             <th class="sortable" id="col-extra-header" data-sort-col="extra" onclick="sortModalTable('extra')">Detalhe <span class="sort-icon">↕</span></th>
             <th class="obs-cell">Nota</th>
             <th class="obs-status-col">OBS</th>
+            <th class="copy-col"></th>
           </tr>
         </thead>
         <tbody id="modal-tbody"></tbody>
@@ -713,6 +715,7 @@
 <script src="js/persistence.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/modal.js"></script>
+<script src="js/whatsapp-copy.js"></script>
 <script src="js/inbox.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/torpedos.js"></script>

@@ -254,7 +254,7 @@ function applyPinnedSort() {
   if (pinned.length) {
     const pSep = document.createElement('tr');
     pSep.className = 'separator-row pinned-separator-row';
-    pSep.innerHTML = `<td colspan="9">Aguardando — fora da ordenação</td>`;
+    pSep.innerHTML = `<td colspan="10">Aguardando — fora da ordenação</td>`;
     tbody.appendChild(pSep);
     pinned.forEach(r => tbody.appendChild(r));
   }
@@ -311,7 +311,7 @@ function vtRender() {
   if (topH > 0) {
     const tr = document.createElement('tr');
     tr.className = 'vt-spacer';
-    tr.innerHTML = `<td colspan="9" style="height:${topH}px;"></td>`;
+    tr.innerHTML = `<td colspan="10" style="height:${topH}px;"></td>`;
     tbody.appendChild(tr);
   }
   vtAllRows.slice(start, end).forEach(html => {
@@ -322,7 +322,7 @@ function vtRender() {
   if (botH > 0) {
     const tr = document.createElement('tr');
     tr.className = 'vt-spacer';
-    tr.innerHTML = `<td colspan="9" style="height:${botH}px;"></td>`;
+    tr.innerHTML = `<td colspan="10" style="height:${botH}px;"></td>`;
     tbody.appendChild(tr);
   }
 }
@@ -436,7 +436,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
 
   if (!arr.length) {
     vtDestroy();
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">Nenhum ticket mapeado nesta seleção.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">Nenhum ticket mapeado nesta seleção.</div></td></tr>`;
   } else {
     const { newItems, oldItems } = partitionAndSort(arr, tk);
     const buildRowHTML = (item, isNew) => {
@@ -458,6 +458,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
         <td>${escapeHtml(item.extra)}</td>
         <td class="obs-cell">${buildObsHTML('')}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>
+        <td class="copy-col"><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
       </tr>`;
     };
 
@@ -465,7 +466,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
     const oldRowsHTML = oldItems.map(i => buildRowHTML(i, false));
 
     const sepHTML = newItems.length && oldItems.length
-      ? `<tr class="separator-row"><td colspan="9">Anteriores — ordenados por abertura</td></tr>`
+      ? `<tr class="separator-row"><td colspan="10">Anteriores — ordenados por abertura</td></tr>`
       : '';
 
     const allHTML = [...newRowsHTML, ...(sepHTML ? [sepHTML] : []), ...oldRowsHTML];

@@ -162,12 +162,12 @@ header {
 /* Cartão */
 #modal-overlay.v2-cards tr.ticket-row {
   display: grid;
-  grid-template-columns: 22px auto minmax(0,1fr) auto;
+  grid-template-columns: 22px auto minmax(0,1fr) auto auto;
   grid-template-areas:
-    "dot cf   tk   sla"
-    "dot ds   ds   ds"
-    "dot ab   ab   ex"
-    "dot note note st";
+    "dot cf   tk   tk sla"
+    "dot ds   ds   ds ds"
+    "dot ab   ab   ex ex"
+    "dot note note cp st";
   column-gap: 8px; row-gap: 6px; align-items: center;
   margin: 0; padding: 10px 10px 10px 6px;
   background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: var(--r);
@@ -182,6 +182,7 @@ header {
 #modal-overlay.v2-cards tr.ticket-row td:nth-child(7) { grid-area: ex; justify-self: end; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); font-family: var(--font-sans); text-align: right; }
 #modal-overlay.v2-cards tr.ticket-row td:nth-child(8) { grid-area: note; }
 #modal-overlay.v2-cards tr.ticket-row td:nth-child(9) { grid-area: st; justify-self: end; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(10) { grid-area: cp; justify-self: end; }
 #modal-overlay.v2-cards tr.ticket-row td:nth-child(7):empty { display: none; }
 
 #modal-overlay.v2-cards .color-cycle-dot { width: 18px; height: 18px; }
@@ -225,3 +226,21 @@ header {
   #modal-overlay .modal-tools { flex-wrap: nowrap; flex-shrink: 0; gap: 4px; }
   #modal-overlay .modal-close-btn { margin-right: -6px; margin-top: -6px; }
 }
+
+/* ══ Botões de copiar para WhatsApp ══ */
+.copy-col { width: 1%; white-space: nowrap; text-align: right; }
+.btn-copy-ticket {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 26px; padding: 0 10px; cursor: pointer;
+  background: rgba(37,211,102,0.08); border: 1px solid rgba(37,211,102,0.35); color: #4ade80;
+  font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  border-radius: var(--r-sm); white-space: nowrap;
+  transition: background var(--t) var(--ease), border-color var(--t) var(--ease), color var(--t) var(--ease);
+}
+.btn-copy-ticket:hover { background: rgba(37,211,102,0.16); border-color: rgba(37,211,102,0.6); }
+.btn-copy-ticket:active { transform: scale(.96); }
+.btn-copy-ticket.copied, .btn-copy-all.copied { background: #16a34a; border-color: #16a34a; color: #fff; }
+.btn-copy-all { color: #4ade80 !important; border-color: rgba(37,211,102,0.35) !important; }
+.btn-copy-all:hover { background: rgba(37,211,102,0.12) !important; }
+@media (pointer: coarse) { .btn-copy-ticket { min-height: 34px; padding: 0 12px; } }
+@media (max-width: 640px) { #modal-overlay .btn-copy-all { padding: 6px 8px; } }
