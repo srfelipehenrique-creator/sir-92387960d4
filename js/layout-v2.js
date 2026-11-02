@@ -11,21 +11,33 @@ const LS_V2_SCOPE = 'sir_v2_scope';    // 'all' | 'mine'
 function _lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
 function _lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-/* Celular/tablet (tela de toque): por padrão mostra só as suas áreas */
-const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
-
 function getLayout()  { return _lsGet(LS_LAYOUT, 'v2'); }
-function getV2Scope() { return _lsGet(LS_V2_SCOPE, IS_TOUCH ? 'mine' : 'all'); }
+/* Com áreas salvas, o padrão é mostrar só elas (em qualquer aparelho) */
+function getV2Scope() { return _lsGet(LS_V2_SCOPE, 'mine'); }
 
-/* Ao salvar "Minhas Áreas" no celular, o painel passa a mostrar só elas.
-   As demais voltam quando você tocar em "Todas as áreas". */
+/* Ao aplicar "Minhas Áreas", o painel passa a mostrar só elas.
+   As demais voltam quando você clicar em "Todas as áreas". */
 if (typeof saveSettings === 'function') {
   const _saveSettingsOrig = saveSettings;
   saveSettings = function (onSaved) {
     return _saveSettingsOrig(function () {
-      if (IS_TOUCH && getUserSavedAreas().length) _lsSet(LS_V2_SCOPE, 'mine');
+      if (getUserSavedAreas().length) _lsSet(LS_V2_SCOPE, 'mine');
       if (onSaved) onSaved();
     });
+  };
+}
+
+/* Lista de tickets em cartões: no layout novo (qualquer tela) e sempre no celular */
+function useTicketCards() {
+  const narrow = !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
+  return getLayout() === 'v2' || narrow;
+}
+if (typeof openModal === 'function') {
+  const _openModalOrig = openModal;
+  openModal = function () {
+    const ov = document.getElementById('modal-overlay');
+    if (ov) ov.classList.toggle('v2-cards', useTicketCards());
+    return _openModalOrig.apply(this, arguments);
   };
 }
 

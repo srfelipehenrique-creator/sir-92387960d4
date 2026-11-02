@@ -470,9 +470,9 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
 
     const allHTML = [...newRowsHTML, ...(sepHTML ? [sepHTML] : []), ...oldRowsHTML];
 
-    /* No celular os tickets viram cartões de altura variável: sem rolagem virtual */
-    const _isNarrow = window.matchMedia && matchMedia('(max-width: 640px)').matches;
-    if (allHTML.length > 80 && !_isNarrow) {
+    /* Em cartões (layout novo / celular) as alturas variam: sem rolagem virtual */
+    const _cards = typeof useTicketCards === 'function' && useTicketCards();
+    if (allHTML.length > 80 && !_cards) {
       vtInit(allHTML, scrollContainer);
     } else {
       tbody.innerHTML = allHTML.join('');
