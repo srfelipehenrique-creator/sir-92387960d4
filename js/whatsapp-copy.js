@@ -12,10 +12,13 @@ function _waSla(abertura, isRal) {
     const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
     return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`;
   };
-  return r.remaining <= 0
-    ? `SLA PERDIDO (+${fmt(Math.abs(r.remaining))})`
-    : `${fmt(r.remaining)} restantes (${isRal ? '6h' : '4h'})`;
+  if (r.remaining <= 0) return `⛔ SLA PERDIDO (+${fmt(Math.abs(r.remaining))})`;
+  /* Mesmas faixas de cor da lista: verde > 2h, amarelo < 2h, vermelho < 1h */
+  const dot = r.remaining < 3600000 ? '🔴' : r.remaining < 7200000 ? '🟡' : '🟢';
+  return `${dot} ${fmt(r.remaining)} restantes (${isRal ? '6h' : '4h'})`;
 }
+
+const _WA_STATUS_EMOJI = { 'sem-acesso': '🚫', 'area-de-risco': '⚠️', 'liberacao-noc': '📡' };
 
 function _waTicketLabel(ticket, isRal) {
   const t = String(ticket || 'N/D').trim();
@@ -27,15 +30,15 @@ function formatTicketWA(item, isRal) {
   const status = st.obsStatus && st.obsStatus !== 'none'
     ? (OBS_STATUSES.find(s => s.key === st.obsStatus) || {}).label : '';
   const lines = [
-    `*${_waTicketLabel(item.ticket, isRal)}* — CF ${item.cfOrigem || 'N/D'}`,
-    `Designação: ${item.designacao || 'N/D'}`,
+    `🎫 *${_waTicketLabel(item.ticket, isRal)}* — 📍 CF ${item.cfOrigem || 'N/D'}`,
+    `✍🏼 Designação: ${item.designacao || 'N/D'}`,
   ];
-  if (item.extra && item.extra !== 'N/D') lines.push(`${isRal ? 'Tipo' : 'Cliente'}: ${item.extra}`);
-  if (item.abertura) lines.push(`Abertura: ${item.abertura}`);
+  if (item.extra && item.extra !== 'N/D') lines.push(isRal ? `🛠️ Tipo: ${item.extra}` : `👤 Cliente: ${item.extra}`);
+  if (item.abertura) lines.push(`🕒 Abertura: ${item.abertura}`);
   const sla = _waSla(item.abertura, isRal);
-  if (sla) lines.push(`SLA: ${sla}`);
-  if (st.obs) lines.push(`Nota: ${st.obs}`);
-  if (status) lines.push(`Status: ${status}`);
+  if (sla) lines.push(`⏳ SLA: ${sla}`);
+  if (st.obs) lines.push(`📝 Nota: ${st.obs}`);
+  if (status) lines.push(`${_WA_STATUS_EMOJI[st.obsStatus] || '📌'} Status: ${status}`);
   return lines.join('\n');
 }
 
@@ -106,7 +109,7 @@ async function copyAllWA(btn) {
 
   const title = (document.getElementById('modal-title')?.textContent || '').trim();
   const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const head = `*COP REDE — ${title}*\n${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · ${now}`;
+  const head = `🚨 *COP REDE — ${title}*\n📊 ${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · 🕒 ${now}`;
   const text = head + '\n\n' + ordered.map(i => formatTicketWA(i, isRal)).join('\n\n');
 
   const ok = await _waWrite(text);
