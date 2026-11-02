@@ -1,4 +1,4 @@
-﻿/* ── SLA ── */
+/* ── SLA ── */
 let slaInterval = null;
 
 function calcSla(aberturaStr, isRal) {
@@ -470,7 +470,9 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
 
     const allHTML = [...newRowsHTML, ...(sepHTML ? [sepHTML] : []), ...oldRowsHTML];
 
-    if (allHTML.length > 80) {
+    /* No celular os tickets viram cartões de altura variável: sem rolagem virtual */
+    const _isNarrow = window.matchMedia && matchMedia('(max-width: 640px)').matches;
+    if (allHTML.length > 80 && !_isNarrow) {
       vtInit(allHTML, scrollContainer);
     } else {
       tbody.innerHTML = allHTML.join('');

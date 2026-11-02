@@ -107,9 +107,7 @@ header {
   .modal-title { font-size: 13px; line-height: 1.35; flex: 1 1 60%; min-width: 0; }
   .modal-title-group { min-width: 0; flex: 1 1 auto; }
   .modal-tools { flex-wrap: wrap; justify-content: flex-end; }
-  .modal-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .data-table { min-width: 860px; }
-  .data-table .cf-tag, .data-table td:nth-child(3) { white-space: nowrap; }
+  .modal-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 
   /* Ferramentas com barra lateral empilham */
   .torpedo-modal-body { flex-direction: column; overflow-y: auto; }
@@ -136,3 +134,84 @@ header {
 /* Modo "Só minhas áreas": total das suas áreas ocupa a linha toda */
 .v2-kpis-mine { grid-template-columns: 1fr; }
 .v2-kpis-mine .v2-kpi-btn { font-size: 26px; }
+
+/* ══ Lista de tickets (RAL/REC) no celular: cada ticket vira um cartão ══ */
+@media (max-width: 640px) {
+  #modal-overlay .modal-filter-bar { padding: 8px 12px; }
+  #modal-overlay .copy-btn { padding: 5px 10px; min-height: 30px; font-size: 10px; }
+
+  #modal-overlay .data-table,
+  #modal-overlay .data-table tbody { display: block; width: 100%; font-size: 13px; }
+
+  /* Cabeçalho vira barra de ordenação (só as colunas ordenáveis) */
+  #modal-overlay .data-table thead { display: block; position: sticky; top: 0; z-index: 5; background: var(--bg-panel); border-bottom: 1px solid var(--line); }
+  #modal-overlay .data-table thead tr { display: flex; gap: 6px; padding: 6px 12px; align-items: center; }
+  #modal-overlay .data-table thead th { display: none; position: static; border: 0; padding: 0; background: none; }
+  #modal-overlay .data-table thead th.sortable {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-xl);
+    font-size: 10px; min-height: 32px;
+  }
+  #modal-overlay .data-table thead tr::before {
+    content: 'Ordenar:'; font-size: 10px; color: var(--text-dim); letter-spacing: .5px; margin-right: 2px;
+  }
+
+  /* Cartão */
+  #modal-overlay tr.ticket-row {
+    display: grid;
+    grid-template-columns: 22px auto minmax(0,1fr) auto;
+    grid-template-areas:
+      "dot cf   tk   sla"
+      "dot ds   ds   ds"
+      "dot ab   ab   ex"
+      "dot note note st";
+    column-gap: 8px; row-gap: 6px; align-items: center;
+    margin: 8px 10px; padding: 10px 10px 10px 6px;
+    background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: var(--r);
+  }
+  #modal-overlay tr.ticket-row td { display: block; padding: 0 !important; border: 0 !important; background: none !important; min-width: 0; width: auto; }
+  #modal-overlay tr.ticket-row td:nth-child(1) { grid-area: dot; align-self: stretch; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px !important; }
+  #modal-overlay tr.ticket-row td:nth-child(2) { grid-area: cf; }
+  #modal-overlay tr.ticket-row td:nth-child(3) { grid-area: tk; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #modal-overlay tr.ticket-row td:nth-child(4) { grid-area: ds; font-size: 12px; color: var(--text-soft); word-break: break-all; }
+  #modal-overlay tr.ticket-row td:nth-child(5) { grid-area: ab; font-size: 11px !important; }
+  #modal-overlay tr.ticket-row td:nth-child(6) { grid-area: sla; justify-self: end; }
+  #modal-overlay tr.ticket-row td:nth-child(7) { grid-area: ex; justify-self: end; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); font-family: var(--font-sans); text-align: right; }
+  #modal-overlay tr.ticket-row td:nth-child(8) { grid-area: note; }
+  #modal-overlay tr.ticket-row td:nth-child(9) { grid-area: st; justify-self: end; }
+  #modal-overlay tr.ticket-row td:nth-child(7):empty { display: none; }
+
+  #modal-overlay .color-cycle-dot { width: 18px; height: 18px; }
+  #modal-overlay .sla-badge { font-size: 11px; padding: 4px 9px; text-align: center; }
+  #modal-overlay .obs-text { max-width: none; white-space: normal; }
+  #modal-overlay .obs-input { font-size: 16px; padding: 6px 8px; }
+
+  /* Estados do cartão (cor do evento, novo, destacado) */
+  #modal-overlay tr.ticket-row[data-event-color="red"]    { box-shadow: inset 4px 0 0 #ef4444; }
+  #modal-overlay tr.ticket-row[data-event-color="blue"]   { box-shadow: inset 4px 0 0 #3b82f6; }
+  #modal-overlay tr.ticket-row[data-event-color="green"]  { box-shadow: inset 4px 0 0 #10b981; }
+  #modal-overlay tr.ticket-row[data-event-color="yellow"] { box-shadow: inset 4px 0 0 #f59e0b; }
+  #modal-overlay tr.ticket-row[data-event-color="purple"] { box-shadow: inset 4px 0 0 #8b5cf6; }
+  #modal-overlay tr.ticket-row[data-event-color="orange"] { box-shadow: inset 4px 0 0 #f97316; }
+  #modal-overlay tr.ticket-row td:first-child { box-shadow: none !important; }
+  #modal-overlay tr.ticket-row.is-new { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.28); }
+  #modal-overlay tr.ticket-row.row-highlight { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.08); }
+
+  /* Separador "Anteriores" e lista vazia */
+  #modal-overlay tr.separator-row, #modal-overlay tr.separator-row td { display: block; }
+  #modal-overlay tr.separator-row td { margin: 10px 10px 0; border-radius: var(--r-sm); }
+  #modal-overlay tbody > tr:not(.ticket-row):not(.separator-row),
+  #modal-overlay tbody > tr:not(.ticket-row):not(.separator-row) td { display: block; }
+  #modal-overlay tbody { padding-bottom: 12px; }
+}
+
+@media (max-width: 640px) {
+  /* Título e botões na mesma linha (título em até 2 linhas) */
+  #modal-overlay .modal-header { flex-wrap: nowrap; align-items: flex-start; }
+  #modal-overlay .modal-title-group { flex: 1 1 auto; min-width: 0; gap: 6px; }
+  #modal-overlay .modal-title {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  #modal-overlay .modal-tools { flex-wrap: nowrap; flex-shrink: 0; gap: 4px; }
+  #modal-overlay .modal-close-btn { margin-right: -6px; margin-top: -6px; }
+}
