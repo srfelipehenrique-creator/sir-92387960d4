@@ -1,4 +1,4 @@
-﻿const URLS = {
+const URLS = {
   ral: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_ral.csv',
   rec: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_rec.csv'
 };
@@ -42,16 +42,16 @@ const REGIONS = {
     'SEF': ['RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO'],
     'NOF': ['RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO'],
     'LGS': ['RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO'],
-    'CZS': ['RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO'],
-    'SU2': ['RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO'],
-    'OE1': ['RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO']
+    'BX1': ['RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO'],
+    'MTP': ['RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO']
   },
   'RIO B': {
     'NO1': ['RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO'],
     'NO2': ['RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO'],
-    'BX1': ['RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO'],
-    'MTP': ['RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO'],
-    'NO3': ['RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO']
+    'NO3': ['RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO'],
+    'OE1': ['RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO'],
+    'SU2': ['RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO'],
+    'CZS': ['RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO']
   }
 };
 
