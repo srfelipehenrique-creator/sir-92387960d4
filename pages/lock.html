@@ -15,6 +15,7 @@
 <link rel="manifest" href="../assets/manifest.json">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <title>SIR · Acesso</title>
+<script src="../js/theme-mode.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
@@ -246,6 +247,15 @@
     .lock-card { width: calc(100% - 32px); padding: 36px 24px 30px; }
   }
   @media (pointer: coarse) { .lock-input { font-size: 16px; } }
+
+  /* Modo claro (segue a escolha feita no painel ou o tema do aparelho) */
+  :root[data-mode="light"] {
+    --bg: #f3f4f6; --panel: #ffffff; --elevated: #f5f6f8;
+    --line: rgba(15,23,42,0.10); --line-strong: rgba(15,23,42,0.18);
+    --text: #17191d; --text-soft: rgba(23,25,29,0.76); --text-muted: rgba(23,25,29,0.54); --text-dim: rgba(23,25,29,0.34);
+  }
+  :root[data-mode="light"] .lock-brand { background: linear-gradient(135deg, #17191d 0%, rgba(23,25,29,0.55) 100%); -webkit-background-clip: text; background-clip: text; }
+  :root[data-mode="light"] .lock-card { box-shadow: 0 24px 60px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.05); }
 </style>
 </head>
 <body>

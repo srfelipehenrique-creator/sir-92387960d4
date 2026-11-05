@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v9';
+const CACHE_NAME   = 'sir-v10';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -9,6 +9,8 @@ const SHELL_ASSETS = [
   'assets/apple-touch-icon.png',
   'css/layout-v2.css',
   'css/mobile.css',
+  'css/theme-light.css',
+  'js/theme-mode.js',
   'assets/icon.svg',
   'css/styles.css',
   'js/config.js',

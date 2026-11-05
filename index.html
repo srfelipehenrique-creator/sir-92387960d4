@@ -23,6 +23,8 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/layout-v2.css">
 <link rel="stylesheet" href="css/mobile.css">
+<link rel="stylesheet" href="css/theme-light.css">
+<script src="js/theme-mode.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 <title>SIR · Dashboard</title>
@@ -45,6 +47,9 @@
     <span class="status-flash" id="status-flash">ATUALIZADO</span>
     <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
       <i data-lucide="cloud-sync"></i>
+    </button>
+    <button class="btn-settings btn-icon" id="btn-theme-mode" onclick="cycleThemeMode()" title="Tema" aria-label="Tema" style="background:transparent;border-color:transparent;">
+      <i data-lucide="sun-moon"></i>
     </button>
     <button class="btn-settings btn-icon" onclick="openPersonalizacao()" title="Configurações" aria-label="Configurações" style="background:transparent;border-color:transparent;">
       <i data-lucide="settings"></i>
