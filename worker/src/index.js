@@ -139,6 +139,14 @@ async function sendPush(env, vapid, sub, payloadObj) {
     },
     body,
   });
+  /* Registro das últimas tentativas (diagnóstico) */
+  try {
+    let reason = '';
+    if (res.status >= 300) { try { reason = (await res.text()).slice(0, 200); } catch (e) {} }
+    const log = (await env.SIR_KV.get('pushlog', 'json')) || [];
+    log.unshift({ at: Date.now(), host: new URL(sub.endpoint).host, status: res.status, reason, title: payloadObj.title });
+    await env.SIR_KV.put('pushlog', JSON.stringify(log.slice(0, 10)));
+  } catch (e) {}
   return res.status;
 }
 
@@ -229,7 +237,8 @@ export default {
       const le = await env.SIR_KV.get('lasterr', 'json');
       const subs = (await env.SIR_KV.list({ prefix: 'sub:' })).keys.length;
       return json({ ok: true, ultimaMudanca: st ? new Date(st.at).toISOString() : null, ticketsConhecidos: st ? st.ids.length : 0,
-                    aparelhos: subs, ultimoErro: le ? { em: new Date(le.at).toISOString(), msg: le.msg } : null }, 200, h);
+                    aparelhos: subs, ultimoErro: le ? { em: new Date(le.at).toISOString(), msg: le.msg } : null,
+                    envios: ((await env.SIR_KV.get('pushlog', 'json')) || []).map(x => ({ em: new Date(x.at).toISOString(), servico: x.host, status: x.status, motivo: x.reason, titulo: x.title })) }, 200, h);
     }
     /* Diagnóstico: roda a verificação agora e devolve só contagens (sem dados de tickets) */
     if (req.method === 'GET' && url.pathname === '/diag') {
