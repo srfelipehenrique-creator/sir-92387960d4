@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v11';
+const CACHE_NAME   = 'sir-v12';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -23,6 +23,7 @@ const SHELL_ASSETS = [
   'js/dashboard.js',
   'js/modal.js',
   'js/whatsapp-copy.js',
+  'js/notify.js',
   'js/inbox.js',
   'js/settings.js',
   'js/torpedos.js',
@@ -104,4 +105,17 @@ self.addEventListener('fetch', e => {
       return resp;
     }))
   );
+});
+
+/* Clique numa notificação de ticket novo: traz o SIR para frente e abre o ticket */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const data = e.notification.data || {};
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    let client = all.find(c => c.url.includes('index.html') || c.url.endsWith('/')) || all[0];
+    if (client) { try { await client.focus(); } catch (err) {} }
+    else { client = await self.clients.openWindow('index.html'); }
+    if (client) client.postMessage({ type: 'sir-notification-click', ...data });
+  })());
 });
