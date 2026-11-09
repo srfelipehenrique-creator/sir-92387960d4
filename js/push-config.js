@@ -1,3 +1,3 @@
 /* Endereço do servidor de notificações (Cloudflare Worker).
    Preenchido depois da primeira publicação em .github/workflows/deploy-push.yml */
-const SIR_PUSH_URL = '';
+const SIR_PUSH_URL = 'https://sir-push.srfelipehenrique.workers.dev';
