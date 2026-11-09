@@ -215,7 +215,7 @@ export default {
     }));
   },
 
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const h = cors(env, req);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
     const url = new URL(req.url);
@@ -264,7 +264,14 @@ export default {
         const rec = await env.SIR_KV.get(id, 'json');
         if (!rec) return json({ error: 'nao inscrito' }, 404, h);
         const v = await getVapid(env);
-        const st = await sendPush(env, v, rec.subscription, { title: 'SIR · notificações ativas', body: 'Você vai receber as RAL/REC novas das suas áreas, mesmo com o app fechado.', data: {} });
+        const payload = { title: 'SIR · notificações ativas', body: 'Teste: as RAL/REC novas das suas áreas vão chegar assim, mesmo com o app fechado.', data: {} };
+        /* Atraso opcional (até 15 s) para dar tempo de sair do app e ver a notificação chegar */
+        const delay = Math.min(15, Math.max(0, Number(body.delay) || 0));
+        if (delay && ctx) {
+          ctx.waitUntil(new Promise(r => setTimeout(r, delay * 1000)).then(() => sendPush(env, v, rec.subscription, payload)).catch(() => {}));
+          return json({ ok: true, agendado: delay }, 200, h);
+        }
+        const st = await sendPush(env, v, rec.subscription, payload);
         return json({ ok: st < 300, status: st }, 200, h);
       }
     }

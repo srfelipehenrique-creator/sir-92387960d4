@@ -157,7 +157,7 @@ async function _ntSystem(items) {
     ? `${first.ticket || ''} — ${first.designacao || ''}${first.extra && first.extra !== 'N/D' ? '\n' + first.extra : ''}`
     : items.slice(0, 4).map(i => `${i.typeKey === 'ral' ? 'RAL' : 'REC'} ${i.cfOrigem} · ${i.ticket}`).join('\n') + (items.length > 4 ? `\n+${items.length - 4}` : '');
   const opts = {
-    body, tag: 'sir-novos', renotify: true,
+    body, tag: 'sir-novos', renotify: true, requireInteraction: true, vibrate: [200, 100, 200],
     icon: 'assets/icon-192.png', badge: 'assets/icon-192.png',
     data: items.length === 1 ? { cf: first.cfOrigem, tk: first.typeKey, ticket: first.ticket } : { inbox: true }
   };
@@ -299,7 +299,10 @@ async function syncPushSubscription(opts = {}) {
     }
     const ok = res.status === 200;
     try { localStorage.setItem(LS_PUSH_OK, ok && notifyEnabled() ? '1' : '0'); } catch (e) {}
-    if (ok && opts.test) await _pushPost('/test', { key, subscription: sub.toJSON() });
+    if (ok && opts.test) {
+      await _pushPost('/test', { key, subscription: sub.toJSON(), delay: 10 });
+      if (typeof showActionToast === 'function') showActionToast('Teste em 10 s — saia do SIR para ver a notificação chegar', 'success');
+    }
     _ntUpdateButton();
     return ok;
   } catch (e) {

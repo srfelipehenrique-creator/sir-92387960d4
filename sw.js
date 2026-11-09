@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v14';
+const CACHE_NAME   = 'sir-v15';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -132,6 +132,10 @@ self.addEventListener('push', e => {
     badge: 'assets/icon-192.png',
     tag: data.ticket ? 'sir-' + data.tk + '-' + data.ticket : 'sir-novos',
     renotify: true,
+    requireInteraction: true,      /* PC: fica na tela até você fechar */
+    silent: false,
+    vibrate: [200, 100, 200],      /* Android */
+    timestamp: Date.now(),
     data,
   }));
 });
