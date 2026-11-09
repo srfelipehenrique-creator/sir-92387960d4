@@ -209,7 +209,10 @@ async function authorized(env, key) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(check(env).catch(e => console.log('check error', e && e.message)));
+    ctx.waitUntil(check(env).catch(async e => {
+      console.log('check error', e && e.message);
+      try { await env.SIR_KV.put('lasterr', JSON.stringify({ at: Date.now(), msg: String(e && e.message || e) })); } catch (err) {}
+    }));
   },
 
   async fetch(req, env) {
@@ -223,7 +226,16 @@ export default {
     }
     if (req.method === 'GET' && url.pathname === '/') {
       const st = await env.SIR_KV.get('state', 'json');
-      return json({ ok: true, ultimaVerificacao: st ? new Date(st.at).toISOString() : null }, 200, h);
+      const le = await env.SIR_KV.get('lasterr', 'json');
+      const subs = (await env.SIR_KV.list({ prefix: 'sub:' })).keys.length;
+      return json({ ok: true, ultimaMudanca: st ? new Date(st.at).toISOString() : null, ticketsConhecidos: st ? st.ids.length : 0,
+                    aparelhos: subs, ultimoErro: le ? { em: new Date(le.at).toISOString(), msg: le.msg } : null }, 200, h);
+    }
+    /* Diagnóstico: roda a verificação agora e devolve só contagens (sem dados de tickets) */
+    if (req.method === 'GET' && url.pathname === '/diag') {
+      const t0 = Date.now();
+      try { const r = await check(env); return json({ ok: true, ...r, ms: Date.now() - t0 }, 200, h); }
+      catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
     }
 
     if (req.method === 'POST' && ['/subscribe', '/unsubscribe', '/test'].includes(url.pathname)) {
