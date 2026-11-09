@@ -1,0 +1,19 @@
+# Servidor de notificações do SIR (Cloudflare Worker)
+# Publicado automaticamente pelo GitHub Actions (.github/workflows/deploy-push.yml)
+name = "sir-push"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+[triggers]
+crons = ["*/2 * * * *"]
+
+[vars]
+# Hash SHA-256 da chave de acesso (o mesmo usado em pages/lock.html)
+KEY_HASH = "329acaf5d0f68075ccc1e62cea32157db54a9ffe29e1c1d590c81ac9158a1a13"
+ALLOWED_ORIGINS = "https://srfelipehenrique-creator.github.io"
+VAPID_SUBJECT = "https://srfelipehenrique-creator.github.io/sir-92387960d4/"
+
+[[kv_namespaces]]
+binding = "SIR_KV"
+id = "__KV_ID__"

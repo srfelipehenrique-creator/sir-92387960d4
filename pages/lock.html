@@ -409,6 +409,8 @@
 
     /* ── Autenticado ── */
     localStorage.setItem(_s, 'granted');
+    /* Guarda a chave neste aparelho para ativar as notificações push (uso pessoal) */
+    try { localStorage.setItem('sir_push_key', raw); } catch (e) {}
 
     /* Mostra overlay de sucesso */
     document.getElementById('lock-success').classList.add('show');

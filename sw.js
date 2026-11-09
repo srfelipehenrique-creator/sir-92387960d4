@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v12';
+const CACHE_NAME   = 'sir-v13';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -23,6 +23,7 @@ const SHELL_ASSETS = [
   'js/dashboard.js',
   'js/modal.js',
   'js/whatsapp-copy.js',
+  'js/push-config.js',
   'js/notify.js',
   'js/inbox.js',
   'js/settings.js',
@@ -118,4 +119,19 @@ self.addEventListener('notificationclick', e => {
     else { client = await self.clients.openWindow('index.html'); }
     if (client) client.postMessage({ type: 'sir-notification-click', ...data });
   })());
+});
+
+/* Push do servidor (chega mesmo com o SIR fechado) */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'SIR', body: e.data ? e.data.text() : '' }; }
+  const data = d.data || {};
+  e.waitUntil(self.registration.showNotification(d.title || 'SIR · ticket novo', {
+    body: d.body || '',
+    icon: 'assets/icon-192.png',
+    badge: 'assets/icon-192.png',
+    tag: data.ticket ? 'sir-' + data.tk + '-' + data.ticket : 'sir-novos',
+    renotify: true,
+    data,
+  }));
 });

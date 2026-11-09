@@ -386,3 +386,11 @@ header {
   .nt-actions { margin-top: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .nt-card { transition: none; } .nt-progress { animation: none; } }
+.nt-keyform { display: flex; gap: 6px; margin-top: 10px; }
+.nt-keyinput {
+  flex: 1; min-width: 0; min-height: 36px; padding: 0 10px; border-radius: var(--r-sm);
+  background: var(--bg-panel-2); border: 1px solid var(--line-strong); color: var(--text-main);
+}
+.nt-keyinput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.nt-keyform .nt-btn { flex: 0 0 auto; padding: 0 16px; }
+.nt-key .nt-progress { display: none; }

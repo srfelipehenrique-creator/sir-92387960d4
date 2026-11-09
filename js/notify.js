@@ -147,6 +147,7 @@ function _ntSummaryCard(rest) {
 /* Notificação do sistema (fora do navegador) — só com o SIR em segundo plano */
 async function _ntSystem(items) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (typeof pushActive === 'function' && pushActive()) return;   /* o servidor já envia */
   if (document.visibilityState === 'visible' && document.hasFocus()) return;
   const first = items[0], isRal = first.typeKey === 'ral';
   const title = items.length === 1
@@ -196,7 +197,7 @@ function _ntUpdateButton() {
   }
   btn.classList.toggle('nt-off', !on);
   const t = on
-    ? `Notificações ligadas (pop-up${sys === 'granted' ? ' + aviso do sistema' : ''}) — toque para desligar`
+    ? `Notificações ligadas (pop-up${typeof pushActive === 'function' && pushActive() ? ' + aviso com o app fechado' : sys === 'granted' ? ' + aviso do sistema' : ''}) — toque para desligar`
     : 'Notificações desligadas — toque para ligar';
   btn.title = t; btn.setAttribute('aria-label', t);
 }
@@ -220,7 +221,7 @@ function _ntAskOnFirstTap() {
   const ask = () => {
     document.removeEventListener('pointerdown', ask, true);
     if (Notification.permission === 'default')
-      Notification.requestPermission().then(_ntUpdateButton).catch(() => {});
+      Notification.requestPermission().then(p => { _ntUpdateButton(); if (p === 'granted' && typeof syncPushSubscription === 'function') syncPushSubscription({ interactive: true, test: true }); }).catch(() => {});
   };
   document.addEventListener('pointerdown', ask, true);
 }
@@ -251,3 +252,105 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 window.addEventListener('load', _ntUpdateButton);
+
+/* ══════════════════════════════════════════════════════════════
+   Push (com o SIR fechado/minimizado) — servidor em SIR_PUSH_URL
+   ══════════════════════════════════════════════════════════════ */
+const LS_PUSH_KEY = 'sir_push_key';
+const LS_PUSH_OK  = 'sir_push_ok';
+
+function _pushUrl() { return (typeof SIR_PUSH_URL === 'string' && SIR_PUSH_URL) ? SIR_PUSH_URL.replace(/\/+$/, '') : ''; }
+function pushSupported() {
+  return !!(_pushUrl() && location.protocol === 'https:' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+}
+function pushActive() { try { return localStorage.getItem(LS_PUSH_OK) === '1'; } catch (e) { return false; } }
+function _pushKey() { try { return localStorage.getItem(LS_PUSH_KEY) || ''; } catch (e) { return ''; } }
+function _b64uToU8(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+
+async function _pushPost(path, payload) {
+  const r = await fetch(_pushUrl() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  return { status: r.status, body: j };
+}
+
+let _pushBusy = false;
+/* Inscreve/atualiza este aparelho no servidor (áreas + ligado/desligado) */
+async function syncPushSubscription(opts = {}) {
+  if (!pushSupported() || _pushBusy) return false;
+  if (Notification.permission !== 'granted') return false;
+  const key = _pushKey();
+  if (!key) { if (opts.interactive) _ntAskKeyCard(); return false; }
+  _pushBusy = true;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      if (!notifyEnabled()) return false;
+      const v = await (await fetch(_pushUrl() + '/vapid')).json();
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _b64uToU8(v.publicKey) });
+    }
+    const areas = typeof getUserSavedAreas === 'function' ? getUserSavedAreas() : [];
+    const device = (navigator.userAgentData && navigator.userAgentData.platform) || (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone/iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'PC');
+    const res = await _pushPost('/subscribe', { key, subscription: sub.toJSON(), areas, enabled: notifyEnabled(), device });
+    if (res.status === 403) {
+      try { localStorage.removeItem(LS_PUSH_KEY); localStorage.removeItem(LS_PUSH_OK); } catch (e) {}
+      if (opts.interactive) _ntAskKeyCard('Chave incorreta. Digite novamente.');
+      return false;
+    }
+    const ok = res.status === 200;
+    try { localStorage.setItem(LS_PUSH_OK, ok && notifyEnabled() ? '1' : '0'); } catch (e) {}
+    if (ok && opts.test) await _pushPost('/test', { key, subscription: sub.toJSON() });
+    _ntUpdateButton();
+    return ok;
+  } catch (e) {
+    console.warn('push:', e && e.message);
+    return false;
+  } finally { _pushBusy = false; }
+}
+
+/* Pede a chave dentro de um pop-up (aparelhos que entraram antes desta versão) */
+function _ntAskKeyCard(msg) {
+  if (document.querySelector('.nt-key')) return;
+  const html = `
+    <div class="nt-head">
+      <span class="nt-badge nt-sum">Ativar avisos com o app fechado</span>
+      <button class="nt-close" type="button" aria-label="Fechar">×</button>
+    </div>
+    <div class="nt-desig">${msg ? '<b>' + _ntEsc(msg) + '</b><br>' : ''}Digite a chave de acesso do SIR uma vez neste aparelho.</div>
+    <form class="nt-keyform">
+      <input type="password" class="nt-keyinput" autocomplete="current-password" placeholder="Chave de acesso" required>
+      <button type="submit" class="nt-btn nt-primary">Ativar</button>
+    </form>`;
+  const card = _ntShowCard(html, c => {
+    c.classList.add('nt-key');
+    c.querySelector('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const v = c.querySelector('input').value.trim();
+      if (!v) return;
+      try { localStorage.setItem(LS_PUSH_KEY, v); } catch (err) {}
+      _ntRemove(c);
+      const ok = await syncPushSubscription({ interactive: true, test: true });
+      if (ok && typeof showActionToast === 'function') showActionToast('Avisos com o app fechado ativados', 'success');
+    });
+  });
+  _ntPause(card);   /* não some sozinho */
+}
+
+/* Liga o push junto com o sino e mantém as áreas atualizadas no servidor */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof toggleNotifications === 'function') {
+    const _tOrig = toggleNotifications;
+    toggleNotifications = async function () {
+      await _tOrig.apply(this, arguments);
+      if (pushSupported()) await syncPushSubscription({ interactive: true, test: notifyEnabled() });
+    };
+  }
+  if (typeof saveSettings === 'function') {
+    const _sOrig = saveSettings;
+    saveSettings = function (cb) { return _sOrig(function () { if (cb) cb(); syncPushSubscription(); }); };
+  }
+});
+window.addEventListener('load', () => {
+  if (!pushSupported() || !notifyEnabled()) return;
+  if (Notification.permission === 'granted') syncPushSubscription({ interactive: !_pushKey() });
+});
