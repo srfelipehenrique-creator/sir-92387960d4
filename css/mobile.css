@@ -399,3 +399,44 @@ header {
 .obs-meta { display: none; font-size: 10px; color: var(--text-dim); font-family: var(--font-sans); white-space: nowrap; }
 #modal-overlay.v2-cards .obs-content { flex-wrap: wrap; row-gap: 2px; }
 #modal-overlay.v2-cards .obs-meta { display: block; flex-basis: 100%; order: 3; }
+
+/* ══ Classificação do ticket ══ */
+.color-cycle-dot.ev-tag { box-shadow: 0 0 0 2px var(--bg-panel), 0 0 6px color-mix(in srgb, var(--tag-color, #888) 60%, transparent); }
+.ticket-row[data-tag-on] td:first-child { box-shadow: inset 3px 0 0 0 var(--tag-color) !important; }
+#modal-overlay.v2-cards tr.ticket-row[data-tag-on] { box-shadow: inset 4px 0 0 var(--tag-color) !important; }
+
+.tag-pill {
+  display: block; width: max-content; max-width: 100%; margin-top: 5px; margin-left: auto;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  font-family: var(--font-sans); font-size: 9.5px; font-weight: 800; letter-spacing: .5px; line-height: 1.2;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+td.sla-col { text-align: right; }
+#modal-overlay:not(.v2-cards) td.sla-col .tag-pill { margin-left: 0; }
+#modal-overlay:not(.v2-cards) td.sla-col { text-align: left; }
+
+.tag-picker {
+  position: fixed; z-index: 10060; width: 230px;
+  background: var(--bg-float); border: 1px solid var(--line-strong); border-radius: var(--r);
+  box-shadow: var(--sh-xl); padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  animation: cpickerIn .15s var(--ease-out);
+}
+.tag-picker-head { font-size: 9.5px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-dim); padding: 2px 4px 6px; }
+.tag-opt {
+  position: relative; width: 100%; min-height: 32px; border: 0; border-radius: 4px; cursor: pointer;
+  font-family: var(--font-sans); font-size: 11.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  transition: transform .12s var(--ease), filter .12s var(--ease);
+}
+.tag-opt:hover { filter: brightness(1.06); transform: translateX(2px); }
+.tag-opt.active { outline: 2px solid var(--text-main); outline-offset: 1px; }
+.tag-opt.active::after { content: '✓'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: 900; }
+.tag-clear { background: var(--bg-panel-2) !important; color: var(--text-muted) !important; border: 1px dashed var(--line-strong); margin-top: 4px; text-transform: none; font-weight: 600; }
+
+/* Celular: lista abre de baixo, com toque confortável */
+.tag-picker.tag-sheet {
+  left: 0; right: 0; bottom: 0; top: auto; width: auto;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  gap: 6px; box-shadow: 0 -10px 40px rgba(0,0,0,.35);
+}
+.tag-sheet .tag-opt { min-height: 42px; font-size: 13px; }

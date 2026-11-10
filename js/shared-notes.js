@@ -55,9 +55,10 @@ async function pullSharedNotes(force) {
     let migrated = false; try { migrated = localStorage.getItem(LS_NOTES_MIGR) === '1'; } catch (e) {}
     if (!migrated) {
       for (const [id, st] of Object.entries(appState.ticketStates)) {
-        const hasObs = st.obs || (st.obsStatus && st.obsStatus !== 'none');
+        const validTag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
+        const hasObs = st.obs || (st.obsStatus && st.obsStatus !== 'none') || validTag !== 'none';
         if (hasObs && !notes[id]) {
-          const res = await _snPost('/note', { key, id, obs: st.obs || '', st: st.obsStatus || 'none', by: _snUser() });
+          const res = await _snPost('/note', { key, id, obs: st.obs || '', st: st.obsStatus || 'none', tag: validTag, by: _snUser() });
           if (res.body && res.body.note) notes[id] = res.body.note;
         }
       }
@@ -67,16 +68,14 @@ async function pullSharedNotes(force) {
     /* Aplica: o servidor manda em nota e status; a cor continua sua */
     for (const [id, n] of Object.entries(notes)) {
       const cur = appState.ticketStates[id] || {};
-      appState.ticketStates[id] = { ...cur, obs: n.obs || '', obsStatus: n.st || 'none', noteBy: n.by || '', noteAt: n.at || 0, ts: Date.now() };
+      appState.ticketStates[id] = { ...cur, obs: n.obs || '', obsStatus: n.st || 'none', eventColor: n.tag || 'none', noteBy: n.by || '', noteAt: n.at || 0, ts: Date.now() };
     }
     /* Notas apagadas por alguém da equipe */
     for (const id of _snServerIds) {
       if (notes[id]) continue;
       const cur = appState.ticketStates[id];
       if (!cur) continue;
-      const next = { ...cur, obs: '', obsStatus: 'none', noteBy: '', noteAt: 0 };
-      if (!next.eventColor || next.eventColor === 'none') delete appState.ticketStates[id];
-      else appState.ticketStates[id] = next;
+      delete appState.ticketStates[id];
     }
     _snServerIds = new Set(Object.keys(notes));
     _snLastPull = Date.now();
@@ -94,7 +93,8 @@ async function _snPush(identity) {
   if (!key) { _snAskKey(); return; }
   const st = appState.ticketStates[identity] || {};
   try {
-    const r = await _snPost('/note', { key, id: identity, obs: st.obs || '', st: st.obsStatus || 'none', by: _snUser() });
+    const tag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
+    const r = await _snPost('/note', { key, id: identity, obs: st.obs || '', st: st.obsStatus || 'none', tag, by: _snUser() });
     if (r.status === 200) {
       if (r.body.note) {
         _snServerIds.add(identity);
@@ -116,7 +116,7 @@ function _snAskName(identity) {
       <span class="nt-badge nt-sum">Notas da equipe</span>
       <button class="nt-close" type="button" aria-label="Fechar">×</button>
     </div>
-    <div class="nt-desig">Suas notas agora aparecem para todos que usam o SIR. Como você quer aparecer nelas?</div>
+    <div class="nt-desig">Suas notas e classificações aparecem para todos que usam o SIR. Como você quer aparecer nelas?</div>
     <form class="nt-keyform">
       <input type="text" class="nt-keyinput" maxlength="30" placeholder="Seu nome" autocomplete="name" required>
       <button type="submit" class="nt-btn nt-primary">Salvar</button>
@@ -166,6 +166,8 @@ function _snRefreshOpenModal() {
         if (t) t.title = `${st.obs}\n— ${meta}`;
       }
     }
+    const tagKey = st.eventColor || 'none';
+    if ((row.dataset.eventColor || 'none') !== tagKey) row.dataset.eventColor = tagKey;
     const status = st.obsStatus || 'none';
     if ((row.dataset.obsStatus || 'none') !== status) {
       row.dataset.obsStatus = status;
@@ -174,6 +176,7 @@ function _snRefreshOpenModal() {
       if (sc) sc.innerHTML = buildObsStatusHTML(status);
     }
   });
+  if (typeof renderAllTicketTags === 'function') renderAllTicketTags();
 }
 
 /* ── Ligações com o código existente ── */
@@ -182,9 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const _orig = persistTicketState;
     persistTicketState = function (identity, updates) {
       const r = _orig.apply(this, arguments);
-      if (updates && ('obs' in updates || 'obsStatus' in updates)) {
+      if (updates && ('obs' in updates || 'obsStatus' in updates || 'eventColor' in updates)) {
         _snPush(identity);
-        if (!_snUser() && (updates.obs || (updates.obsStatus && updates.obsStatus !== 'none'))) _snAskName(identity);
+        if (!_snUser() && (updates.obs || (updates.obsStatus && updates.obsStatus !== 'none') || (updates.eventColor && updates.eventColor !== 'none'))) _snAskName(identity);
       }
       return r;
     };

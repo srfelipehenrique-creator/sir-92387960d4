@@ -31,6 +31,8 @@ function formatTicketWA(item, isRal) {
     ? (OBS_STATUSES.find(s => s.key === st.obsStatus) || {}).label : '';
   const lines = [
     `🎫 *${_waTicketLabel(item.ticket, isRal)}* — 📍 CF ${item.cfOrigem || 'N/D'}`,
+    ...(typeof getTicketTag === 'function' && getTicketTag(st.eventColor)
+        ? [`${getTicketTag(st.eventColor).emoji} *${getTicketTag(st.eventColor).label}*`] : []),
     `✍🏼 Designação: ${item.designacao || 'N/D'}`,
   ];
   if (item.extra && item.extra !== 'N/D') lines.push(isRal ? `🛠️ Tipo: ${item.extra}` : `👤 Cliente: ${item.extra}`);

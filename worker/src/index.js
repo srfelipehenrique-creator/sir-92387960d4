@@ -263,8 +263,9 @@ export default {
       const obs = String(body.obs || '').slice(0, 200);
       const st  = String(body.st || 'none').slice(0, 30);
       const by  = String(body.by || '').slice(0, 40);
-      if (!obs && (!st || st === 'none')) delete notes[id];
-      else notes[id] = { obs, st, by, at: Date.now() };
+      const tag = String(body.tag || 'none').slice(0, 30);   /* classificação (bolinha de cor) */
+      if (!obs && (!st || st === 'none') && (!tag || tag === 'none')) delete notes[id];
+      else notes[id] = { obs, st, tag, by, at: Date.now() };
       await env.SIR_KV.put('notesmap', JSON.stringify(notes));
       return json({ ok: true, note: notes[id] || null }, 200, h);
     }
