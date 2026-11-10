@@ -316,10 +316,10 @@ function _ntAskKeyCard(msg) {
   if (document.querySelector('.nt-key')) return;
   const html = `
     <div class="nt-head">
-      <span class="nt-badge nt-sum">Ativar avisos com o app fechado</span>
+      <span class="nt-badge nt-sum">Chave do SIR neste aparelho</span>
       <button class="nt-close" type="button" aria-label="Fechar">×</button>
     </div>
-    <div class="nt-desig">${msg ? '<b>' + _ntEsc(msg) + '</b><br>' : ''}Digite a chave de acesso do SIR uma vez neste aparelho.</div>
+    <div class="nt-desig">${msg ? '<b>' + _ntEsc(msg) + '</b><br>' : ''}Digite a chave de acesso uma vez neste aparelho para ver as <b>notas da equipe</b> e receber <b>avisos com o app fechado</b>.</div>
     <form class="nt-keyform">
       <input type="password" class="nt-keyinput" autocomplete="current-password" placeholder="Chave de acesso" required>
       <button type="submit" class="nt-btn nt-primary">Ativar</button>
@@ -332,8 +332,10 @@ function _ntAskKeyCard(msg) {
       if (!v) return;
       try { localStorage.setItem(LS_PUSH_KEY, v); } catch (err) {}
       _ntRemove(c);
+      document.dispatchEvent(new Event('sir-key-saved'));
       const ok = await syncPushSubscription({ interactive: true, test: true });
       if (ok && typeof showActionToast === 'function') showActionToast('Avisos com o app fechado ativados', 'success');
+      else if (typeof showActionToast === 'function') showActionToast('Chave salva neste aparelho', 'success');
     });
   });
   _ntPause(card);   /* não some sozinho */

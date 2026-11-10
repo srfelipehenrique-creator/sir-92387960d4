@@ -247,6 +247,28 @@ export default {
       catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
     }
 
+    /* ── Notas compartilhadas (todos com a chave veem as mesmas notas) ── */
+    if (req.method === 'POST' && (url.pathname === '/notes' || url.pathname === '/note')) {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const notes = (await env.SIR_KV.get('notesmap', 'json')) || {};
+      /* Limpa notas paradas há mais de 15 dias */
+      const old = Date.now() - 15 * 86400000;
+      for (const [k, n] of Object.entries(notes)) if (!n.at || n.at < old) delete notes[k];
+
+      if (url.pathname === '/notes') return json({ notes, at: Date.now() }, 200, h);
+
+      const id = String(body.id || '').slice(0, 300);
+      if (!id) return json({ error: 'id' }, 400, h);
+      const obs = String(body.obs || '').slice(0, 200);
+      const st  = String(body.st || 'none').slice(0, 30);
+      const by  = String(body.by || '').slice(0, 40);
+      if (!obs && (!st || st === 'none')) delete notes[id];
+      else notes[id] = { obs, st, by, at: Date.now() };
+      await env.SIR_KV.put('notesmap', JSON.stringify(notes));
+      return json({ ok: true, note: notes[id] || null }, 200, h);
+    }
+
     if (req.method === 'POST' && ['/subscribe', '/unsubscribe', '/test'].includes(url.pathname)) {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);

@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v15';
+const CACHE_NAME   = 'sir-v16';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -25,6 +25,7 @@ const SHELL_ASSETS = [
   'js/whatsapp-copy.js',
   'js/push-config.js',
   'js/notify.js',
+  'js/shared-notes.js',
   'js/inbox.js',
   'js/settings.js',
   'js/torpedos.js',
