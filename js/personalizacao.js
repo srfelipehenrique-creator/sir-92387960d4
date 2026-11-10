@@ -13,6 +13,7 @@ const TOOLBAR_DEFS = [
   { id: 'cfg-scripts',    label: 'Textos',     icon: 'pen-line',     onclick: 'openScripts()',      visible: true, group: 'consulta'  },
   { id: 'cfg-historico',  label: 'Histórico',  icon: 'archive',      onclick: 'openHistorico()',    visible: true, group: 'consulta'  },
   { id: 'cfg-siglas',     label: 'Siglas',     icon: 'book-open',    onclick: 'openSiglas()',       visible: true, group: 'consulta'  },
+  { id: 'cfg-nodes',      label: 'Endereços de Node', icon: 'map-pinned', onclick: 'openNodes()',   visible: true, group: 'consulta'  },
   { id: 'cfg-timer',      label: 'Timer',      icon: 'timer',        onclick: 'toggleTimerFloat()', visible: true, group: 'util'      },
 ];
 
@@ -65,10 +66,18 @@ function loadToolbarConfig() {
   try {
     const saved = JSON.parse(localStorage.getItem(LS_TOOLBAR) || 'null');
     if (!saved) return TOOLBAR_DEFS.map((d, i) => ({ ...d, order: i }));
-    return saved.map(s => {
+    const list = saved.map(s => {
       const def = TOOLBAR_DEFS.find(d => d.id === s.id);
       return def ? { ...def, visible: s.visible, order: s.order } : null;
     }).filter(Boolean);
+    /* Botões novos (de versões mais recentes) entram visíveis, logo após o seu grupo */
+    TOOLBAR_DEFS.forEach(def => {
+      if (list.some(x => x.id === def.id)) return;
+      const sameGroup = list.filter(x => x.group === def.group);
+      const after = sameGroup.length ? Math.max(...sameGroup.map(x => x.order)) + 0.5 : list.length;
+      list.push({ ...def, order: after });
+    });
+    return list.sort((a, b) => a.order - b.order).map((x, i) => ({ ...x, order: i }));
   } catch { return TOOLBAR_DEFS.map((d, i) => ({ ...d, order: i })); }
 }
 

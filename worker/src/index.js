@@ -247,6 +247,29 @@ export default {
       catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
     }
 
+    /* ── Endereços de Node (base protegida pela chave; nunca fica no GitHub público) ──
+       /nodes     {key, since?} → {at, by, rows} (ou {same:true} se não mudou)
+       /nodes/set {key, rows, by} → grava a base enviada pelo SIR (planilha .xlsx lida no aparelho) */
+    if (req.method === 'POST' && (url.pathname === '/nodes' || url.pathname === '/nodes/set')) {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      if (url.pathname === '/nodes') {
+        const meta = await env.SIR_KV.get('nodes_meta', 'json');
+        if (!meta) return json({ at: 0, rows: [] }, 200, h);
+        if (body.since && Number(body.since) === meta.at) return json({ same: true, at: meta.at }, 200, h);
+        const rows = (await env.SIR_KV.get('nodes', 'json')) || [];
+        return json({ at: meta.at, by: meta.by, count: rows.length, rows }, 200, h);
+      }
+      const rows = Array.isArray(body.rows) ? body.rows : null;
+      if (!rows || !rows.length || rows.length > 30000) return json({ error: 'linhas' }, 400, h);
+      const clean = rows.filter(r => Array.isArray(r) && r[0]).map(r => r.slice(0, 9).map(c => String(c ?? '').slice(0, 200)));
+      if (!clean.length) return json({ error: 'vazio' }, 400, h);
+      const at = Date.now();
+      await env.SIR_KV.put('nodes', JSON.stringify(clean));
+      await env.SIR_KV.put('nodes_meta', JSON.stringify({ at, by: String(body.by || '').slice(0, 40), count: clean.length }));
+      return json({ ok: true, at, count: clean.length }, 200, h);
+    }
+
     /* ── Notas compartilhadas (todos com a chave veem as mesmas notas) ──
        Cada ticket: { list: [{ i, t, by, at, et? }], st, tag, at }
        - list: várias notas por ticket (adicionar, editar, excluir)
