@@ -8,7 +8,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 const TICKET_TAGS = [
-  { key: 'tratativa',         label: 'EM TRATATIVA',       bg: '#4f8fd8', fg: '#ffffff', emoji: '🔵' },
+  { key: 'tratativa',         label: 'EQUIPE ACIONADA',    bg: '#4f8fd8', fg: '#ffffff', emoji: '🔵' },
   { key: 'transferir',        label: 'TRANSFERIR',         bg: '#c9bee0', fg: '#2b2140', emoji: '🟣' },
   { key: 'falha-concorrente', label: 'FALHA CONCORRENTE',  bg: '#f7cbaa', fg: '#5a2e10', emoji: '🟠' },
   { key: 'validacao',         label: 'VALIDAÇÃO',          bg: '#ffff00', fg: '#3a3500', emoji: '🟡' },
@@ -122,6 +122,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof applyTicketStatesToTbody === 'function') {
     const _apply = applyTicketStatesToTbody;
     applyTicketStatesToTbody = function () { const r = _apply.apply(this, arguments); renderAllTicketTags(); return r; };
+  }
+  /* Ordenar por classificação (na ordem da equipe; sem classificação por último) */
+  if (typeof sortRowsArray === 'function') {
+    const _sort = sortRowsArray;
+    sortRowsArray = function (rows) {
+      if (modalSortState.col !== 'tag') return _sort(rows);
+      const rank = r => { const i = TICKET_TAGS.findIndex(t => t.key === r.dataset.eventColor); return i < 0 ? 99 : i; };
+      rows.sort((a, b) => {
+        const d = modalSortState.dir === 'asc' ? rank(a) - rank(b) : (rank(b) === 99 ? -1 : rank(a) === 99 ? 1 : rank(b) - rank(a));
+        return d || (parseAbertura(b.dataset.abertura || '') - parseAbertura(a.dataset.abertura || ''));
+      });
+    };
   }
   if (typeof updateSlaCells === 'function') {
     const _sla = updateSlaCells;

@@ -20,6 +20,10 @@ function _waSla(abertura, isRal) {
 
 const _WA_STATUS_EMOJI = { 'sem-acesso': '🚫', 'area-de-risco': '⚠️', 'liberacao-noc': '📡' };
 
+function _waWhen(ts) {
+  return new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+}
+
 function _waTicketLabel(ticket, isRal) {
   const t = String(ticket || 'N/D').trim();
   return /^[A-Za-z]/.test(t) ? t : `${isRal ? 'RAL' : 'REC'} ${t}`;
@@ -39,7 +43,13 @@ function formatTicketWA(item, isRal) {
   if (item.abertura) lines.push(`🕒 Abertura: ${item.abertura}`);
   const sla = _waSla(item.abertura, isRal);
   if (sla) lines.push(`⏳ SLA: ${sla}`);
-  if (st.obs) lines.push(`📝 Nota: ${st.obs}`);
+  const notes = typeof getTicketNotes === 'function' ? getTicketNotes(makeIdentity(isRal ? 'ral' : 'rec', item))
+              : (st.obs ? [{ t: st.obs }] : []);
+  if (notes.length === 1) lines.push(`📝 Nota${notes[0].at ? ' (' + _waWhen(notes[0].at) + (notes[0].by ? ' · ' + notes[0].by : '') + ')' : ''}: ${notes[0].t}`);
+  else if (notes.length > 1) {
+    lines.push(`📝 Notas:`);
+    notes.forEach(n => lines.push(`   • ${n.at ? _waWhen(n.at) + (n.by ? ' · ' + n.by : '') + ' — ' : ''}${n.t}`));
+  }
   if (status) lines.push(`${_WA_STATUS_EMOJI[st.obsStatus] || '📌'} Status: ${status}`);
   return lines.join('\n');
 }
@@ -95,19 +105,22 @@ async function copyTicketWA(btn) {
 async function copyAllWA(btn) {
   const { tk, isRal, list } = _waCurrentList();
   if (!list.length) return;
-  /* Mesmo critério do campo "Filtrar tickets..." */
+  /* Fonte: as linhas que estão na tela (respeita filtro, ordenação e fixados).
+     Se a lista usa rolagem virtual (muitas linhas no PC), filtra os dados pelo mesmo texto. */
   const q = (document.getElementById('modal-filter-input')?.value || '').toLowerCase().trim();
-  const items = !q ? list : list.filter(i =>
-    [i.ticket, i.cfOrigem, i.designacao, i.extra, i.abertura].join(' ').toLowerCase().includes(q));
+  const rows = Array.from(document.querySelectorAll('#modal-tbody tr.ticket-row'));
+  let ordered;
+  if (rows.length >= list.length) {
+    const pool = new Map();
+    list.forEach(i => { const k = makeIdentity(tk, i); if (!pool.has(k)) pool.set(k, []); pool.get(k).push(i); });
+    ordered = rows.filter(r => r.style.display !== 'none').map(r => (pool.get(r.dataset.identity) || []).shift()).filter(Boolean);
+  } else {
+    ordered = (!q ? list : list.filter(i =>
+      [i.ticket, i.cfOrigem, i.designacao, i.extra, i.abertura].join(' ').toLowerCase().includes(q)))
+      .slice().sort((a, b) => parseAbertura(b.abertura) - parseAbertura(a.abertura));
+  }
+  const items = ordered;
   if (!items.length) return;
-
-  /* Mantém a ordem que está na tela (ordenação e fixados) quando possível */
-  const byId = new Map(items.map(i => [makeIdentity(tk, i), i]));
-  const rows = Array.from(document.querySelectorAll('#modal-tbody tr.ticket-row'))
-    .filter(r => r.style.display !== 'none' && byId.has(r.dataset.identity));
-  const ordered = rows.length === items.length
-    ? rows.map(r => byId.get(r.dataset.identity))
-    : items.slice().sort((a, b) => parseAbertura(b.abertura) - parseAbertura(a.abertura));
 
   const title = (document.getElementById('modal-title')?.textContent || '').trim();
   const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -119,3 +132,16 @@ async function copyAllWA(btn) {
   if (typeof showActionToast === 'function')
     showActionToast(ok ? `${items.length} copiado${items.length > 1 ? 's' : ''} — cole no WhatsApp` : 'Não foi possível copiar', ok ? 'success' : 'error');
 }
+
+/* Ao abrir outra lista, o filtro começa vazio (evita copiar só parte dos tickets) */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof openModal !== 'function') return;
+  const _open = openModal;
+  openModal = function () {
+    const f = document.getElementById('modal-filter-input');
+    if (f) f.value = '';
+    const r = _open.apply(this, arguments);
+    if (typeof filterModalTable === 'function') filterModalTable();
+    return r;
+  };
+});

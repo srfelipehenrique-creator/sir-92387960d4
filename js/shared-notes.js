@@ -1,14 +1,15 @@
 /* ══════════════════════════════════════════════════════════════
-   Notas compartilhadas
-   - Nota (texto) e status OBS de cada ticket ficam no servidor e
-     aparecem para todos que acessam o SIR com a chave.
-   - A cor (bolinha) continua pessoal, só no seu aparelho.
-   - Atualiza a cada 1 min, ao abrir uma lista e ao voltar ao app.
-   - Mostra quem escreveu e quando (nome definido uma vez por aparelho).
+   Notas da equipe (compartilhadas)
+   - Várias notas por ticket, em ordem de data e hora
+   - Cada nota: adicionar, editar, excluir (com autor e horário)
+   - Status OBS e classificação (bolinha) também compartilhados
+   - Tudo fica no servidor (SIR_PUSH_URL) para todos com a chave;
+     sem servidor/chave, funciona só neste aparelho
+   - Atualiza a cada 1 min, ao abrir uma lista e ao voltar ao app
    ══════════════════════════════════════════════════════════════ */
 
 const LS_USER_NAME     = 'sir_user_name';
-const LS_NOTES_MIGR    = 'sir_notes_migrated';
+const LS_NOTES_MIGR    = 'sir_notes_migrated2';
 const LS_NOTES_SRV_IDS = 'sir_notes_server_ids';
 const SN_POLL_MS       = 60000;
 
@@ -16,29 +17,153 @@ let _snServerIds = new Set();
 try { _snServerIds = new Set(JSON.parse(localStorage.getItem(LS_NOTES_SRV_IDS) || '[]')); } catch (e) {}
 let _snLastPull = 0, _snPulling = false, _snKeyAsked = false;
 
-function _snUrl() { return typeof _pushUrl === 'function' ? _pushUrl() : ''; }
-function _snKey() { return typeof _pushKey === 'function' ? _pushKey() : ''; }
+function _snUrl()  { return typeof _pushUrl === 'function' ? _pushUrl() : ''; }
+function _snKey()  { return typeof _pushKey === 'function' ? _pushKey() : ''; }
 function _snUser() { try { return localStorage.getItem(LS_USER_NAME) || ''; } catch (e) { return ''; } }
 function sharedNotesReady() { return !!(_snUrl() && location.protocol === 'https:'); }
+function _snNewId() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 async function _snPost(path, payload) {
   const r = await fetch(_snUrl() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   let j = {}; try { j = await r.json(); } catch (e) {}
   return { status: r.status, body: j };
 }
-
-function _snSaveLocal() {
-  try { localStorage.setItem(STORAGE_TICKET, JSON.stringify(appState.ticketStates)); } catch (e) {}
-  try { localStorage.setItem(LS_NOTES_SRV_IDS, JSON.stringify([..._snServerIds])); } catch (e) {}
-}
-
 function _snAskKey() {
   if (_snKeyAsked || typeof _ntAskKeyCard !== 'function') return;
   _snKeyAsked = true;
   _ntAskKeyCard();
 }
 
-/* ── Baixa as notas da equipe e aplica ── */
+/* ── Notas de um ticket (sempre em lista, ordem cronológica) ── */
+function getTicketNotes(identity) {
+  const st = appState.ticketStates[identity] || {};
+  let list = Array.isArray(st.notes) ? st.notes.slice() : [];
+  if (!list.length && st.obs) list = [{ i: 'legacy', t: st.obs, by: st.noteBy || '', at: st.noteAt || st.ts || Date.now() }];
+  return list.sort((a, b) => (a.at || 0) - (b.at || 0));
+}
+function _snSetLocal(identity, patch) {
+  const cur = appState.ticketStates[identity] || {};
+  const next = { ...cur, ...patch, ts: Date.now() };
+  if ('notes' in patch) next.obs = next.notes.length ? next.notes[next.notes.length - 1].t : '';
+  const empty = !(next.notes && next.notes.length) && !next.obs
+             && (!next.obsStatus || next.obsStatus === 'none')
+             && (!next.eventColor || next.eventColor === 'none');
+  if (empty) delete appState.ticketStates[identity]; else appState.ticketStates[identity] = next;
+  _snSaveLocal();
+}
+function _snSaveLocal() {
+  try { localStorage.setItem(STORAGE_TICKET, JSON.stringify(appState.ticketStates)); } catch (e) {}
+  try { localStorage.setItem(LS_NOTES_SRV_IDS, JSON.stringify([..._snServerIds])); } catch (e) {}
+}
+function _snApplyServer(id, n) {
+  const cur = appState.ticketStates[id] || {};
+  const list = Array.isArray(n.list) ? n.list : [];
+  appState.ticketStates[id] = {
+    ...cur, notes: list, obs: list.length ? list[list.length - 1].t : '',
+    obsStatus: n.st || 'none', eventColor: n.tag || 'none', ts: Date.now()
+  };
+  _snServerIds.add(id);
+}
+
+function _snWhen(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+}
+function noteMetaText(n) {
+  return `${n.by ? n.by + ' · ' : ''}${_snWhen(n.at)}${n.et ? ' (editada)' : ''}`;
+}
+
+/* ── Desenho da célula de notas ── */
+function renderNotesCell(row) {
+  if (!row) return;
+  const cell = row.querySelector('td.obs-cell');
+  if (!cell || cell.querySelector('.obs-input')) return;   /* não mexe enquanto alguém digita */
+  const list = getTicketNotes(row.dataset.identity);
+  cell.classList.toggle('has-obs', list.length > 0);
+  cell.innerHTML =
+    (list.length ? `<div class="notes-list">${list.map(n => `
+      <div class="note-item" data-nid="${escapeHtml(n.i)}">
+        <div class="note-text">${escapeHtml(n.t)}</div>
+        <div class="note-foot">
+          <span class="note-meta">${escapeHtml(noteMetaText(n))}</span>
+          <button type="button" class="note-btn" data-act="edit" title="Editar nota" aria-label="Editar nota">✎</button>
+          <button type="button" class="note-btn note-del" data-act="del" title="Excluir nota" aria-label="Excluir nota">✕</button>
+        </div>
+      </div>`).join('')}</div>` : '') +
+    `<button type="button" class="btn-add-obs${list.length ? ' btn-add-more' : ''}" onclick="startAddObs(this)" title="Adicionar nota">${list.length ? '+ Nota' : '+'}</button>`;
+}
+
+function _snInputHTML(value) {
+  return `<div class="obs-input-wrap">
+    <input type="text" class="obs-input" maxlength="300" placeholder="Digite a nota..." autocomplete="off" value="${escapeHtml(value || '')}">
+    <button class="btn-obs-confirm" title="Salvar">✓</button>
+    <button class="btn-obs-cancel" title="Cancelar">×</button>
+  </div>`;
+}
+function _snOpenInput(container, value, onSave, onCancel) {
+  container.insertAdjacentHTML('beforeend', _snInputHTML(value));
+  const wrap = container.querySelector('.obs-input-wrap:last-child');
+  const inp = wrap.querySelector('.obs-input');
+  const save = () => { const v = inp.value.trim(); if (v) onSave(v); else onCancel(); };
+  wrap.querySelector('.btn-obs-confirm').addEventListener('click', e => { e.stopPropagation(); save(); });
+  wrap.querySelector('.btn-obs-cancel').addEventListener('click', e => { e.stopPropagation(); onCancel(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); });
+  inp.focus();
+  if (value) inp.setSelectionRange(value.length, value.length);
+}
+
+/* ── Operações ── */
+async function notesOp(identity, op, args = {}) {
+  /* 1) aplica na hora, neste aparelho */
+  const list = getTicketNotes(identity).filter(n => n.i !== 'legacy' || op !== 'del' || args.nid !== 'legacy');
+  const user = _snUser();
+  let nid = args.nid;
+  if (op === 'add') { nid = _snNewId(); list.push({ i: nid, t: args.text, by: user, at: Date.now() }); }
+  if (op === 'edit') { const n = list.find(x => x.i === nid); if (n) { n.t = args.text; n.et = Date.now(); } }
+  if (op === 'del') { const k = list.findIndex(x => x.i === nid); if (k > -1) list.splice(k, 1); }
+  _snSetLocal(identity, { notes: list });
+  _snRefreshOpenModal();
+  if ((op === 'add' || op === 'edit') && !user) _snAskName();
+
+  /* 2) envia para a equipe */
+  if (!sharedNotesReady()) return;
+  const key = _snKey();
+  if (!key) { _snAskKey(); return; }
+  try {
+    const legacy = nid === 'legacy';
+    const r = legacy
+      ? await _snPost('/note', { key, id: identity, op: op === 'del' ? 'meta' : 'add', text: args.text, by: user })
+      : await _snPost('/note', { key, id: identity, op, nid, text: args.text, by: user });
+    if (r.status === 403) { try { localStorage.removeItem('sir_push_key'); } catch (e) {} _snKeyAsked = false; _snAskKey(); return; }
+    if (r.status === 200) {
+      if (r.body.note) _snApplyServer(identity, r.body.note);
+      else { _snServerIds.delete(identity); _snSetLocal(identity, { notes: [], obsStatus: 'none', eventColor: 'none' }); }
+      _snSaveLocal();
+      _snRefreshOpenModal();
+    }
+  } catch (e) {
+    if (typeof showActionToast === 'function') showActionToast('Sem conexão: a nota ficou só neste aparelho por enquanto', 'error');
+  }
+}
+
+async function _snPushMeta(identity) {
+  if (!sharedNotesReady() || !identity) return;
+  const key = _snKey();
+  if (!key) { _snAskKey(); return; }
+  const st = appState.ticketStates[identity] || {};
+  const tag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
+  try {
+    const r = await _snPost('/note', { key, id: identity, op: 'meta', st: st.obsStatus || 'none', tag, by: _snUser() });
+    if (r.status === 200) {
+      if (r.body.note) _snApplyServer(identity, r.body.note); else _snServerIds.delete(identity);
+      _snSaveLocal();
+      _snRefreshOpenModal();
+    }
+  } catch (e) {}
+}
+
+/* ── Baixa tudo da equipe ── */
 async function pullSharedNotes(force) {
   if (!sharedNotesReady() || _snPulling) return;
   if (!force && Date.now() - _snLastPull < 3000) return;
@@ -51,33 +176,31 @@ async function pullSharedNotes(force) {
     if (r.status !== 200 || !r.body.notes) return;
     const notes = r.body.notes;
 
-    /* 1ª vez neste aparelho: envia as notas que já existiam só aqui */
+    /* 1ª vez nesta versão: envia o que existia só neste aparelho */
     let migrated = false; try { migrated = localStorage.getItem(LS_NOTES_MIGR) === '1'; } catch (e) {}
     if (!migrated) {
       for (const [id, st] of Object.entries(appState.ticketStates)) {
-        const validTag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
-        const hasObs = st.obs || (st.obsStatus && st.obsStatus !== 'none') || validTag !== 'none';
-        if (hasObs && !notes[id]) {
-          const res = await _snPost('/note', { key, id, obs: st.obs || '', st: st.obsStatus || 'none', tag: validTag, by: _snUser() });
+        if (notes[id] || _snServerIds.has(id)) continue;
+        for (const n of getTicketNotes(id)) {
+          const res = await _snPost('/note', { key, id, op: 'add', text: n.t, by: n.by || _snUser() });
+          if (res.body && res.body.note) notes[id] = res.body.note;
+        }
+        const tag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
+        if ((st.obsStatus && st.obsStatus !== 'none') || tag !== 'none') {
+          const res = await _snPost('/note', { key, id, op: 'meta', st: st.obsStatus || 'none', tag, by: _snUser() });
           if (res.body && res.body.note) notes[id] = res.body.note;
         }
       }
       try { localStorage.setItem(LS_NOTES_MIGR, '1'); } catch (e) {}
     }
 
-    /* Aplica: o servidor manda em nota e status; a cor continua sua */
-    for (const [id, n] of Object.entries(notes)) {
-      const cur = appState.ticketStates[id] || {};
-      appState.ticketStates[id] = { ...cur, obs: n.obs || '', obsStatus: n.st || 'none', eventColor: n.tag || 'none', noteBy: n.by || '', noteAt: n.at || 0, ts: Date.now() };
-    }
-    /* Notas apagadas por alguém da equipe */
-    for (const id of _snServerIds) {
+    for (const [id, n] of Object.entries(notes)) _snApplyServer(id, n);
+    /* Itens apagados por alguém da equipe */
+    for (const id of [..._snServerIds]) {
       if (notes[id]) continue;
-      const cur = appState.ticketStates[id];
-      if (!cur) continue;
       delete appState.ticketStates[id];
+      _snServerIds.delete(id);
     }
-    _snServerIds = new Set(Object.keys(notes));
     _snLastPull = Date.now();
     _snSaveLocal();
     _snRefreshOpenModal();
@@ -86,30 +209,8 @@ async function pullSharedNotes(force) {
   } finally { _snPulling = false; }
 }
 
-/* ── Envia a nota/status ao salvar ── */
-async function _snPush(identity) {
-  if (!sharedNotesReady() || !identity) return;
-  const key = _snKey();
-  if (!key) { _snAskKey(); return; }
-  const st = appState.ticketStates[identity] || {};
-  try {
-    const tag = typeof getTicketTag === 'function' && getTicketTag(st.eventColor) ? st.eventColor : 'none';
-    const r = await _snPost('/note', { key, id: identity, obs: st.obs || '', st: st.obsStatus || 'none', tag, by: _snUser() });
-    if (r.status === 200) {
-      if (r.body.note) {
-        _snServerIds.add(identity);
-        if (appState.ticketStates[identity]) Object.assign(appState.ticketStates[identity], { noteBy: r.body.note.by, noteAt: r.body.note.at });
-      } else _snServerIds.delete(identity);
-      _snSaveLocal();
-      _snRefreshOpenModal();
-    }
-  } catch (e) {
-    if (typeof showActionToast === 'function') showActionToast('Sem conexão: a nota ficou só neste aparelho por enquanto', 'error');
-  }
-}
-
 /* ── Nome de quem escreve (uma vez por aparelho) ── */
-function _snAskName(identity) {
+function _snAskName() {
   if (_snUser() || document.querySelector('.nt-name') || typeof _ntShowCard !== 'function') return;
   const html = `
     <div class="nt-head">
@@ -129,43 +230,18 @@ function _snAskName(identity) {
       if (!v) return;
       try { localStorage.setItem(LS_USER_NAME, v); } catch (err) {}
       _ntRemove(c);
-      if (identity) _snPush(identity);   /* reenvia a nota já com o nome */
     });
   });
   if (typeof _ntPause === 'function') _ntPause(card);
 }
 
-/* ── Atualiza a lista aberta com as notas da equipe ── */
-function _snMetaText(st) {
-  if (!st || !st.noteAt) return '';
-  const d = new Date(st.noteAt);
-  const hoje = new Date().toDateString() === d.toDateString();
-  const quando = hoje
-    ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  return `${st.noteBy ? st.noteBy + ' · ' : ''}${quando}`;
-}
-
+/* ── Atualiza a lista aberta ── */
 function _snRefreshOpenModal() {
   const ov = document.getElementById('modal-overlay');
   if (!ov || !ov.classList.contains('active')) return;
   document.querySelectorAll('#modal-tbody tr.ticket-row').forEach(row => {
-    const id = row.dataset.identity;
-    const st = appState.ticketStates[id] || {};
-    const obsCell = row.querySelector('td.obs-cell');
-    if (obsCell && !obsCell.querySelector('.obs-input')) {
-      obsCell.innerHTML = buildObsHTML(st.obs || '');
-      obsCell.classList.toggle('has-obs', !!st.obs);
-      const meta = _snMetaText(st);
-      const content = obsCell.querySelector('.obs-content');
-      if (content && meta) {
-        const m = document.createElement('span');
-        m.className = 'obs-meta'; m.textContent = meta;
-        content.appendChild(m);
-        const t = content.querySelector('.obs-text');
-        if (t) t.title = `${st.obs}\n— ${meta}`;
-      }
-    }
+    const st = appState.ticketStates[row.dataset.identity] || {};
+    renderNotesCell(row);
     const tagKey = st.eventColor || 'none';
     if ((row.dataset.eventColor || 'none') !== tagKey) row.dataset.eventColor = tagKey;
     const status = st.obsStatus || 'none';
@@ -181,13 +257,46 @@ function _snRefreshOpenModal() {
 
 /* ── Ligações com o código existente ── */
 document.addEventListener('DOMContentLoaded', () => {
+  /* Botão "+" (nova nota) */
+  startAddObs = function (btn) {
+    const row = btn.closest('tr'), cell = btn.closest('td');
+    btn.remove();
+    _snOpenInput(cell, '',
+      text => { cell.querySelector('.obs-input-wrap')?.remove(); notesOp(row.dataset.identity, 'add', { text }); },
+      () => { cell.querySelector('.obs-input-wrap')?.remove(); renderNotesCell(row); });
+  };
+  /* Editar / excluir (cliques dentro da lista de notas) */
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#modal-tbody .note-btn');
+    if (!b) return;
+    e.stopPropagation();
+    const row = b.closest('tr'), item = b.closest('.note-item');
+    const nid = item.dataset.nid, identity = row.dataset.identity;
+    if (b.dataset.act === 'edit') {
+      const n = getTicketNotes(identity).find(x => x.i === nid);
+      if (!n) return;
+      item.innerHTML = '';
+      _snOpenInput(item, n.t,
+        text => { item.querySelector('.obs-input-wrap')?.remove(); notesOp(identity, 'edit', { nid, text }); },
+        () => { item.querySelector('.obs-input-wrap')?.remove(); renderNotesCell(row); });
+    }
+    if (b.dataset.act === 'del') {
+      if (!b.classList.contains('confirm')) {          /* 1º toque: pede confirmação */
+        b.classList.add('confirm'); b.textContent = 'Excluir?';
+        setTimeout(() => { if (b.isConnected) { b.classList.remove('confirm'); b.textContent = '✕'; } }, 3000);
+        return;
+      }
+      notesOp(identity, 'del', { nid });
+    }
+  }, true);   /* captura: a janela da lista bloqueia a propagação dos cliques */
+
   if (typeof persistTicketState === 'function') {
     const _orig = persistTicketState;
     persistTicketState = function (identity, updates) {
       const r = _orig.apply(this, arguments);
-      if (updates && ('obs' in updates || 'obsStatus' in updates || 'eventColor' in updates)) {
-        _snPush(identity);
-        if (!_snUser() && (updates.obs || (updates.obsStatus && updates.obsStatus !== 'none') || (updates.eventColor && updates.eventColor !== 'none'))) _snAskName(identity);
+      if (updates && ('obsStatus' in updates || 'eventColor' in updates)) {
+        _snPushMeta(identity);
+        if (!_snUser() && ((updates.obsStatus && updates.obsStatus !== 'none') || (updates.eventColor && updates.eventColor !== 'none'))) _snAskName();
       }
       return r;
     };

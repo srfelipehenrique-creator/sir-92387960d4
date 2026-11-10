@@ -555,7 +555,7 @@ function exportModalCSV() {
       row.dataset.abertura || '',
       row.querySelector('.sla-badge')?.textContent.trim() || '',
       row.dataset.extra || '',
-      row.querySelector('.obs-text')?.textContent || '',
+      (typeof getTicketNotes === 'function' ? getTicketNotes(row.dataset.identity).map(n => (n.at ? new Date(n.at).toLocaleString('pt-BR') + ' ' : '') + n.t).join(' | ') : (row.querySelector('.obs-text')?.textContent || '')),
       row.querySelector('.btn-obs-trigger')?.textContent.trim() || ''
     ].map(esc).join(','));
   });

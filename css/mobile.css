@@ -440,3 +440,47 @@ td.sla-col { text-align: right; }
   gap: 6px; box-shadow: 0 -10px 40px rgba(0,0,0,.35);
 }
 .tag-sheet .tag-opt { min-height: 42px; font-size: 13px; }
+
+/* ══ Várias notas por ticket ══ */
+.notes-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; min-width: 0; }
+.note-item {
+  background: var(--bg-panel-3, rgba(127,127,127,.08)); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent); border-radius: 4px; padding: 4px 6px; min-width: 0;
+}
+.note-text { font-size: 12px; color: var(--text-main); white-space: pre-wrap; word-break: break-word; line-height: 1.35; }
+.note-foot { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.note-meta { font-size: 10px; color: var(--text-dim); margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.note-btn {
+  flex-shrink: 0; min-width: 22px; height: 20px; padding: 0 5px; border-radius: 4px; cursor: pointer;
+  background: transparent; border: 1px solid transparent; color: var(--text-muted); font-size: 11px; line-height: 1;
+}
+.note-btn:hover { border-color: var(--line-strong); color: var(--text-main); }
+.note-del:hover, .note-del.confirm { color: #fff; background: #dc2626; border-color: #dc2626; }
+.note-del.confirm { font-size: 10px; font-weight: 700; }
+.note-item .obs-input-wrap { margin: 0; }
+.btn-add-obs.btn-add-more { width: auto; padding: 0 8px; font-size: 10.5px; font-weight: 700; }
+td.obs-cell { min-width: 180px; }
+#modal-overlay.v2-cards td.obs-cell { min-width: 0; }
+@media (pointer: coarse) { .note-btn { min-width: 32px; height: 28px; font-size: 13px; } }
+
+/* Ordenar por classificação: no PC só o ícone na coluna da bolinha */
+#modal-overlay:not(.v2-cards) th.color-cycle-col .th-tag-label { display: none; }
+#modal-overlay:not(.v2-cards) th.color-cycle-col.sortable { cursor: pointer; padding: 0 4px; text-align: center; }
+#modal-overlay:not(.v2-cards) th.color-cycle-col .sort-icon { font-size: 11px; }
+
+/* Cartões: notas ocupam a largura toda; Copiar e OBS na linha de baixo */
+#modal-overlay.v2-cards tr.ticket-row {
+  grid-template-areas:
+    "dot cf   tk   tk sla"
+    "dot ds   ds   ds ds"
+    "dot ab   ab   ex ex"
+    "dot note note note note"
+    "dot .    .    cp st" !important;
+}
+#modal-overlay.v2-cards td.obs-cell { width: 100%; }
+#modal-overlay.v2-cards .notes-list { width: 100%; }
+
+/* Botão "Classificação" na barra Ordenar (cartões) */
+#modal-overlay.v2-cards thead th.color-cycle-col.sortable {
+  width: auto !important; padding: 6px 10px !important; text-align: left;
+}

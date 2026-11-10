@@ -247,25 +247,59 @@ export default {
       catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
     }
 
-    /* ── Notas compartilhadas (todos com a chave veem as mesmas notas) ── */
+    /* ── Notas compartilhadas (todos com a chave veem as mesmas notas) ──
+       Cada ticket: { list: [{ i, t, by, at, et? }], st, tag, at }
+       - list: várias notas por ticket (adicionar, editar, excluir)
+       - st:   status OBS     - tag: classificação (bolinha)          */
     if (req.method === 'POST' && (url.pathname === '/notes' || url.pathname === '/note')) {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       const notes = (await env.SIR_KV.get('notesmap', 'json')) || {};
-      /* Limpa notas paradas há mais de 15 dias */
-      const old = Date.now() - 15 * 86400000;
-      for (const [k, n] of Object.entries(notes)) if (!n.at || n.at < old) delete notes[k];
+      const now = Date.now();
+      /* Formato antigo (uma nota só em "obs") → lista */
+      const norm = n => {
+        if (!n) return null;
+        if (!Array.isArray(n.list)) n.list = n.obs ? [{ i: 'n' + (n.at || now).toString(36), t: n.obs, by: n.by || '', at: n.at || now }] : [];
+        delete n.obs; delete n.by;
+        n.st = n.st || 'none'; n.tag = n.tag || 'none';
+        return n;
+      };
+      /* Limpa tickets sem mexer há mais de 15 dias */
+      const old = now - 15 * 86400000;
+      for (const [k, n] of Object.entries(notes)) { if (!n.at || n.at < old) delete notes[k]; else norm(n); }
 
-      if (url.pathname === '/notes') return json({ notes, at: Date.now() }, 200, h);
+      if (url.pathname === '/notes') return json({ notes, at: now }, 200, h);
 
       const id = String(body.id || '').slice(0, 300);
       if (!id) return json({ error: 'id' }, 400, h);
-      const obs = String(body.obs || '').slice(0, 200);
-      const st  = String(body.st || 'none').slice(0, 30);
       const by  = String(body.by || '').slice(0, 40);
-      const tag = String(body.tag || 'none').slice(0, 30);   /* classificação (bolinha de cor) */
-      if (!obs && (!st || st === 'none') && (!tag || tag === 'none')) delete notes[id];
-      else notes[id] = { obs, st, tag, by, at: Date.now() };
+      const cur = norm(notes[id]) || { list: [], st: 'none', tag: 'none' };
+      const nid = String(body.nid || '').replace(/[^a-z0-9]/gi, '').slice(0, 20);
+      const txt = String(body.text || '').trim().slice(0, 300);
+      const op  = String(body.op || '');
+
+      if (op === 'add') {
+        if (!txt) return json({ error: 'texto' }, 400, h);
+        const i = nid && !cur.list.some(x => x.i === nid) ? nid : 'n' + now.toString(36) + Math.random().toString(36).slice(2, 6);
+        cur.list.push({ i, t: txt, by, at: now });
+        if (cur.list.length > 30) cur.list = cur.list.slice(-30);
+      } else if (op === 'edit') {
+        const n = cur.list.find(x => x.i === nid);
+        if (n && txt) { n.t = txt; n.et = now; if (by) n.eb = by; }
+      } else if (op === 'del') {
+        cur.list = cur.list.filter(x => x.i !== nid);
+      } else if (op === 'meta' || !op) {
+        if ('st' in body)  cur.st  = String(body.st || 'none').slice(0, 30);
+        if ('tag' in body) cur.tag = String(body.tag || 'none').slice(0, 30);
+        /* Versões antigas do app mandavam a nota em "obs" */
+        if (!op && body.obs && !cur.list.some(x => x.t === String(body.obs).trim()))
+          cur.list.push({ i: 'n' + now.toString(36), t: String(body.obs).trim().slice(0, 300), by, at: now });
+      } else return json({ error: 'op' }, 400, h);
+
+      cur.at = now;
+      cur.list.sort((a, b) => a.at - b.at);
+      if (!cur.list.length && cur.st === 'none' && cur.tag === 'none') delete notes[id];
+      else notes[id] = cur;
       await env.SIR_KV.put('notesmap', JSON.stringify(notes));
       return json({ ok: true, note: notes[id] || null }, 200, h);
     }
