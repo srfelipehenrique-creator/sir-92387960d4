@@ -150,9 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
 const tagFilter = new Set();    /* chaves marcadas ('none' = sem classificação) */
 
 function _tfLabel() {
-  if (!tagFilter.size) return 'Classificação';
+  if (!tagFilter.size) return 'Filtrar status';
   if (tagFilter.size === 1) { const k = [...tagFilter][0]; return k === 'none' ? 'Sem classificação' : (getTicketTag(k)?.label || k); }
-  return `Classificação (${tagFilter.size})`;
+  return `Filtrar status (${tagFilter.size})`;
 }
 function _tfButton() {
   let b = document.getElementById('tag-filter-btn');
@@ -185,7 +185,7 @@ function placeTagFilter() {
   if (host && b.parentNode !== host) host.appendChild(b);
   _tfButton();
   const cp = document.getElementById('btn-modal-copy-sel');
-  if (cp) { cp.disabled = !tagFilter.size; cp.title = tagFilter.size ? 'Copiar só os tickets das classificações selecionadas' : 'Selecione classificações em "Classificação ▾" para usar'; }
+  if (cp) { cp.disabled = !tagFilter.size; cp.title = tagFilter.size ? 'Copiar só os tickets das classificações selecionadas' : 'Selecione em "Filtrar status ▾" para usar'; }
 }
 
 function applyTagFilter() {
@@ -249,7 +249,7 @@ function toggleTagFilterMenu(btn) {
 
 /* Copiar selecionados: tickets das classificações marcadas, agrupados na ordem da equipe */
 async function copySelectedWA(btn) {
-  if (!tagFilter.size) { if (typeof showActionToast === 'function') showActionToast('Escolha as classificações em "Classificação ▾"', 'error'); return; }
+  if (!tagFilter.size) { if (typeof showActionToast === 'function') showActionToast('Escolha em "Filtrar status ▾"', 'error'); return; }
   const tk = appState.currentModalType, isRal = tk === 'ral';
   const list = (modalData[tk] && modalData[tk][appState.currentModalKey]) || [];
   const keyOf = i => { const k = (appState.ticketStates[makeIdentity(tk, i)] || {}).eventColor; return getTicketTag(k) ? k : 'none'; };
