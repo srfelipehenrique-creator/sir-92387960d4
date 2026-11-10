@@ -589,3 +589,15 @@ td.obs-cell { min-width: 180px; }
   #modal-overlay .modal-tools > :not(.modal-close-btn) { order: 3; }
   #modal-overlay .modal-tools > .modal-csv-btn { flex: 1 1 auto; justify-content: center; text-align: center; }
 }
+
+/* Quantidade de cada classificação em destaque, dentro do botão colorido */
+.tf-opt .tf-count {
+  min-width: 24px; height: 20px; padding: 0 7px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.88); color: #111; opacity: 1;
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; letter-spacing: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.tf-opt.tf-none .tf-count { background: var(--bg-elevated); color: var(--text-main); border: 1px solid var(--line-strong); box-shadow: none; }
+.tag-sheet .tf-opt .tf-count { height: 24px; min-width: 30px; font-size: 13px; }
+.tf-hint { font-size: 11.5px; color: var(--text-muted); padding: 2px 4px 6px; }

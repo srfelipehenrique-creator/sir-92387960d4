@@ -213,10 +213,13 @@ function toggleTagFilterMenu(btn) {
     const k = getTicketTag(r.dataset.eventColor) ? r.dataset.eventColor : 'none';
     counts[k] = (counts[k] || 0) + 1;
   });
-  const opts = [...TICKET_TAGS.map(t => ({ key: t.key, label: t.label, bg: t.bg, fg: t.fg })), { key: 'none', label: 'Sem classificação', bg: '', fg: '' }];
+  /* Só as classificações que têm ticket nesta lista (as já marcadas continuam, para poder desmarcar) */
+  const opts = [...TICKET_TAGS.map(t => ({ key: t.key, label: t.label, bg: t.bg, fg: t.fg })), { key: 'none', label: 'Sem classificação', bg: '', fg: '' }]
+    .filter(o => (counts[o.key] || 0) > 0 || tagFilter.has(o.key));
   const m = document.createElement('div');
   m.id = 'tag-filter-menu'; m.className = 'tag-picker tag-filter-menu';
   m.innerHTML = `<div class="tag-picker-head">Mostrar só</div>` +
+    (opts.some(o => o.key !== 'none') ? '' : `<div class="tf-hint">Nenhum ticket classificado nesta lista.</div>`) +
     opts.map(o => `<label class="tf-opt${o.key === 'none' ? ' tf-none' : ''}" ${o.bg ? `style="--c:${o.bg};--fg:${o.fg}"` : ''}>
         <input type="checkbox" value="${o.key}" ${tagFilter.has(o.key) ? 'checked' : ''}>
         <span class="tf-name">${escapeHtml(o.label)}</span><span class="tf-count">${counts[o.key] || 0}</span>
