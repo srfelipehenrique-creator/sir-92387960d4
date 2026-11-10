@@ -104,13 +104,13 @@ function showTagPicker(e, row) {
     removeTagPicker();
   });
   const onClose = ev => { if (!menu.contains(ev.target)) removeTagPicker(); };
-  const onKey   = ev => { if (ev.key === 'Escape') removeTagPicker(); };
+  const onKey   = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); removeTagPicker(); } };
   setTimeout(() => { document.addEventListener('click', onClose, true); document.addEventListener('contextmenu', onClose); }, 0);
-  document.addEventListener('keydown', onKey);
+  window.addEventListener('keydown', onKey, true);
   menu._cleanup = () => {
     document.removeEventListener('click', onClose, true);
     document.removeEventListener('contextmenu', onClose);
-    document.removeEventListener('keydown', onKey);
+    window.removeEventListener('keydown', onKey, true);
   };
 }
 
@@ -139,4 +139,140 @@ document.addEventListener('DOMContentLoaded', () => {
     const _sla = updateSlaCells;
     updateSlaCells = function () { const r = _sla.apply(this, arguments); renderAllTicketTags(); return r; };
   }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   Filtro por classificação (na linha "Ordenar:") + Copiar selecionados
+   - Marque uma ou mais classificações: só esses tickets aparecem
+   - Nada marcado: tudo aparece normalmente
+   - "Copiar selecionados": texto só dos tickets das classificações marcadas
+   ══════════════════════════════════════════════════════════════ */
+const tagFilter = new Set();    /* chaves marcadas ('none' = sem classificação) */
+
+function _tfLabel() {
+  if (!tagFilter.size) return 'Classificação';
+  if (tagFilter.size === 1) { const k = [...tagFilter][0]; return k === 'none' ? 'Sem classificação' : (getTicketTag(k)?.label || k); }
+  return `Classificação (${tagFilter.size})`;
+}
+function _tfButton() {
+  let b = document.getElementById('tag-filter-btn');
+  if (!b) {
+    b = document.createElement('button');
+    b.type = 'button'; b.id = 'tag-filter-btn'; b.className = 'tag-filter-btn';
+    b.addEventListener('click', e => { e.stopPropagation(); toggleTagFilterMenu(b); });
+  }
+  b.innerHTML = `<span class="tf-dots">${[...tagFilter].filter(k => k !== 'none').slice(0, 4).map(k => `<i style="background:${getTicketTag(k).bg}"></i>`).join('')}</span><span class="tf-text">${escapeHtml(_tfLabel())}</span><span class="tf-caret">▾</span>`;
+  b.classList.toggle('on', tagFilter.size > 0);
+  b.title = tagFilter.size ? 'Filtrando por classificação — clique para alterar' : 'Mostrar só as classificações escolhidas';
+  return b;
+}
+/* Coloca o botão na linha "Ordenar:" (cartões) ou na barra de filtro (tabela) */
+function placeTagFilter() {
+  const ov = document.getElementById('modal-overlay');
+  if (!ov) return;
+  const b = _tfButton();
+  let host;
+  if (ov.classList.contains('v2-cards')) {
+    let th = document.getElementById('tag-filter-th');
+    if (!th) { th = document.createElement('th'); th.id = 'tag-filter-th'; th.className = 'tag-filter-th'; }
+    const tr = ov.querySelector('.data-table thead tr');
+    if (tr && th.parentNode !== tr) tr.appendChild(th);
+    host = th;
+  } else {
+    document.getElementById('tag-filter-th')?.remove();
+    host = document.getElementById('modal-filter-bar');
+  }
+  if (host && b.parentNode !== host) host.appendChild(b);
+  _tfButton();
+  const cp = document.getElementById('btn-modal-copy-sel');
+  if (cp) { cp.disabled = !tagFilter.size; cp.title = tagFilter.size ? 'Copiar só os tickets das classificações selecionadas' : 'Selecione classificações em "Classificação ▾" para usar'; }
+}
+
+function applyTagFilter() {
+  document.querySelectorAll('#modal-tbody tr.ticket-row').forEach(r => {
+    const k = getTicketTag(r.dataset.eventColor) ? r.dataset.eventColor : 'none';
+    r.classList.toggle('tag-hidden', tagFilter.size > 0 && !tagFilter.has(k));
+  });
+  const tb = document.getElementById('modal-tbody');
+  if (tb) {
+    let empty = tb.querySelector('.tf-empty-row');
+    const anyVisible = !!tb.querySelector('tr.ticket-row:not(.tag-hidden)');
+    if (tagFilter.size && !anyVisible && tb.querySelector('tr.ticket-row')) {
+      if (!empty) { empty = document.createElement('tr'); empty.className = 'tf-empty-row'; empty.innerHTML = '<td colspan="10">Nenhum ticket com as classificações selecionadas.</td>'; tb.appendChild(empty); }
+    } else empty?.remove();
+  }
+  placeTagFilter();
+}
+
+function removeTagFilterMenu() { const m = document.getElementById('tag-filter-menu'); if (m) { m._cleanup?.(); m.remove(); } }
+function toggleTagFilterMenu(btn) {
+  if (document.getElementById('tag-filter-menu')) return removeTagFilterMenu();
+  removeTagPicker();
+  const counts = {};
+  document.querySelectorAll('#modal-tbody tr.ticket-row').forEach(r => {
+    const k = getTicketTag(r.dataset.eventColor) ? r.dataset.eventColor : 'none';
+    counts[k] = (counts[k] || 0) + 1;
+  });
+  const opts = [...TICKET_TAGS.map(t => ({ key: t.key, label: t.label, bg: t.bg, fg: t.fg })), { key: 'none', label: 'Sem classificação', bg: '', fg: '' }];
+  const m = document.createElement('div');
+  m.id = 'tag-filter-menu'; m.className = 'tag-picker tag-filter-menu';
+  m.innerHTML = `<div class="tag-picker-head">Mostrar só</div>` +
+    opts.map(o => `<label class="tf-opt${o.key === 'none' ? ' tf-none' : ''}" ${o.bg ? `style="--c:${o.bg};--fg:${o.fg}"` : ''}>
+        <input type="checkbox" value="${o.key}" ${tagFilter.has(o.key) ? 'checked' : ''}>
+        <span class="tf-name">${escapeHtml(o.label)}</span><span class="tf-count">${counts[o.key] || 0}</span>
+      </label>`).join('') +
+    `<button type="button" class="tag-opt tag-clear tf-clear">Mostrar todos</button>`;
+  document.body.appendChild(m);
+  if (window.matchMedia && matchMedia('(max-width: 640px)').matches) m.classList.add('tag-sheet');
+  else {
+    const r = btn.getBoundingClientRect(), mw = 250, mh = m.offsetHeight || 380;
+    m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + 'px';
+    m.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - mh - 8)) + 'px';
+  }
+  m.addEventListener('click', e => e.stopPropagation());
+  m.addEventListener('change', e => {
+    const cb = e.target.closest('input[type=checkbox]');
+    if (!cb) return;
+    cb.checked ? tagFilter.add(cb.value) : tagFilter.delete(cb.value);
+    applyTagFilter();
+  });
+  m.querySelector('.tf-clear').addEventListener('click', () => { tagFilter.clear(); applyTagFilter(); removeTagFilterMenu(); });
+  const onClose = ev => { if (!m.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) removeTagFilterMenu(); };
+  const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); removeTagFilterMenu(); } };
+  setTimeout(() => document.addEventListener('click', onClose, true), 0);
+  window.addEventListener('keydown', onKey, true);   /* Esc fecha só a lista, não a janela */
+  m._cleanup = () => { document.removeEventListener('click', onClose, true); window.removeEventListener('keydown', onKey, true); };
+}
+
+/* Copiar selecionados: tickets das classificações marcadas, agrupados na ordem da equipe */
+async function copySelectedWA(btn) {
+  if (!tagFilter.size) { if (typeof showActionToast === 'function') showActionToast('Escolha as classificações em "Classificação ▾"', 'error'); return; }
+  const tk = appState.currentModalType, isRal = tk === 'ral';
+  const list = (modalData[tk] && modalData[tk][appState.currentModalKey]) || [];
+  const keyOf = i => { const k = (appState.ticketStates[makeIdentity(tk, i)] || {}).eventColor; return getTicketTag(k) ? k : 'none'; };
+  const rank = k => { const x = TICKET_TAGS.findIndex(t => t.key === k); return x < 0 ? 99 : x; };
+  const items = list.filter(i => tagFilter.has(keyOf(i)))
+    .sort((a, b) => (rank(keyOf(a)) - rank(keyOf(b))) || (parseAbertura(b.abertura) - parseAbertura(a.abertura)));
+  if (!items.length) { if (typeof showActionToast === 'function') showActionToast('Nenhum ticket com essas classificações', 'error'); return; }
+  const title = (document.getElementById('modal-title')?.textContent || '').trim();
+  const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const sel = [...tagFilter].map(k => k === 'none' ? '⚪ Sem classificação' : `${getTicketTag(k).emoji} ${getTicketTag(k).label}`).join(' · ');
+  const head = `🚨 *COP REDE — ${title}*\n🏷️ ${sel}\n📊 ${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · 🕒 ${now}`;
+  const text = head + '\n\n' + items.map(i => formatTicketWA(i, isRal)).join('\n\n');
+  const ok = await _waWrite(text);
+  _waFlash(btn, ok);
+  if (typeof showActionToast === 'function')
+    showActionToast(ok ? `${items.length} copiado${items.length > 1 ? 's' : ''} — cole no WhatsApp` : 'Não foi possível copiar', ok ? 'success' : 'error');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  /* Reaplica o filtro sempre que as classificações forem redesenhadas */
+  const _rat = renderAllTicketTags;
+  renderAllTicketTags = function () { const r = _rat.apply(this, arguments); applyTagFilter(); return r; };
+  const _rt = renderTicketTag;
+  renderTicketTag = function () { const r = _rt.apply(this, arguments); if (tagFilter.size) applyTagFilter(); return r; };
+  const _open = openModal;
+  openModal = function () { removeTagFilterMenu(); const r = _open.apply(this, arguments); setTimeout(applyTagFilter, 0); return r; };
+  const _close = typeof closeModal === 'function' ? closeModal : null;
+  if (_close) closeModal = function () { removeTagFilterMenu(); return _close.apply(this, arguments); };
 });

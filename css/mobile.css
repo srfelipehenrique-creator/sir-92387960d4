@@ -542,3 +542,50 @@ td.obs-cell { min-width: 180px; }
 }
 .note-who-input:focus { outline: none; border-color: var(--accent); }
 @media (pointer: coarse) { .note-who-input { font-size: 16px; height: 28px; width: 140px; } }
+
+/* ══ Filtro por classificação ══ */
+#modal-tbody tr.ticket-row.tag-hidden { display: none !important; }
+#modal-tbody tr.tf-empty-row td { text-align: center; color: var(--text-muted); padding: 24px 8px; font-size: 12.5px; }
+#modal-overlay.v2-cards tr.tf-empty-row { grid-column: 1 / -1; display: block; }
+#modal-overlay.v2-cards tr.tf-empty-row td { display: block; }
+
+#modal-overlay.v2-cards thead th.tag-filter-th { display: inline-flex !important; position: static; border: 0; padding: 0; background: none; margin-left: auto; }
+#modal-overlay.v2-cards .data-table thead tr { flex-wrap: wrap; }
+.tag-filter-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; cursor: pointer;
+  border-radius: var(--r-xl); border: 1px dashed var(--line-strong); background: transparent; color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap;
+}
+.tag-filter-btn:hover { color: var(--text-main); border-color: var(--text-dim); }
+.tag-filter-btn.on { border-style: solid; border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.tag-filter-btn .tf-dots { display: inline-flex; }
+.tag-filter-btn .tf-dots i { width: 9px; height: 9px; border-radius: 50%; margin-left: -3px; border: 1.5px solid var(--bg-panel); }
+.tag-filter-btn .tf-dots i:first-child { margin-left: 0; }
+.tag-filter-btn .tf-text { max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+#modal-filter-bar .tag-filter-btn { margin-left: 8px; flex-shrink: 0; }
+
+.tag-filter-menu { width: 250px; }
+.tf-opt {
+  display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border-radius: 4px; cursor: pointer;
+  background: var(--c, var(--bg-panel-2)); color: var(--fg, var(--text-muted));
+  font-size: 11.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+}
+.tf-opt.tf-none { border: 1px dashed var(--line-strong); text-transform: none; font-weight: 600; margin-top: 2px; }
+.tf-opt input { width: 16px; height: 16px; margin: 0; accent-color: #111; flex-shrink: 0; cursor: pointer; }
+.tf-opt .tf-name { flex: 1; }
+.tf-opt .tf-count { font-family: var(--font-mono); font-size: 11px; opacity: .8; }
+.tf-opt:has(input:not(:checked)) { filter: saturate(.75); opacity: .78; }
+.tf-opt:has(input:checked) { outline: 2px solid var(--text-main); outline-offset: 1px; opacity: 1; filter: none; }
+.tag-sheet .tf-opt { min-height: 42px; font-size: 13px; }
+
+.btn-copy-sel:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Celular: título na 1ª linha, botões (Copiar selecionados, Copiar todos, CSV) na 2ª */
+@media (max-width: 640px) {
+  #modal-overlay .modal-header { flex-wrap: wrap; row-gap: 8px; }
+  #modal-overlay .modal-title-group { flex: 1 1 calc(100% - 50px); order: 1; }
+  #modal-overlay .modal-tools { display: contents; }
+  #modal-overlay .modal-close-btn { order: 2; margin-left: auto; }
+  #modal-overlay .modal-tools > :not(.modal-close-btn) { order: 3; }
+  #modal-overlay .modal-tools > .modal-csv-btn { flex: 1 1 auto; justify-content: center; text-align: center; }
+}
