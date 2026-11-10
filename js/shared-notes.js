@@ -94,21 +94,35 @@ function renderNotesCell(row) {
     `<button type="button" class="btn-add-obs${list.length ? ' btn-add-more' : ''}" onclick="startAddObs(this)" title="Adicionar nota">${list.length ? '+ Nota' : '+'}</button>`;
 }
 
-function _snInputHTML(value) {
-  return `<div class="obs-input-wrap">
-    <input type="text" class="obs-input" maxlength="300" placeholder="Digite a nota..." autocomplete="off" value="${escapeHtml(value || '')}">
-    <button class="btn-obs-confirm" title="Salvar">✓</button>
-    <button class="btn-obs-cancel" title="Cancelar">×</button>
+function _snInputHTML(value, withName) {
+  return `<div class="obs-input-wrap${withName ? ' with-name' : ''}">
+    <div class="obs-input-row">
+      <input type="text" class="obs-input" maxlength="300" placeholder="Digite a nota..." autocomplete="off" value="${escapeHtml(value || '')}">
+      <button class="btn-obs-confirm" title="Salvar">✓</button>
+      <button class="btn-obs-cancel" title="Cancelar">×</button>
+    </div>
+    ${withName ? `<label class="note-who" title="Responsável pela nota">
+      <span>Responsável</span>
+      <input type="text" class="note-who-input" maxlength="30" placeholder="Nome" autocomplete="name" value="${escapeHtml(_snUser())}">
+    </label>` : ''}
   </div>`;
 }
-function _snOpenInput(container, value, onSave, onCancel) {
-  container.insertAdjacentHTML('beforeend', _snInputHTML(value));
+/* onSave(texto, responsável) */
+function _snOpenInput(container, value, onSave, onCancel, withName) {
+  container.insertAdjacentHTML('beforeend', _snInputHTML(value, withName));
   const wrap = container.querySelector('.obs-input-wrap:last-child');
   const inp = wrap.querySelector('.obs-input');
-  const save = () => { const v = inp.value.trim(); if (v) onSave(v); else onCancel(); };
+  const who = wrap.querySelector('.note-who-input');
+  const save = () => {
+    const v = inp.value.trim();
+    if (!v) return onCancel();
+    const name = who ? who.value.trim().slice(0, 30) : '';
+    if (who && name) { try { localStorage.setItem(LS_USER_NAME, name); } catch (e) {} }   /* vira o padrão da próxima */
+    onSave(v, name);
+  };
   wrap.querySelector('.btn-obs-confirm').addEventListener('click', e => { e.stopPropagation(); save(); });
   wrap.querySelector('.btn-obs-cancel').addEventListener('click', e => { e.stopPropagation(); onCancel(); });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); });
+  [inp, who].filter(Boolean).forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); }));
   inp.focus();
   if (value) inp.setSelectionRange(value.length, value.length);
 }
@@ -117,14 +131,13 @@ function _snOpenInput(container, value, onSave, onCancel) {
 async function notesOp(identity, op, args = {}) {
   /* 1) aplica na hora, neste aparelho */
   const list = getTicketNotes(identity).filter(n => n.i !== 'legacy' || op !== 'del' || args.nid !== 'legacy');
-  const user = _snUser();
+  const user = (op === 'add' && args.by !== undefined) ? args.by : _snUser();
   let nid = args.nid;
   if (op === 'add') { nid = _snNewId(); list.push({ i: nid, t: args.text, by: user, at: Date.now() }); }
   if (op === 'edit') { const n = list.find(x => x.i === nid); if (n) { n.t = args.text; n.et = Date.now(); } }
   if (op === 'del') { const k = list.findIndex(x => x.i === nid); if (k > -1) list.splice(k, 1); }
   _snSetLocal(identity, { notes: list });
   _snRefreshOpenModal();
-  if ((op === 'add' || op === 'edit') && !user) _snAskName();
 
   /* 2) envia para a equipe */
   if (!sharedNotesReady()) return;
@@ -262,8 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const row = btn.closest('tr'), cell = btn.closest('td');
     btn.remove();
     _snOpenInput(cell, '',
-      text => { cell.querySelector('.obs-input-wrap')?.remove(); notesOp(row.dataset.identity, 'add', { text }); },
-      () => { cell.querySelector('.obs-input-wrap')?.remove(); renderNotesCell(row); });
+      (text, by) => { cell.querySelector('.obs-input-wrap')?.remove(); notesOp(row.dataset.identity, 'add', { text, by }); },
+      () => { cell.querySelector('.obs-input-wrap')?.remove(); renderNotesCell(row); },
+      true);
   };
   /* Editar / excluir (cliques dentro da lista de notas) */
   document.addEventListener('click', e => {
