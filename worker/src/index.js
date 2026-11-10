@@ -209,6 +209,45 @@ async function check(env) {
   return { changed: true, novos: fresh.length, enviados: sent };
 }
 
+
+/* ─────────────── Base de nodes criptografada no GitHub ─────────────── */
+const NODES_ENC_URL = 'https://raw.githubusercontent.com/srfelipehenrique-creator/sir-92387960d4/main/data/nodes.enc.json';
+async function getNodesKeypair(env) {
+  let kp = await env.SIR_KV.get('nodes_kp', 'json');
+  if (!kp) {
+    const k = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    kp = { publicKey: b64u(await crypto.subtle.exportKey('raw', k.publicKey)), privateJwk: await crypto.subtle.exportKey('jwk', k.privateKey) };
+    await env.SIR_KV.put('nodes_kp', JSON.stringify(kp));
+  }
+  return kp;
+}
+let _nodesCheckedAt = 0;
+async function importNodesFromGithub(env, force) {
+  if (!force && Date.now() - _nodesCheckedAt < 10 * 60000) return { verificado: false };
+  _nodesCheckedAt = Date.now();
+  const res = await fetch(NODES_ENC_URL + '?_=' + Date.now(), { cf: { cacheTtl: 0 } });
+  if (res.status === 404) return { arquivo: false };
+  if (!res.ok) throw new Error('github ' + res.status);
+  const pkg = await res.json();
+  const meta = await env.SIR_KV.get('nodes_meta', 'json');
+  /* Só importa se o arquivo do GitHub for mais novo que a base atual (inclusive a enviada pelo botão) */
+  if (!force && meta && meta.at >= pkg.createdAt) return { importado: false, motivo: 'base atual é mais nova' };
+  if (force && meta && meta.src === pkg.createdAt) return { importado: false, motivo: 'já importado', count: meta.count };
+  const kp = await getNodesKeypair(env);
+  const priv = await crypto.subtle.importKey('jwk', kp.privateJwk, { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+  const epk = await crypto.subtle.importKey('raw', unb64u(pkg.epk), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: epk }, priv, 256));
+  const aesRaw = await hkdf(unb64u(pkg.salt), shared, enc.encode('SIR nodes v1'), 32);
+  const aes = await crypto.subtle.importKey('raw', aesRaw, 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64u(pkg.iv) }, aes, unb64u(pkg.ct));
+  const rows = JSON.parse(new TextDecoder().decode(plain));
+  if (!Array.isArray(rows) || !rows.length) throw new Error('arquivo vazio');
+  const at = Math.max(Date.now(), pkg.createdAt);
+  await env.SIR_KV.put('nodes', JSON.stringify(rows));
+  await env.SIR_KV.put('nodes_meta', JSON.stringify({ at, by: 'GitHub (planilha)', count: rows.length, src: pkg.createdAt }));
+  return { importado: true, count: rows.length };
+}
+
 /* ─────────────────────────── API ─────────────────────────── */
 async function authorized(env, key) {
   if (!key || !env.KEY_HASH) return false;
@@ -247,6 +286,17 @@ export default {
       catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
     }
 
+    /* ── Base de nodes guardada no GitHub CRIPTOGRAFADA (data/nodes.enc.json) ──
+       Só este servidor tem a chave privada para abrir. A pública (abaixo) serve só para trancar. */
+    if (req.method === 'GET' && url.pathname === '/nodes/pubkey') {
+      const kp = await getNodesKeypair(env);
+      return json({ publicKey: kp.publicKey }, 200, h);
+    }
+    if (req.method === 'GET' && url.pathname === '/nodes/refresh') {
+      try { const r = await importNodesFromGithub(env, true); return json({ ok: true, ...r }, 200, h); }
+      catch (e) { return json({ ok: false, erro: String(e && e.message || e) }, 200, h); }
+    }
+
     /* ── Endereços de Node (base protegida pela chave; nunca fica no GitHub público) ──
        /nodes     {key, since?} → {at, by, rows} (ou {same:true} se não mudou)
        /nodes/set {key, rows, by} → grava a base enviada pelo SIR (planilha .xlsx lida no aparelho) */
@@ -254,6 +304,7 @@ export default {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       if (url.pathname === '/nodes') {
+        try { await importNodesFromGithub(env, false); } catch (e) { console.log('nodes import', e && e.message); }
         const meta = await env.SIR_KV.get('nodes_meta', 'json');
         if (!meta) return json({ at: 0, rows: [] }, 200, h);
         if (body.since && Number(body.since) === meta.at) return json({ same: true, at: meta.at }, 200, h);
