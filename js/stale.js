@@ -70,8 +70,11 @@ async function updateStaleWarning() {
     <div class="stale-txt"><b>Dados sem atualizar ${_staleAgo(min)}</b>
       <span>Última atualização: ${hhmm}. A fonte normal atualiza a cada ~6 min — os números podem estar desatualizados.</span></div>
     <button type="button" class="stale-btn" id="stale-reload">Atualizar agora</button>
+    ${typeof openColetor === 'function' ? '<button type="button" class="stale-btn" id="stale-coletor">Usar meu coletor</button>' : ''}
     <button type="button" class="stale-x" id="stale-x" aria-label="Fechar aviso" title="Fechar (volta se piorar)">&times;</button>`;
   bar.querySelector('#stale-reload').onclick = () => { _staleGh.checked = 0; if (typeof loadNow === 'function') loadNow(); else location.reload(); };
+  const colBtn = bar.querySelector('#stale-coletor');
+  if (colBtn) colBtn.onclick = () => openColetor();
   bar.querySelector('#stale-x').onclick = () => { _staleDismissed = level === 'crit' ? 2 : 1; bar.remove(); };
 }
 
