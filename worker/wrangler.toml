@@ -11,8 +11,7 @@ crons = ["*/2 * * * *"]
 [vars]
 # Hash SHA-256 da chave de acesso (o mesmo usado em pages/lock.html)
 KEY_HASH = "329acaf5d0f68075ccc1e62cea32157db54a9ffe29e1c1d590c81ac9158a1a13"
-# 2ª origem: a aba do SIR interno, de onde o coletor envia os dados (só /ingest aceita o código do coletor)
-ALLOWED_ORIGINS = "https://srfelipehenrique-creator.github.io,http://172.30.130.133"
+ALLOWED_ORIGINS = "https://srfelipehenrique-creator.github.io"
 VAPID_SUBJECT = "https://srfelipehenrique-creator.github.io/sir-92387960d4/"
 
 [[kv_namespaces]]
