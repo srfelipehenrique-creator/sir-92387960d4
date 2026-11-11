@@ -206,7 +206,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v25';
+const SIR_APP_VERSION = 'v26';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */

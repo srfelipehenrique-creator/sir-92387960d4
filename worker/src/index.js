@@ -373,7 +373,8 @@ export default {
       const le = await env.SIR_KV.get('lasterr', 'json');
       const subs = (await env.SIR_KV.list({ prefix: 'sub:' })).keys.length;
       const hb = await env.SIR_KV.get('data_hb', 'json');
-      return json({ ok: true, ultimaMudanca: st ? new Date(st.at).toISOString() : null, ticketsConhecidos: st ? st.ids.length : 0,
+      const tk = await env.SIR_KV.get('ingest_tok', 'json');
+      return json({ ok: true, coletorConfigurado: !!tk, ultimaMudanca: st ? new Date(st.at).toISOString() : null, ticketsConhecidos: st ? st.ids.length : 0,
                     fonte: st ? (st.src || 'espelho') : null, dadosGuardados: !!(st && st.dfp),
                     coletor: hb ? { ultimoEnvio: new Date(hb.at).toISOString(), ativo: Date.now() - hb.at < OWN_FRESH_MS, por: hb.by || '' } : null,
                     aparelhos: subs, ultimoErro: le ? { em: new Date(le.at).toISOString(), msg: le.msg } : null,
@@ -389,9 +390,25 @@ export default {
     /* ── Dados de RAL/REC guardados neste servidor (protegidos pela chave) ──
        /data   {key, since?} → {at, src, ral, rec} (ou {same:true} se não mudou; {empty:true} se ainda não há cópia)
        /ingest {key, ral, rec, by} → recebe os CSVs do SEU coletor e passa a usá-los como fonte */
-    if (req.method === 'POST' && (url.pathname === '/data' || url.pathname === '/ingest')) {
+    /* Código do coletor: um segredo separado, que só serve para ENVIAR dados (/ingest).
+       Assim a chave de acesso do SIR nunca precisa ficar na máquina que coleta.
+       Gerar um novo invalida o anterior. Só o hash fica guardado. */
+    if (req.method === 'POST' && url.pathname === '/collector/token') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const token = b64u(crypto.getRandomValues(new Uint8Array(24)));
+      await env.SIR_KV.put('ingest_tok', JSON.stringify({ hash: await sha256Hex(token), at: Date.now() }));
+      return json({ ok: true, token }, 200, h);
+    }
+
+    if (req.method === 'POST' && (url.pathname === '/data' || url.pathname === '/ingest')) {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      let allowed = await authorized(env, body.key);
+      if (!allowed && url.pathname === '/ingest' && typeof body.token === 'string' && body.token.length >= 20) {
+        const tk = await env.SIR_KV.get('ingest_tok', 'json');
+        allowed = !!(tk && tk.hash === await sha256Hex(body.token));
+      }
+      if (!allowed) return json({ error: 'chave' }, 403, h);
 
       if (url.pathname === '/data') {
         const d = await env.SIR_KV.get('data', 'json');
