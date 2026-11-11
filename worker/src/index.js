@@ -1,8 +1,10 @@
 /* ══════════════════════════════════════════════════════════════
    SIR Push — servidor de notificações (Cloudflare Worker)
-   - A cada 2 min (cron) baixa os CSVs de RAL/REC, descobre tickets
-     novos e envia notificação push para cada aparelho inscrito,
-     filtrando pelas "Minhas Áreas" daquele aparelho.
+   - Guarda os dados de RAL/REC neste servidor (o SIR lê daqui, com a chave).
+     Fonte: o seu coletor (POST /ingest) ou, sem ele, um espelho da fonte
+     pública atualizado pelo cron a cada 2 min.
+   - A cada mudança descobre tickets novos e envia notificação push para
+     cada aparelho inscrito, filtrando pelas "Minhas Áreas" daquele aparelho.
    - Funciona com o SIR fechado/minimizado (Web Push padrão):
      iPhone (app na Tela de Início, iOS 16.4+), Android, PC.
    - Inscrição protegida pela mesma chave de acesso do SIR
@@ -169,30 +171,43 @@ function buildPayload(items) {
   };
 }
 
-/* ─────────────────────────── Verificação periódica ─────────────────────────── */
-async function check(env) {
-  const ts = Date.now();
-  const [ralTxt, recTxt] = await Promise.all(Object.values(CSV_URLS).map(u =>
-    fetch(`${u}?_=${ts}`, { cf: { cacheTtl: 0 } }).then(r => { if (!r.ok) throw new Error('CSV ' + r.status); return r.text(); })));
+/* ─────────────────────────── Dados (RAL/REC) ───────────────────────────
+   Os CSVs ficam guardados NESTE servidor (KV "data") e o SIR lê daqui.
+   Origem dos dados, por prioridade:
+     1. "coletor"  → enviados pelo seu próprio coletor (POST /ingest)
+     2. "espelho"  → cópia da fonte pública, feita pelo cron enquanto
+                     o seu coletor não estiver ativo
+   ─────────────────────────────────────────────────────────────────────── */
+const OWN_FRESH_MS = 25 * 60000;   /* coletor é considerado ativo se enviou há menos de 25 min */
+const HB_EVERY_MS  = 8 * 60000;    /* grava o "sinal de vida" no máximo a cada 8 min (limite do plano grátis) */
 
-  /* Nada mudou nos arquivos → nada a fazer (economiza processamento) */
+async function processData(env, ralTxt, recTxt, src) {
+  const ts = Date.now();
   const fp = await sha256Hex(ralTxt + '\u0001' + recTxt);
   const state = (await env.SIR_KV.get('state', 'json')) || null;
-  if (state && state.fp === fp) return { changed: false };
+  /* Nada mudou e a cópia guardada já é esta → nada a fazer */
+  if (state && state.fp === fp && state.dfp === fp) return { changed: false, fonte: state.src || src };
 
   const tickets = [...parseCsv(ralTxt, true), ...parseCsv(recTxt, false)];
-  if (!tickets.length) return { changed: false, warn: 'csv vazio' };   /* não apaga o estado por um CSV ruim */
+  if (!tickets.length) return { changed: false, warn: 'csv vazio' };   /* não troca dados bons por um CSV ruim */
+
+  /* 1º guarda os dados; se falhar, para aqui */
+  if (!state || state.dfp !== fp) {
+    try { await env.SIR_KV.put('data', JSON.stringify({ ral: ralTxt, rec: recTxt, at: ts, src, fp })); }
+    catch (e) { return { changed: true, erro: 'kv-data' }; }
+  }
+
   const ids = tickets.map(idOf);
   const known = new Set(state ? state.ids : []);
   const fresh = state ? tickets.filter(t => !known.has(idOf(t))) : [];   /* 1ª execução: só memoriza */
 
   /* Se não conseguir gravar o estado, não envia nada (evita avisar o mesmo ticket de novo) */
-  try { await env.SIR_KV.put('state', JSON.stringify({ fp, ids, at: ts })); }
+  try { await env.SIR_KV.put('state', JSON.stringify({ fp, dfp: fp, ids, at: ts, src })); }
   catch (e) { return { changed: true, erro: 'kv' }; }
-  if (!fresh.length) return { changed: true, novos: 0 };
+  if (!fresh.length) return { changed: true, novos: 0, fonte: src };
 
   const list = await env.SIR_KV.list({ prefix: 'sub:' });
-  if (!list.keys.length) return { changed: true, novos: fresh.length, enviados: 0 };
+  if (!list.keys.length) return { changed: true, novos: fresh.length, enviados: 0, fonte: src };
   const vapid = await getVapid(env);
   let sent = 0;
   for (const k of list.keys) {
@@ -206,7 +221,19 @@ async function check(env) {
       else if (st < 300) sent++;
     } catch (e) { /* segue para o próximo aparelho */ }
   }
-  return { changed: true, novos: fresh.length, enviados: sent };
+  return { changed: true, novos: fresh.length, enviados: sent, fonte: src };
+}
+
+/* ─────────────────────────── Verificação periódica ─────────────────────────── */
+async function check(env) {
+  const ts = Date.now();
+  /* Seu coletor está ativo → ele mesmo entrega os dados; não usa a fonte pública */
+  const hb = await env.SIR_KV.get('data_hb', 'json');
+  if (hb && ts - hb.at < OWN_FRESH_MS) return { changed: false, fonte: 'coletor' };
+
+  const [ralTxt, recTxt] = await Promise.all(Object.values(CSV_URLS).map(u =>
+    fetch(`${u}?_=${ts}`, { cf: { cacheTtl: 0 } }).then(r => { if (!r.ok) throw new Error('CSV ' + r.status); return r.text(); })));
+  return processData(env, ralTxt, recTxt, 'espelho');
 }
 
 
@@ -345,7 +372,10 @@ export default {
       const st = await env.SIR_KV.get('state', 'json');
       const le = await env.SIR_KV.get('lasterr', 'json');
       const subs = (await env.SIR_KV.list({ prefix: 'sub:' })).keys.length;
+      const hb = await env.SIR_KV.get('data_hb', 'json');
       return json({ ok: true, ultimaMudanca: st ? new Date(st.at).toISOString() : null, ticketsConhecidos: st ? st.ids.length : 0,
+                    fonte: st ? (st.src || 'espelho') : null, dadosGuardados: !!(st && st.dfp),
+                    coletor: hb ? { ultimoEnvio: new Date(hb.at).toISOString(), ativo: Date.now() - hb.at < OWN_FRESH_MS, por: hb.by || '' } : null,
                     aparelhos: subs, ultimoErro: le ? { em: new Date(le.at).toISOString(), msg: le.msg } : null,
                     envios: ((await env.SIR_KV.get('pushlog', 'json')) || []).map(x => ({ em: new Date(x.at).toISOString(), servico: x.host, status: x.status, motivo: x.reason, titulo: x.title })) }, 200, h);
     }
@@ -354,6 +384,34 @@ export default {
       const t0 = Date.now();
       try { const r = await check(env); return json({ ok: true, ...r, ms: Date.now() - t0 }, 200, h); }
       catch (e) { return json({ ok: false, erro: String(e && e.message || e), ms: Date.now() - t0 }, 200, h); }
+    }
+
+    /* ── Dados de RAL/REC guardados neste servidor (protegidos pela chave) ──
+       /data   {key, since?} → {at, src, ral, rec} (ou {same:true} se não mudou; {empty:true} se ainda não há cópia)
+       /ingest {key, ral, rec, by} → recebe os CSVs do SEU coletor e passa a usá-los como fonte */
+    if (req.method === 'POST' && (url.pathname === '/data' || url.pathname === '/ingest')) {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+
+      if (url.pathname === '/data') {
+        const d = await env.SIR_KV.get('data', 'json');
+        if (!d || !d.ral || !d.rec) return json({ empty: true }, 200, h);
+        if (body.since && Number(body.since) === d.at) return json({ same: true, at: d.at, src: d.src }, 200, h);
+        return json({ at: d.at, src: d.src, ral: d.ral, rec: d.rec }, 200, h);
+      }
+
+      const ral = typeof body.ral === 'string' ? body.ral.replace(/^\uFEFF/, '') : '';
+      const rec = typeof body.rec === 'string' ? body.rec.replace(/^\uFEFF/, '') : '';
+      if (!ral || !rec || ral.length > 3e6 || rec.length > 3e6) return json({ error: 'tamanho' }, 400, h);
+      /* Os dois arquivos precisam ter a coluna de CF (formato do SIR) */
+      const hasCf = t => (t.split('\n').find(l => l.trim()) || '').toLowerCase().includes(CF_COL.toLowerCase());
+      if (!hasCf(ral) || !hasCf(rec)) return json({ error: 'formato' }, 400, h);
+      const now = Date.now();
+      const hb = await env.SIR_KV.get('data_hb', 'json');
+      if (!hb || now - hb.at > HB_EVERY_MS)
+        await env.SIR_KV.put('data_hb', JSON.stringify({ at: now, by: String(body.by || '').slice(0, 40) }));
+      const r = await processData(env, ral, rec, 'coletor');
+      return json({ ok: !r.erro && !r.warn, ...r }, r.erro ? 500 : 200, h);
     }
 
     /* ── Base de nodes guardada no GitHub CRIPTOGRAFADA (data/nodes.enc.json) ──

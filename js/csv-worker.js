@@ -104,18 +104,35 @@ self.onmessage = async function(e) {
   const { type } = e.data;
 
   if (type === 'FETCH_PARSE') {
-    const { ralUrl, recUrl } = e.data;
+    const { ralUrl, recUrl, own } = e.data;
     try {
-      const ts = Date.now();
-      const [ralResp, recResp] = await Promise.all([
-        fetch(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
-        fetch(`${recUrl}?_=${ts}`, { cache: 'no-store' })
-      ]);
-      if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
-      const [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
+      let ralText = null, recText = null, src = 'publica', srcAt = 0;
+      /* 1º: o seu servidor (dados guardados lá, protegidos pela chave) */
+      if (own && own.url && own.key) {
+        try {
+          const r = await fetch(own.url + '/data', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: own.key }), cache: 'no-store'
+          });
+          if (r.ok) {
+            const d = await r.json();
+            if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; }
+          }
+        } catch (err) { /* cai para a reserva */ }
+      }
+      /* Reserva: fonte pública */
+      if (ralText === null) {
+        const ts = Date.now();
+        const [ralResp, recResp] = await Promise.all([
+          fetch(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
+          fetch(`${recUrl}?_=${ts}`, { cache: 'no-store' })
+        ]);
+        if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
+        [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
+      }
       const ralRes = parseRaw(ralText, true);
       const recRes = parseRaw(recText, false);
-      self.postMessage({ type: 'RESULT', ralRes, recRes, ralText, recText });
+      self.postMessage({ type: 'RESULT', ralRes, recRes, ralText, recText, src, srcAt });
     } catch(err) {
       self.postMessage({ type: 'ERROR', message: err.message });
     }

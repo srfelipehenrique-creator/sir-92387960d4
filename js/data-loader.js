@@ -97,17 +97,61 @@ function parseRawInline(text, isRal) {
   return { counts, details, total, qualidadeDetails };
 }
 
+/* ── Fonte dos dados ──
+   1º o seu servidor (SIR_PUSH_URL + chave de acesso); se não responder,
+   a fonte pública entra como reserva. O rodapé mostra qual está em uso. */
+function _ownSource() {
+  try {
+    const url = (typeof SIR_PUSH_URL === 'string' && SIR_PUSH_URL) ? SIR_PUSH_URL.replace(/\/+$/, '') : '';
+    const key = localStorage.getItem('sir_push_key') || '';
+    return (url && key) ? { url, key } : null;
+  } catch (e) { return null; }
+}
+const DATA_SRC_LABEL = {
+  coletor: ['Fonte: meu servidor · coletor próprio', 'own'],
+  espelho: ['Fonte: meu servidor', 'own'],
+  publica: ['Fonte: pública (reserva)', 'pub'],
+};
+function setDataSource(src, at) {
+  appState.dataSource = { src, at: at || 0 };
+  let el = document.getElementById('data-source');
+  if (!el) {
+    const footer = document.querySelector('.page-footer');
+    if (!footer) return;
+    el = document.createElement('span');
+    el.id = 'data-source';
+    footer.insertBefore(el, footer.lastElementChild);
+  }
+  const [txt, cls] = DATA_SRC_LABEL[src] || DATA_SRC_LABEL.publica;
+  el.textContent = txt;
+  el.className = 'data-source ds-' + cls;
+  el.title = src === 'publica'
+    ? 'Seu servidor não respondeu (ou falta a chave neste aparelho). Usando a fonte pública como reserva.'
+    : 'Dados lidos do seu servidor' + (at ? ' · última mudança ' + new Date(at).toLocaleString('pt-BR') : '');
+}
+
 async function fetchAndParseInline(userSavedAreas) {
-  const ts = Date.now();
-  const [ralResp, recResp] = await Promise.all([
-    fetch(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
-    fetch(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
-  ]);
-  if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
-  const [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
+  let ralText = null, recText = null, src = 'publica', srcAt = 0;
+  const own = _ownSource();
+  if (own) {
+    try {
+      const r = await fetch(own.url + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: own.key }), cache: 'no-store' });
+      if (r.ok) { const d = await r.json(); if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; } }
+    } catch (e) {}
+  }
+  if (ralText === null) {
+    const ts = Date.now();
+    const [ralResp, recResp] = await Promise.all([
+      fetch(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
+      fetch(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
+    ]);
+    if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
+    [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
+  }
   const ralRes = parseRawInline(ralText, true);
   const recRes = parseRawInline(recText, false);
   onDataReady(ralRes, recRes, ralText, recText, userSavedAreas);
+  setDataSource(src, srcAt);
 }
 
 /* ── Worker path (http/https only) ── */
@@ -122,13 +166,14 @@ async function fetchAndParseWorker(userSavedAreas) {
     worker.onmessage = msg => {
       if (msg.data.type === 'ERROR') { reject(new Error(msg.data.message)); return; }
       if (msg.data.type === 'RESULT') {
-        const { ralRes, recRes, ralText, recText } = msg.data;
+        const { ralRes, recRes, ralText, recText, src, srcAt } = msg.data;
         onDataReady(ralRes, recRes, ralText, recText, userSavedAreas);
+        setDataSource(src, srcAt);
         resolve();
       }
     };
     worker.onerror = err => reject(err);
-    worker.postMessage({ type: 'FETCH_PARSE', ralUrl: URLS.ral, recUrl: URLS.rec });
+    worker.postMessage({ type: 'FETCH_PARSE', ralUrl: URLS.ral, recUrl: URLS.rec, own: _ownSource() });
   });
 }
 
