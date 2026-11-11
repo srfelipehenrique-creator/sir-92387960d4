@@ -37,10 +37,44 @@ function nodeMapQuery(r) {
   const partes = [end, num && num !== '-' ? num : '', rota, cidade].map(x => String(x || '').trim()).filter(Boolean);
   return partes.join(', ') + ` - ${es ? 'ES' : 'RJ'}, Brasil`;
 }
+function nodeMapUrl(r) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nodeMapQuery(r)); }
 function openNodeMap(i) {
   const r = _nodes.rows[i];
   if (!r) return;
-  window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nodeMapQuery(r)), '_blank', 'noopener,noreferrer');
+  window.open(nodeMapUrl(r), '_blank', 'noopener,noreferrer');
+}
+
+/* ── Copiar as informações do node para enviar por mensagem (WhatsApp etc.) ── */
+function formatNodeMsg(r) {
+  const v = x => { x = String(x || '').trim(); return x && x !== '-' ? x : ''; };
+  const L = [];
+  L.push(`📡 *NODE ${v(r[0])}*`);
+  L.push('');
+  if (v(r[1])) L.push(`🏢 *Headend/Hub:* ${v(r[1])}`);
+  if (v(r[2])) L.push(`🛣️ *Rota:* ${v(r[2])}`);
+  if (v(r[3])) L.push(`🔀 *Segmentação:* ${v(r[3])}`);
+  if (v(r[4])) L.push(`🏭 *Fabricante:* ${v(r[4])}`);
+  if (v(r[5])) L.push(`⚙️ *Modelo:* ${v(r[5])}`);
+  L.push('');
+  L.push(`📍 *Endereço:* ${v(r[6]) || '—'}`);
+  if (v(r[7])) L.push(`🔢 *Número/Ref.:* ${v(r[7])}`);
+  L.push(`🗺️ ${nodeMapUrl(r)}`);
+  return L.join('\n');
+}
+async function copyNodeInfo(i, btn) {
+  const r = _nodes.rows[i];
+  if (!r) return;
+  const text = formatNodeMsg(r);
+  const ok = typeof _waWrite === 'function' ? await _waWrite(text)
+    : await navigator.clipboard.writeText(text).then(() => true, () => false);
+  if (btn) {
+    const lbl = btn.querySelector('span');
+    btn.classList.toggle('done', ok);
+    if (lbl) lbl.textContent = ok ? 'Copiado' : 'Erro';
+    setTimeout(() => { btn.classList.remove('done'); if (lbl) lbl.textContent = 'Copiar'; }, 1600);
+  }
+  if (typeof showActionToast === 'function')
+    showActionToast(ok ? `Node ${r[0]} copiado — cole na conversa` : 'Não foi possível copiar', ok ? 'success' : 'error');
 }
 
 /* ── Janela ── */
@@ -75,7 +109,9 @@ function _ndModal() {
   ov.querySelector('#nodes-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) uploadNodesXlsx(f); });
   ov.querySelector('#nodes-results').addEventListener('click', e => {
     const b = e.target.closest('[data-map]');
-    if (b) openNodeMap(Number(b.dataset.map));
+    if (b) { openNodeMap(Number(b.dataset.map)); return; }
+    const c = e.target.closest('[data-ndcopy]');
+    if (c) copyNodeInfo(Number(c.dataset.ndcopy), c);
   });
   return ov;
 }
@@ -136,6 +172,9 @@ function renderNodeResults() {
     return `<div class="nd-card">
       <div class="nd-head">
         <div class="nd-title">${escapeHtml(r[0])}</div>
+        <button type="button" class="nd-copy" data-ndcopy="${i}" title="Copiar informações para enviar por mensagem" aria-label="Copiar informações do node ${escapeHtml(r[0])}">
+          <i data-lucide="copy"></i><span>Copiar</span>
+        </button>
         <button type="button" class="nd-map" data-map="${i}" title="Abrir no Google Maps" aria-label="Abrir ${escapeHtml(r[0])} no Google Maps">
           <i data-lucide="map-pin"></i><span>Mapa</span>
         </button>
