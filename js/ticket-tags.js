@@ -261,7 +261,7 @@ async function copySelectedWA(btn) {
   const title = (document.getElementById('modal-title')?.textContent || '').trim();
   const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const sel = [...tagFilter].map(k => k === 'none' ? '⚪ Sem classificação' : `${getTicketTag(k).emoji} ${getTicketTag(k).label}`).join(' · ');
-  const head = `🚨 *COP REDE — ${title}*\n🏷️ ${sel}\n📊 ${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · 🕒 ${now}`;
+  const head = `🚨 *COP REDE — ${title}*\n🏷️ ${sel}\n📊 ${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · 📅 ${now}`;
   const text = head + '\n\n' + items.map(i => formatTicketWA(i, isRal)).join('\n\n');
   const ok = await _waWrite(text);
   _waFlash(btn, ok);
