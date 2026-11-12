@@ -638,3 +638,19 @@ td.obs-cell { min-width: 180px; }
 @media (max-width: 900px) { .v2-tile.v2-open { grid-column: span 2; } }
 @media (max-width: 640px) { .v2-tile.v2-open { grid-column: 1 / -1; } }
 .v2-tiles { align-items: start; }   /* card aberto não estica os vizinhos */
+
+/* Card expandido: linha do título + botão copiar resumo */
+.v2-card-top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.v2-card-top .v2-tile-head { flex: 1; min-width: 0; }
+.v2-sum-copy { display: none; flex: none; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--text-muted); cursor: pointer; }
+.v2-open .v2-sum-copy { display: inline-flex; }
+.v2-sum-copy:hover { color: var(--accent); border-color: var(--accent); }
+.v2-sum-copy.done { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+/* "Minhas áreas" */
+.v2-kpis { align-items: start; }
+.v2-kpi-toggle { appearance: none; background: none; border: 0; padding: 0; margin: 0 0 4px; font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left; }
+.v2-kpi-toggle:hover { color: var(--accent); }
+.v2-kpi .v2-card-top { margin-bottom: 0; }
+.v2-kpi .v2-sum { margin-top: 6px; }
+.v2-kpi .v2-chev { margin-left: 0; }
+.v2-kpis:not(.v2-kpis-mine) .v2-kpi.v2-open { grid-column: span 2; }   /* "Minhas áreas" aberto ganha largura para ler as classificações */

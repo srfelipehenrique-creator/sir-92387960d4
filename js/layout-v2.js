@@ -74,9 +74,11 @@ function _delta(tk, cf, val) {
 }
 
 /* ── Card expandido: resumo por classificação ──
-   Toque no título do card (ex.: "NO2") para abrir/fechar.
-   Os cards abertos ficam salvos neste aparelho ('sir_v2_open'). */
+   Toque no título do card (ex.: "NO2" ou "Minhas áreas") para abrir/fechar.
+   Os cards abertos ficam salvos neste aparelho ('sir_v2_open').
+   Card aberto ganha o botão de copiar o resumo (mensagem com emojis). */
 const LS_V2_OPEN = 'sir_v2_open';
+const V2_MY = 'MY_AREAS_V2';
 function _v2OpenSet() { try { return new Set(JSON.parse(localStorage.getItem(LS_V2_OPEN) || '[]')); } catch (e) { return new Set(); } }
 function _v2SaveOpen(set) { _lsSet(LS_V2_OPEN, JSON.stringify([...set])); }
 
@@ -98,9 +100,50 @@ function _v2SumCol(tk, cf) {
 }
 function _v2SumHTML(cf) { return _v2SumCol('ral', cf) + _v2SumCol('rec', cf); }
 
+function _v2CopyBtn() {
+  return `<button type="button" class="v2-sum-copy" data-v2copy title="Copiar resumo para enviar por mensagem" aria-label="Copiar resumo">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>`;
+}
+
+/* ── Texto do resumo para WhatsApp (o mesmo que aparece no card) ── */
+function _v2SumLines(tk, cf) {
+  const n = ((modalData[tk] && modalData[tk][cf]) || []).length;
+  const rows = _v2TagCounts(tk, cf);
+  const L = [`${tk === 'ral' ? '📕' : '📗'} *${tk.toUpperCase()}* (${n} ticket${n === 1 ? '' : 's'})`];
+  if (rows.length) rows.forEach(({ t, n }) => L.push(`${t.emoji} ${t.label}: *${n}*`));
+  else L.push('▫️ Sem classificação');
+  return L;
+}
+function v2SummaryText(cf) {
+  const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+  if (cf !== V2_MY) {
+    const name = CF_NAMES[cf] || '';
+    return [`📊 *RESUMO ${cf}*${name ? ` — ${name}` : ''}`, `🕒 ${now}`, '',
+            ..._v2SumLines('ral', cf), '', ..._v2SumLines('rec', cf)].join('\n');
+  }
+  /* Minhas áreas: 1 mensagem com o total e cada área separada */
+  const areas = getUserSavedAreas();
+  const L = [`📊 *RESUMO — MINHAS ÁREAS*`, `🕒 ${now}`, '', '🧮 *TOTAL*', ..._v2SumLines('ral', V2_MY), ..._v2SumLines('rec', V2_MY)];
+  for (const a of areas) {
+    const name = CF_NAMES[a] || '';
+    L.push('', '━━━━━━━━━━', `📍 *${a}*${name ? ` — ${name}` : ''}`, ..._v2SumLines('ral', a), ..._v2SumLines('rec', a));
+  }
+  return L.join('\n');
+}
+async function copyV2Summary(cf, btn) {
+  const text = v2SummaryText(cf);
+  const ok = typeof _waWrite === 'function' ? await _waWrite(text)
+    : await navigator.clipboard.writeText(text).then(() => true, () => false);
+  if (btn) { btn.classList.toggle('done', ok); setTimeout(() => btn.classList.remove('done'), 1500); }
+  if (typeof showActionToast === 'function')
+    showActionToast(ok ? `Resumo ${cf === V2_MY ? 'de Minhas áreas' : cf} copiado — cole na conversa` : 'Não foi possível copiar', ok ? 'success' : 'error');
+}
+
+function _v2CardEl(cf) { return document.querySelector(`#main-grid [data-v2card][data-cf="${CSS.escape(cf)}"]`); }
 /* Atualiza os resumos abertos (após classificar ou receber notas da equipe) */
 function refreshV2Summaries() {
-  document.querySelectorAll('#main-grid .v2-tile.v2-open').forEach(el => {
+  document.querySelectorAll('#main-grid [data-v2card].v2-open').forEach(el => {
     const box = el.querySelector('.v2-sum');
     if (box) box.innerHTML = _v2SumHTML(el.dataset.cf);
   });
@@ -109,11 +152,11 @@ function toggleV2Tile(cf) {
   const set = _v2OpenSet();
   set.has(cf) ? set.delete(cf) : set.add(cf);
   _v2SaveOpen(set);
-  const el = document.querySelector(`#main-grid .v2-tile[data-cf="${CSS.escape(cf)}"]`);
+  const el = _v2CardEl(cf);
   if (!el) return;
   const open = set.has(cf);
   el.classList.toggle('v2-open', open);
-  el.querySelector('.v2-tile-head').setAttribute('aria-expanded', open);
+  el.querySelector('[data-v2toggle]').setAttribute('aria-expanded', open);
   const box = el.querySelector('.v2-sum');
   if (open) { box.innerHTML = _v2SumHTML(cf); box.hidden = false; } else { box.hidden = true; box.innerHTML = ''; }
 }
@@ -121,12 +164,15 @@ function toggleV2Tile(cf) {
 function _v2Tile(cf, ralV, recV, mine) {
   const name = CF_NAMES[cf] || '';
   const open = _v2OpenSet().has(cf);
-  return `<div class="v2-tile${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-cf="${escapeHtml(cf)}">
-    <button type="button" class="v2-tile-head" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">
-      <span class="v2-tile-cf">${escapeHtml(cf)}</span>
-      <span class="v2-tile-name">${escapeHtml(name)}</span>
-      <i class="v2-chev" aria-hidden="true"></i>
-    </button>
+  return `<div class="v2-tile v2-exp${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-v2card data-cf="${escapeHtml(cf)}">
+    <div class="v2-card-top">
+      <button type="button" class="v2-tile-head" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">
+        <span class="v2-tile-cf">${escapeHtml(cf)}</span>
+        <span class="v2-tile-name">${escapeHtml(name)}</span>
+        <i class="v2-chev" aria-hidden="true"></i>
+      </button>
+      ${_v2CopyBtn()}
+    </div>
     <div class="v2-tile-cells">
       ${_v2Cell('ral', cf, ralV, _delta('ral', cf, ralV))}
       ${_v2Cell('rec', cf, recV, _delta('rec', cf, recV))}
@@ -135,13 +181,24 @@ function _v2Tile(cf, ralV, recV, mine) {
   </div>`;
 }
 document.addEventListener('click', e => {
-  const h = e.target.closest && e.target.closest('#main-grid [data-v2toggle]');
-  if (h) toggleV2Tile(h.closest('.v2-tile').dataset.cf);
+  if (!e.target.closest) return;
+  const c = e.target.closest('#main-grid [data-v2copy]');
+  if (c) { copyV2Summary(c.closest('[data-v2card]').dataset.cf, c); return; }
+  const h = e.target.closest('#main-grid [data-v2toggle]');
+  if (h) toggleV2Tile(h.closest('[data-v2card]').dataset.cf);
 });
 
 function _v2Kpi(label, key, ralV, recV, accent) {
-  return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}">
-    <div class="v2-kpi-lbl">${escapeHtml(label)}</div>
+  const exp = key === V2_MY;   /* só o card "Minhas áreas" expande */
+  const open = exp && _v2OpenSet().has(V2_MY);
+  const head = exp
+    ? `<div class="v2-card-top">
+         <button type="button" class="v2-kpi-lbl v2-kpi-toggle" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">${escapeHtml(label)}<i class="v2-chev" aria-hidden="true"></i></button>
+         ${_v2CopyBtn()}
+       </div>`
+    : `<div class="v2-kpi-lbl">${escapeHtml(label)}</div>`;
+  return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}${exp ? ' v2-exp' : ''}${open ? ' v2-open' : ''}"${exp ? ` data-v2card data-cf="${V2_MY}"` : ''}>
+    ${head}
     <div class="v2-kpi-vals">
       <button class="v2-kpi-btn v2-t-${_sevTotal(ralV)}" onclick="openModal('${_q(key)}',true,'${_q('RAL · ' + label)}')">
         <span class="v2-kpi-type">RAL</span><span class="animate-num" data-val="${ralV}">${ralV}</span>
@@ -150,6 +207,7 @@ function _v2Kpi(label, key, ralV, recV, accent) {
         <span class="v2-kpi-type">REC</span><span class="animate-num" data-val="${recV}">${recV}</span>
       </button>
     </div>
+    ${exp ? `<div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(V2_MY) : ''}</div>` : ''}
   </div>`;
 }
 
@@ -173,7 +231,7 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
     const fRal = getFlatCFData(ralR), fRec = getFlatCFData(recR);
     const mRal = areas.reduce((s, cf) => s + (fRal[cf] || 0), 0);
     const mRec = areas.reduce((s, cf) => s + (fRec[cf] || 0), 0);
-    kpiMine = _v2Kpi('Minhas áreas', 'MY_AREAS_V2', mRal, mRec, true);
+    kpiMine = _v2Kpi('Minhas áreas', V2_MY, mRal, mRec, true);
   }
   let kpis;
   if (scope === 'mine') {
@@ -258,7 +316,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v29';
+const SIR_APP_VERSION = 'v30';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
