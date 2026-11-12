@@ -73,19 +73,71 @@ function _delta(tk, cf, val) {
   return (p === undefined || val <= p) ? 0 : val - p;
 }
 
+/* ── Card expandido: resumo por classificação ──
+   Toque no título do card (ex.: "NO2") para abrir/fechar.
+   Os cards abertos ficam salvos neste aparelho ('sir_v2_open'). */
+const LS_V2_OPEN = 'sir_v2_open';
+function _v2OpenSet() { try { return new Set(JSON.parse(localStorage.getItem(LS_V2_OPEN) || '[]')); } catch (e) { return new Set(); } }
+function _v2SaveOpen(set) { _lsSet(LS_V2_OPEN, JSON.stringify([...set])); }
+
+function _v2TagCounts(tk, cf) {
+  const list = (modalData[tk] && modalData[tk][cf]) || [];
+  const cnt = {};
+  for (const item of list) {
+    const k = ((appState.ticketStates[makeIdentity(tk, item)] || {}).eventColor);
+    if (typeof getTicketTag === 'function' && getTicketTag(k)) cnt[k] = (cnt[k] || 0) + 1;
+  }
+  return (typeof TICKET_TAGS !== 'undefined' ? TICKET_TAGS : []).filter(t => cnt[t.key]).map(t => ({ t, n: cnt[t.key] }));
+}
+function _v2SumCol(tk, cf) {
+  const rows = _v2TagCounts(tk, cf);
+  const body = rows.length
+    ? rows.map(({ t, n }) => `<div class="v2-sum-row" title="${escapeHtml(t.label)}"><i class="v2-sum-dot" style="background:${t.bg}"></i><span class="v2-sum-lbl">${escapeHtml(t.label)}</span><b class="v2-sum-n">${n}</b></div>`).join('')
+    : '<div class="v2-sum-empty">Sem classificação</div>';
+  return `<div class="v2-sum-col"><div class="v2-sum-h">${tk.toUpperCase()}</div>${body}</div>`;
+}
+function _v2SumHTML(cf) { return _v2SumCol('ral', cf) + _v2SumCol('rec', cf); }
+
+/* Atualiza os resumos abertos (após classificar ou receber notas da equipe) */
+function refreshV2Summaries() {
+  document.querySelectorAll('#main-grid .v2-tile.v2-open').forEach(el => {
+    const box = el.querySelector('.v2-sum');
+    if (box) box.innerHTML = _v2SumHTML(el.dataset.cf);
+  });
+}
+function toggleV2Tile(cf) {
+  const set = _v2OpenSet();
+  set.has(cf) ? set.delete(cf) : set.add(cf);
+  _v2SaveOpen(set);
+  const el = document.querySelector(`#main-grid .v2-tile[data-cf="${CSS.escape(cf)}"]`);
+  if (!el) return;
+  const open = set.has(cf);
+  el.classList.toggle('v2-open', open);
+  el.querySelector('.v2-tile-head').setAttribute('aria-expanded', open);
+  const box = el.querySelector('.v2-sum');
+  if (open) { box.innerHTML = _v2SumHTML(cf); box.hidden = false; } else { box.hidden = true; box.innerHTML = ''; }
+}
+
 function _v2Tile(cf, ralV, recV, mine) {
   const name = CF_NAMES[cf] || '';
-  return `<div class="v2-tile${mine ? ' v2-mine' : ''}">
-    <div class="v2-tile-head">
+  const open = _v2OpenSet().has(cf);
+  return `<div class="v2-tile${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-cf="${escapeHtml(cf)}">
+    <button type="button" class="v2-tile-head" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">
       <span class="v2-tile-cf">${escapeHtml(cf)}</span>
-      <span class="v2-tile-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-    </div>
+      <span class="v2-tile-name">${escapeHtml(name)}</span>
+      <i class="v2-chev" aria-hidden="true"></i>
+    </button>
     <div class="v2-tile-cells">
       ${_v2Cell('ral', cf, ralV, _delta('ral', cf, ralV))}
       ${_v2Cell('rec', cf, recV, _delta('rec', cf, recV))}
     </div>
+    <div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(cf) : ''}</div>
   </div>`;
 }
+document.addEventListener('click', e => {
+  const h = e.target.closest && e.target.closest('#main-grid [data-v2toggle]');
+  if (h) toggleV2Tile(h.closest('.v2-tile').dataset.cf);
+});
 
 function _v2Kpi(label, key, ralV, recV, accent) {
   return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}">
@@ -206,7 +258,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v28';
+const SIR_APP_VERSION = 'v29';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
@@ -231,6 +283,16 @@ window.addEventListener('load', () => window.scrollTo(0, 0));
 
 document.addEventListener('DOMContentLoaded', () => {
   applyLayoutClass(); renderV2Bar();
+
+  /* Resumos abertos acompanham as classificações (sua e da equipe) */
+  if (typeof persistTicketState === 'function') {
+    const _pts = persistTicketState;
+    persistTicketState = function () { const r = _pts.apply(this, arguments); setTimeout(refreshV2Summaries, 0); return r; };
+  }
+  if (typeof pullSharedNotes === 'function') {
+    const _psn = pullSharedNotes;
+    pullSharedNotes = function () { return Promise.resolve(_psn.apply(this, arguments)).finally(refreshV2Summaries); };
+  }
 
   if (typeof renderToolbarButtons === 'function') {
     const _rtbOrig = renderToolbarButtons;
