@@ -42,7 +42,7 @@
     root.setAttribute('data-mode-pref', pref);
     root.style.colorScheme = mode;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', mode === 'light' ? '#f3f4f6' : '#141416');
+    if (meta) meta.setAttribute('content', mode === 'light' ? '#f3f4f6' : '#06101d');
     updateButton();
   }
 
