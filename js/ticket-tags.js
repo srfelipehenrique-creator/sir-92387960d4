@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Classificação do ticket (bolinha de cor)
-   - Clique na bolinha → lista com as 8 classificações (ordem da equipe)
+   - Clique na bolinha → lista com as 9 classificações (ordem da equipe)
    - A escolhida aparece como etiqueta colorida abaixo do SLA,
      pinta a bolinha e a faixa lateral do ticket
    - Compartilhada com todos (via notas da equipe — shared-notes.js)
@@ -15,7 +15,8 @@ const TICKET_TAGS = [
   { key: 'conjunta',          label: 'CONJUNTA',           bg: '#f79646', fg: '#3d1a00', emoji: '🟠' },
   { key: 'area-risco',        label: 'ÁREA DE RISCO',      bg: '#ff0000', fg: '#ffffff', emoji: '🔴' },
   { key: 'pend-encerramento', label: 'PEND. ENCERRAMENTO', bg: '#c4d79b', fg: '#24320a', emoji: '🟢' },
-  { key: 'acesso',            label: 'ACESSO',             bg: '#963634', fg: '#ffffff', emoji: '🟤' },
+  { key: 'acesso',            label: 'ACESSO',             bg: '#8c8c8c', fg: '#ffffff', emoji: '⚪' },
+  { key: 'indisp-tecnica',    label: 'INDISP. TÉCNICA',    bg: '#c00000', fg: '#ffffff', emoji: '🔴' },
 ];
 function getTicketTag(key) { return TICKET_TAGS.find(t => t.key === key) || null; }
 
