@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Gráficos do layout novo (abaixo das regiões)
-   - Esquerda: quantidade de RAL por área (CF)
+   - Esquerda: quantidade de RAL por área (CF) — colunas
    - Direita:  quantidade de REC por área (CF)
    Mostra as mesmas áreas do painel (todas ou só as suas).
    Tocar num ponto abre a lista daquela área.
@@ -34,45 +34,52 @@ function _niceMax(v) {
 }
 
 function _v2ChartSVG(tk, rows, width) {
-  const H = 210, padL = 30, padR = 10, padT = 18, padB = 26;
   const W = Math.max(260, Math.round(width));
+  /* Pouco espaço por área (celular) → nomes inclinados, todos visíveis */
+  const tilt = rows.length && (W - 40) / rows.length < 26;
+  const H = 210, padL = 30, padR = 10, padT = 18, padB = tilt ? 36 : 26;
   const vals = rows.map(r => r[tk]);
   const max = _niceMax(Math.max(1, ...vals));
   const n = rows.length;
   const iw = W - padL - padR, ih = H - padT - padB;
-  const x = i => padL + (n === 1 ? iw / 2 : (i * iw) / (n - 1));
+  const band = n ? iw / n : iw;                                   /* espaço de cada área */
+  const x = i => padL + band * (i + 0.5);                          /* centro da coluna */
+  const bw = Math.max(6, Math.min(34, band * 0.62));               /* largura da coluna */
   const y = v => padT + ih - (v / max) * ih;
   const col = _v2ChartColor(tk);
   const id = 'g' + tk;
 
   let g = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${col}" stop-opacity=".38"/><stop offset="100%" stop-color="${col}" stop-opacity=".02"/></linearGradient>
-      <filter id="${id}f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      <stop offset="0%" stop-color="${col}" stop-opacity=".95"/><stop offset="100%" stop-color="${col}" stop-opacity=".28"/></linearGradient>
+      <filter id="${id}f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
   /* linhas de grade + eixo Y */
   for (let k = 0; k <= 4; k++) {
     const v = (max / 4) * k, yy = y(v);
     g += `<line class="g-grid" x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}" stroke-dasharray="${k ? '3 4' : ''}" opacity="${k ? .55 : .9}"/>`;
     g += `<text class="g-axis" x="${padL - 6}" y="${yy + 3.5}" text-anchor="end">${Math.round(v * 10) / 10}</text>`;
   }
-  /* rótulos do eixo X (pula alguns se faltar espaço) */
-  const every = Math.max(1, Math.ceil(n / Math.floor(iw / 25)));
+  /* rótulos do eixo X: todos; inclinados quando falta espaço */
   rows.forEach((r, i) => {
-    if (i % every && i !== n - 1) return;
-    g += `<text class="g-x${r.mine ? ' mine' : ''}" x="${x(i)}" y="${H - 8}" text-anchor="middle">${escapeHtml(r.cf)}</text>`;
+    const t = escapeHtml(r.cf), cls = `g-x${r.mine ? ' mine' : ''}`;
+    g += tilt
+      ? `<text class="${cls}" x="${x(i)}" y="${H - padB + 12}" text-anchor="end" transform="rotate(-50 ${x(i)} ${H - padB + 12})" style="font-size:9px">${t}</text>`
+      : `<text class="${cls}" x="${x(i)}" y="${H - 8}" text-anchor="middle">${t}</text>`;
   });
   if (n) {
-    const pts = rows.map((r, i) => [x(i), y(r[tk])]);
-    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    g += `<path d="${line} L${pts[n - 1][0].toFixed(1)} ${y(0)} L${pts[0][0].toFixed(1)} ${y(0)} Z" fill="url(#${id})"/>`;
-    g += `<path d="${line}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#${id}f)"/>`;
+    const y0 = y(0);
     rows.forEach((r, i) => {
-      const [px, py] = pts[i], v = r[tk];
+      const v = r[tk], cx = x(i), top = y(v), h = Math.max(0, y0 - top);
+      const rad = Math.min(4, bw / 2, h);
       const label = `${tk.toUpperCase()} ${r.cf}: ${v}`;
-      g += `<g data-chart-cf="${escapeHtml(r.cf)}" data-chart-tk="${tk}" role="button" tabindex="0" aria-label="${label}">
+      /* coluna com cantos de cima arredondados */
+      const bar = h > 0
+        ? `<path class="g-bar" d="M${(cx - bw / 2).toFixed(1)} ${y0} V${(top + rad).toFixed(1)} Q${(cx - bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx - bw / 2 + rad).toFixed(1)} ${top.toFixed(1)} H${(cx + bw / 2 - rad).toFixed(1)} Q${(cx + bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx + bw / 2).toFixed(1)} ${(top + rad).toFixed(1)} V${y0} Z" fill="url(#${id})" stroke="${col}" stroke-width="1" filter="url(#${id}f)"/>`
+        : `<line x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke="${col}" stroke-opacity=".35" stroke-width="2"/>`;
+      g += `<g class="g-col" data-chart-cf="${escapeHtml(r.cf)}" data-chart-tk="${tk}" role="button" tabindex="0" aria-label="${label}">
         <title>${label} — toque para abrir a lista</title>
-        <rect class="g-hit" x="${px - 14}" y="${padT - 8}" width="28" height="${ih + 8}"/>
-        <circle class="g-pt" cx="${px}" cy="${py}" r="4" fill="${col}" stroke="var(--bg-panel)" stroke-width="1.5"/>
-        ${v ? `<text class="g-val" x="${px}" y="${py - 8}" text-anchor="middle" fill="${col}">${v}</text>` : ''}
+        <rect class="g-hit" x="${(cx - band / 2).toFixed(1)}" y="${padT - 8}" width="${band.toFixed(1)}" height="${ih + 8}"/>
+        ${bar}
+        ${v ? `<text class="g-val" x="${cx}" y="${top - 6}" text-anchor="middle" fill="${col}">${v}</text>` : ''}
       </g>`;
     });
   }
