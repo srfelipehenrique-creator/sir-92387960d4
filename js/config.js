@@ -37,7 +37,7 @@ const REGIONS = {
     'NOR': ['RT/VTA /NOR/FFA/FO'],
     'SUL': ['RT/VTA /SUL/FFA/FO']
   },
-  'RIO A': {
+  'INTERIOR': {
     'SUF': ['RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO'],
     'SEF': ['RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO'],
     'NOF': ['RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO'],
@@ -45,7 +45,7 @@ const REGIONS = {
     'BX1': ['RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO'],
     'MTP': ['RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO']
   },
-  'RIO B': {
+  'CAPITAL': {
     'NO1': ['RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO'],
     'NO2': ['RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO'],
     'NO3': ['RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO'],
