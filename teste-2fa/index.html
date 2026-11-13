@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#06101d">
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<title>SIR · Teste dois fatores</title>
+<script src="qrcode.js"></script>  <!-- gerador de QR hospedado junto (MIT, Kazuhiko Arase) — sem depender de site externo -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
+  :root {
+    --bg: #06101d; --panel: #0b1a2c; --panel-2: #0f2237; --elev: #12294a;
+    --neon: #38bdf8; --neon-line: rgba(56,189,248,.55); --neon-glow: rgba(56,189,248,.22);
+    --accent: #6366f1; --ok: #3ee6a0; --warn: #f5c518; --red: #ff6b6b;
+    --text: #e8f3ff; --soft: rgba(214,232,255,.78); --muted: rgba(214,232,255,.55); --dim: rgba(214,232,255,.3);
+    --line: rgba(56,189,248,.16); --line-strong: rgba(56,189,248,.32);
+    --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100dvh; font-family: Inter, system-ui, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased;
+    background: radial-gradient(1000px 520px at 50% -10%, rgba(56,189,248,.12), transparent 60%), radial-gradient(700px 400px at 100% 110%, rgba(99,102,241,.10), transparent 60%), var(--bg);
+    display: flex; flex-direction: column; align-items: center; padding: 16px 16px 40px;
+  }
+  .banner {
+    width: 100%; max-width: 460px; margin-bottom: 14px; padding: 9px 12px; border-radius: 10px;
+    background: rgba(245,197,24,.10); border: 1px solid rgba(245,197,24,.45); color: #ffe68a; font-size: 12.5px; line-height: 1.45;
+  }
+  .banner b { color: #fff3c2; }
+  .tabs { display: flex; gap: 4px; width: 100%; max-width: 460px; margin-bottom: 12px; padding: 3px; border-radius: 10px; background: rgba(9,23,40,.8); border: 1px solid var(--line-strong); }
+  .tabs button { flex: 1; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted); background: transparent; border: 0; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+  .tabs button.on { background: var(--elev); color: var(--text); box-shadow: 0 0 0 1px var(--line-strong) inset; }
+  .card {
+    width: 100%; max-width: 460px; padding: 22px 20px 20px; border-radius: 14px;
+    background: linear-gradient(180deg, rgba(17,40,66,.96), rgba(9,23,40,.96));
+    border: 1px solid var(--neon-line); box-shadow: 0 0 0 1px rgba(56,189,248,.06) inset, 0 0 22px var(--neon-glow);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .logo-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(56,189,248,.12); border: 1px solid var(--neon-line); color: var(--neon); }
+  .logo b { font-size: 15px; letter-spacing: .6px; }
+  .logo span { display: block; font-size: 11.5px; color: var(--muted); }
+  h2 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  p.lead { font-size: 13.5px; color: var(--soft); line-height: 1.5; margin-bottom: 16px; }
+  label.f { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  input.inp {
+    width: 100%; font: inherit; font-size: 15px; color: var(--text); padding: 12px 13px; border-radius: 10px;
+    background: rgba(6,16,29,.75); border: 1px solid var(--line-strong); outline: none;
+  }
+  input.inp:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(56,189,248,.15); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px;
+    font: inherit; font-size: 14px; font-weight: 800; letter-spacing: .4px; padding: 12px 14px; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent); box-shadow: 0 0 16px rgba(99,102,241,.35);
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.ghost { background: transparent; color: var(--soft); border-color: var(--line-strong); box-shadow: none; font-weight: 700; }
+  .btn.small { width: auto; margin: 0; padding: 7px 12px; font-size: 12.5px; }
+  .link { background: none; border: 0; color: var(--neon); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+  .msg { min-height: 20px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .msg.err { color: var(--red); } .msg.ok { color: var(--ok); }
+  .otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .otp input {
+    width: 100%; aspect-ratio: 1 / 1.15; text-align: center; font: 800 24px var(--mono); color: var(--text);
+    background: rgba(6,16,29,.8); border: 1px solid var(--line-strong); border-radius: 10px; outline: none; caret-color: var(--neon);
+  }
+  .otp input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(56,189,248,.15); }
+  .otp.shake { animation: shake .35s; }
+  @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+  .steps { display: grid; gap: 14px; margin-bottom: 4px; }
+  .step { display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
+  .step-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 800 12px var(--mono); color: var(--neon); border: 1px solid var(--neon-line); background: rgba(56,189,248,.08); }
+  .step-t { font-size: 13.5px; line-height: 1.5; color: var(--soft); }
+  .step-t b { color: var(--text); }
+  .qr-wrap { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  #qr { background: #fff; padding: 8px; border-radius: 10px; width: 156px; height: 156px; }
+  #qr svg { display: block; width: 140px; height: 140px; }
+  .secret { font: 700 13px var(--mono); letter-spacing: 1.5px; word-break: break-all; padding: 8px 10px; border-radius: 8px; background: rgba(6,16,29,.8); border: 1px dashed var(--line-strong); color: var(--text); }
+  .side { flex: 1; min-width: 170px; display: grid; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .codes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 12px; }
+  .codes div { font: 700 14px var(--mono); letter-spacing: 1px; text-align: center; padding: 9px 6px; border-radius: 8px; background: rgba(6,16,29,.8); border: 1px solid var(--line-strong); }
+  .codes div.used { text-decoration: line-through; color: var(--dim); }
+  .chk { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; color: var(--soft); margin-top: 12px; cursor: pointer; line-height: 1.4; }
+  .chk input { margin-top: 2px; accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
+  .ok-ic { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 12px; background: rgba(62,230,160,.12); border: 1px solid rgba(62,230,160,.5); color: var(--ok); box-shadow: 0 0 18px rgba(62,230,160,.25); }
+  .center { text-align: center; }
+  .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .timer { font: 700 12px var(--mono); color: var(--muted); }
+  .bar { height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; background: var(--neon); transition: width 1s linear; }
+  .people { display: grid; gap: 8px; margin: 10px 0 4px; }
+  .person { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(6,16,29,.6); border: 1px solid var(--line); }
+  .person b { font-size: 14px; } .person small { grid-column: 1; font-size: 11.5px; color: var(--muted); }
+  .pill { grid-row: 1 / span 2; grid-column: 2; font-size: 10.5px; font-weight: 800; letter-spacing: .5px; padding: 3px 8px; border-radius: 999px; }
+  .pill.on { background: rgba(62,230,160,.14); color: var(--ok); } .pill.wait { background: rgba(245,197,24,.14); color: var(--warn); } .pill.off { background: rgba(255,107,107,.14); color: var(--red); }
+  .person .acts { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 4px; }
+  .invite { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(56,189,248,.06); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--soft); line-height: 1.5; }
+  .invite code { display: block; margin-top: 6px; font: 600 11.5px var(--mono); word-break: break-all; color: var(--text); }
+  .foot { width: 100%; max-width: 460px; margin-top: 12px; display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="banner"><b>Versão de teste.</b> Os códigos são reais (funcionam no app autenticador), mas nada é enviado ao servidor: tudo fica só neste navegador. O SIR de verdade não muda.</div>
+
+<div class="tabs" role="tablist">
+  <button class="on" data-tab="user">Entrar no SIR</button>
+  <button data-tab="admin">Painel do administrador</button>
+</div>
+
+<!-- ═════════ Fluxo do usuário ═════════ -->
+<section id="tab-user">
+<div class="card">
+  <div class="logo">
+    <div class="logo-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div><b>SIR · COP REDE</b><span>Acesso protegido em duas etapas</span></div>
+  </div>
+
+  <!-- 1. Chave -->
+  <div data-screen="key">
+    <h2>Entrar</h2>
+    <p class="lead">Etapa 1 de 2: digite a sua chave de acesso.</p>
+    <label class="f" for="in-key">Chave de acesso</label>
+    <input class="inp" id="in-key" type="password" autocomplete="current-password" placeholder="Sua chave">
+    <button class="btn" id="b-key">Continuar</button>
+    <div class="msg" id="m-key"></div>
+  </div>
+
+  <!-- 2. Configurar (primeira vez) -->
+  <div data-screen="setup" hidden>
+    <h2>Ative a verificação em duas etapas</h2>
+    <p class="lead">Só é feito uma vez. Depois, além da chave, o SIR vai pedir um código que muda a cada 30 segundos no seu celular.</p>
+    <div class="steps">
+      <div class="step"><span class="step-n">1</span><div class="step-t">Instale um app autenticador no celular: <b>Google Authenticator</b> ou <b>Microsoft Authenticator</b> (App Store / Play Store).</div></div>
+      <div class="step"><span class="step-n">2</span><div class="step-t">No app, toque em <b>+</b> e <b>leia o QR code</b>. Se estiver no próprio celular, toque em <b>Adicionar ao app</b> ou digite o código abaixo.
+        <div class="qr-wrap">
+          <div id="qr"></div>
+          <div class="side">
+            <a class="btn small" id="otp-link" href="#">Adicionar ao app</a>
+            <span>Ou digite no app:</span>
+            <div class="secret" id="secret"></div>
+            <button class="link" id="b-copy-secret" type="button">Copiar código</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t">Digite o código de 6 dígitos que o app mostrar para <b>SIR COP REDE</b>.</div></div>
+    </div>
+    <div class="otp" id="otp-setup" style="margin-top:12px"></div>
+    <button class="btn" id="b-setup">Confirmar e ativar</button>
+    <div class="msg" id="m-setup"></div>
+  </div>
+
+  <!-- 3. Códigos de recuperação -->
+  <div data-screen="recovery" hidden>
+    <h2>Guarde seus códigos de recuperação</h2>
+    <p class="lead">Se perder ou trocar de celular, use <b>um</b> destes códigos no lugar do código do app. Cada um funciona uma única vez.</p>
+    <div class="codes" id="codes"></div>
+    <div class="row" style="margin-top:0">
+      <button class="btn small ghost" id="b-copy-codes" type="button">Copiar códigos</button>
+      <span class="msg" id="m-codes" style="margin:0"></span>
+    </div>
+    <label class="chk"><input type="checkbox" id="ck-saved"> Guardei os códigos em um lugar seguro (fora deste celular).</label>
+    <button class="btn" id="b-recovery" disabled>Concluir</button>
+  </div>
+
+  <!-- 4. Login com código -->
+  <div data-screen="code" hidden>
+    <h2>Código de verificação</h2>
+    <p class="lead">Etapa 2 de 2: abra o app autenticador e digite o código de <b>SIR COP REDE</b>.</p>
+    <div class="otp" id="otp-login"></div>
+    <label class="chk"><input type="checkbox" id="ck-trust" checked> Confiar neste aparelho por 30 dias</label>
+    <button class="btn" id="b-code">Entrar</button>
+    <div class="msg" id="m-code"></div>
+    <div class="row">
+      <button class="link" id="b-use-rec" type="button">Usar código de recuperação</button>
+      <button class="link" id="b-back" type="button">Voltar</button>
+    </div>
+    <div id="rec-box" hidden style="margin-top:12px">
+      <label class="f" for="in-rec">Código de recuperação</label>
+      <input class="inp" id="in-rec" placeholder="XXXX-XXXX" autocomplete="one-time-code" style="font-family:var(--mono);letter-spacing:2px;text-transform:uppercase">
+      <button class="btn ghost" id="b-rec">Entrar com código de recuperação</button>
+    </div>
+  </div>
+
+  <!-- 5. Liberado -->
+  <div data-screen="done" hidden class="center">
+    <div class="ok-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h2>Acesso liberado</h2>
+    <p class="lead" id="done-txt"></p>
+    <button class="btn" id="b-next">Simular o próximo acesso</button>
+    <button class="btn ghost" id="b-forget">Simular aparelho novo (pede o código de novo)</button>
+  </div>
+</div>
+
+<div class="foot">
+  <span id="foot-state"></span>
+  <button class="link" id="b-reset" type="button">Recomeçar o teste</button>
+</div>
+
+<div class="card" id="helper" style="margin-top:12px" hidden>
+  <label class="f">Código atual (só nesta versão de teste)</label>
+  <div class="row" style="margin-top:4px">
+    <span class="secret" id="cur-code" style="font-size:20px;letter-spacing:4px"></span>
+    <span class="timer" id="cur-time"></span>
+  </div>
+  <div class="bar"><i id="cur-bar"></i></div>
+  <p class="lead" style="margin:10px 0 0;font-size:12px">Para conferir que o app está gerando o mesmo código. Na versão real esta caixa não existe.</p>
+</div>
+</section>
+
+<!-- ═════════ Administrador (opção: cada pessoa com o seu app) ═════════ -->
+<section id="tab-admin" hidden>
+<div class="card">
+  <div class="logo">
+    <div class="logo-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+    <div><b>Pessoas com acesso</b><span>Só na opção "cada pessoa com o seu app"</span></div>
+  </div>
+  <p class="lead">Você convida cada pessoa. Ela abre o link, configura o app autenticador e passa a entrar com o próprio código. O nome dela aparece nas notas automaticamente.</p>
+  <div class="people" id="people"></div>
+  <label class="f" for="in-person" style="margin-top:14px">Convidar pessoa</label>
+  <div class="row" style="margin-top:0">
+    <input class="inp" id="in-person" placeholder="Nome (ex.: João — Equipe NO1)">
+    <button class="btn small" id="b-invite" type="button">Convidar</button>
+  </div>
+  <div class="invite" id="invite" hidden></div>
+</div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+  /* Chave real do SIR (mesmo hash da tela de bloqueio atual) */
+  const KEY_HASH = '329acaf5d0f68075ccc1e62cea32157db54a9ffe29e1c1d590c81ac9158a1a13';
+  const LS = 'sir_2fa_teste';
+  const ISSUER = 'SIR COP REDE';
+
+  const $ = id => document.getElementById(id);
+  const load = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } };
+  const save = s => { try { localStorage.setItem(LS, JSON.stringify(s)); } catch (e) {} };
+  let S = load();
+
+  /* ── TOTP (RFC 6238) — o mesmo cálculo do Google Authenticator ── */
+  const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  function b32enc(bytes) { let bits = 0, val = 0, out = ''; for (const b of bytes) { val = (val << 8) | b; bits += 8; while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } } if (bits) out += B32[(val << (5 - bits)) & 31]; return out; }
+  function b32dec(s) { let bits = 0, val = 0; const out = []; for (const c of s.replace(/=+$/, '')) { val = (val << 5) | B32.indexOf(c); bits += 5; if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; } } return new Uint8Array(out); }
+  async function totp(secret, step) {
+    const key = await crypto.subtle.importKey('raw', b32dec(secret), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const buf = new ArrayBuffer(8); const dv = new DataView(buf); dv.setUint32(0, Math.floor(step / 4294967296)); dv.setUint32(4, step >>> 0);
+    const h = new Uint8Array(await crypto.subtle.sign('HMAC', key, buf)); const o = h[19] & 15;
+    return String((((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]) % 1e6).padStart(6, '0');
+  }
+  const nowStep = () => Math.floor(Date.now() / 30000);
+  async function verify(secret, code) {
+    for (const d of [-1, 0, 1]) if (await totp(secret, nowStep() + d) === code) return true;   /* tolera 30 s de relógio adiantado/atrasado */
+    return false;
+  }
+  async function sha256(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  const rnd = n => crypto.getRandomValues(new Uint8Array(n));
+  function recCodes() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({ length: 8 }, () => { const r = rnd(8); let s = ''; r.forEach((b, i) => { s += A[b % A.length]; if (i === 3) s += '-'; }); return s; }); }
+
+  /* ── Telas ── */
+  function show(name) {
+    document.querySelectorAll('[data-screen]').forEach(el => el.hidden = el.dataset.screen !== name);
+    $('helper').hidden = !(S.secret && (name === 'setup' || name === 'code'));
+    footState();
+    const first = document.querySelector(`[data-screen="${name}"] input:not([type=checkbox])`); if (first) setTimeout(() => first.focus(), 50);
+  }
+  function footState() {
+    const t = S.trustUntil && S.trustUntil > Date.now();
+    $('foot-state').textContent = !S.secret ? 'Dois fatores: não configurado' : t ? `Aparelho confiável até ${new Date(S.trustUntil).toLocaleDateString('pt-BR')}` : 'Dois fatores: ativo';
+  }
+  function msg(id, t, cls) { const m = $(id); m.textContent = t || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); }
+
+  /* Caixas de 6 dígitos (aceita colar o código inteiro; iPhone sugere o código do teclado) */
+  function buildOtp(boxId, onFull) {
+    const box = $(boxId); box.innerHTML = '';
+    const ins = Array.from({ length: 6 }, (_, i) => { const x = document.createElement('input'); x.inputMode = 'numeric'; x.maxLength = 1; x.autocomplete = i ? 'off' : 'one-time-code'; x.setAttribute('aria-label', 'Dígito ' + (i + 1)); box.appendChild(x); return x; });
+    const val = () => ins.map(x => x.value).join('');
+    ins.forEach((x, i) => {
+      x.addEventListener('input', () => {
+        const d = x.value.replace(/\D/g, '');
+        if (d.length > 1) { d.slice(0, 6).split('').forEach((c, k) => { if (ins[i + k]) ins[i + k].value = c; }); ins[Math.min(5, i + d.length - 1)].focus(); }
+        else { x.value = d; if (d && ins[i + 1]) ins[i + 1].focus(); }
+        if (val().length === 6) onFull(val());
+      });
+      x.addEventListener('keydown', e => { if (e.key === 'Backspace' && !x.value && ins[i - 1]) { ins[i - 1].focus(); ins[i - 1].value = ''; } if (e.key === 'Enter' && val().length === 6) onFull(val()); });
+      x.addEventListener('paste', e => { const d = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6); if (d.length === 6) { e.preventDefault(); d.split('').forEach((c, k) => ins[k].value = c); onFull(d); } });
+    });
+    return { val, clear() { ins.forEach(x => x.value = ''); ins[0].focus(); }, shake() { box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake'); } };
+  }
+
+  /* Limite de tentativas: 5 erros → espera 30 s (no servidor real seria por aparelho/IP) */
+  function locked(id) { if (S.lockUntil && S.lockUntil > Date.now()) { msg(id, `Muitas tentativas erradas. Aguarde ${Math.ceil((S.lockUntil - Date.now()) / 1000)} s.`, 'err'); return true; } return false; }
+  function fail(id, t) { S.fails = (S.fails || 0) + 1; if (S.fails >= 5) { S.lockUntil = Date.now() + 30000; S.fails = 0; } save(S); msg(id, t, 'err'); }
+
+  /* 1. Chave */
+  async function doKey() {
+    if (locked('m-key')) return;
+    const k = $('in-key').value.trim();
+    if (!k) return msg('m-key', 'Digite a chave.', 'err');
+    if (await sha256(k) !== KEY_HASH) return fail('m-key', 'Chave incorreta.');
+    S.fails = 0; save(S); $('in-key').value = ''; msg('m-key', '');
+    if (!S.secret) return startSetup();
+    if (S.trustUntil && S.trustUntil > Date.now()) return done('Este aparelho é confiável: entrou só com a chave, sem pedir o código.');
+    show('code'); otpLogin.clear();
+  }
+  $('b-key').onclick = doKey;
+  $('in-key').addEventListener('keydown', e => { if (e.key === 'Enter') doKey(); });
+
+  /* 2. Configuração */
+  let pending = null;
+  function startSetup() {
+    pending = b32enc(rnd(20));
+    const label = encodeURIComponent(ISSUER + ':Felipe');
+    const uri = `otpauth://totp/${label}?secret=${pending}&issuer=${encodeURIComponent(ISSUER)}&algorithm=SHA1&digits=6&period=30`;
+    $('qr').innerHTML = '';
+    try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) { $('qr').textContent = 'QR indisponível'; }
+    $('otp-link').href = uri;
+    $('secret').textContent = pending.match(/.{1,4}/g).join(' ');
+    S.secret = null; S.pendingSecret = pending; save(S);
+    $('helper').hidden = false; tick();
+    show('setup'); $('helper').hidden = false; otpSetup.clear(); msg('m-setup', '');
+  }
+  $('b-copy-secret').onclick = () => navigator.clipboard?.writeText(pending).then(() => msg('m-setup', 'Código copiado. Cole no app autenticador.', 'ok'));
+  async function doSetup(code) {
+    code = code || otpSetup.val();
+    if (code.length !== 6) return msg('m-setup', 'Digite os 6 dígitos.', 'err');
+    if (!(await verify(pending, code))) { otpSetup.shake(); otpSetup.clear(); return msg('m-setup', 'Código não confere. Confira se leu o QR certo e digite o código atual.', 'err'); }
+    S.secret = pending; delete S.pendingSecret; S.codes = recCodes(); S.used = []; save(S);
+    $('codes').innerHTML = S.codes.map(c => `<div>${c}</div>`).join('');
+    $('ck-saved').checked = false; $('b-recovery').disabled = true;
+    show('recovery');
+  }
+  $('b-setup').onclick = () => doSetup();
+
+  /* 3. Códigos de recuperação */
+  $('ck-saved').onchange = e => $('b-recovery').disabled = !e.target.checked;
+  $('b-copy-codes').onclick = () => navigator.clipboard?.writeText('Códigos de recuperação — SIR COP REDE\n' + S.codes.join('\n')).then(() => msg('m-codes', 'Copiados', 'ok'));
+  $('b-recovery').onclick = () => { S.trustUntil = Date.now() + 30 * 864e5; save(S); done('Verificação em duas etapas ativada. Este aparelho fica liberado por 30 dias.'); };
+
+  /* 4. Entrar com código */
+  async function doCode(code) {
+    if (locked('m-code')) return;
+    code = code || otpLogin.val();
+    if (code.length !== 6) return msg('m-code', 'Digite os 6 dígitos.', 'err');
+    if (!(await verify(S.secret, code))) { otpLogin.shake(); otpLogin.clear(); return fail('m-code', 'Código incorreto ou expirado. Use o código que está aparecendo agora no app.'); }
+    S.fails = 0;
+    if ($('ck-trust').checked) S.trustUntil = Date.now() + 30 * 864e5;
+    save(S);
+    done($('ck-trust').checked ? 'Código aceito. Este aparelho fica liberado por 30 dias.' : 'Código aceito. Na próxima vez o código será pedido de novo.');
+  }
+  $('b-code').onclick = () => doCode();
+  $('b-back').onclick = () => show('key');
+  $('b-use-rec').onclick = () => { $('rec-box').hidden = !$('rec-box').hidden; if (!$('rec-box').hidden) $('in-rec').focus(); };
+  $('b-rec').onclick = () => {
+    if (locked('m-code')) return;
+    const c = $('in-rec').value.trim().toUpperCase().replace(/\s/g, '');
+    const i = (S.codes || []).indexOf(c);
+    if (i < 0 || (S.used || []).includes(c)) return fail('m-code', 'Código de recuperação inválido ou já usado.');
+    S.used.push(c); S.fails = 0; save(S); $('in-rec').value = ''; $('rec-box').hidden = true;
+    done(`Entrou com código de recuperação. Restam ${S.codes.length - S.used.length}. Na versão real, você poderia reconfigurar o app em seguida.`);
+  };
+
+  /* 5. Concluído */
+  function done(t) { $('done-txt').textContent = t; show('done'); }
+  $('b-next').onclick = () => show('key');
+  $('b-forget').onclick = () => { delete S.trustUntil; save(S); show('key'); };
+  $('b-reset').onclick = () => { if (!confirm('Apagar a configuração de teste deste navegador? (Remova também a conta "SIR COP REDE" do app autenticador.)')) return; localStorage.removeItem(LS); S = {}; show('key'); };
+
+  /* Código atual (só para conferir no teste) */
+  async function tick() {
+    const sec = S.secret || S.pendingSecret || pending;
+    if (sec && !$('helper').hidden) {
+      $('cur-code').textContent = (await totp(sec, nowStep())).replace(/(\d{3})/, '$1 ');
+      const left = 30 - Math.floor(Date.now() / 1000) % 30;
+      $('cur-time').textContent = `muda em ${left} s`; $('cur-bar').style.width = (left / 30 * 100) + '%';
+    }
+  }
+  setInterval(tick, 1000);
+
+  const otpSetup = buildOtp('otp-setup', c => doSetup(c));
+  const otpLogin = buildOtp('otp-login', c => doCode(c));
+
+  /* ── Administrador (simulação) ── */
+  if (!S.people) S.people = [
+    { n: 'Felipe (você)', s: 'on', d: 'Administrador · app configurado' },
+    { n: 'Exemplo — Equipe NO1', s: 'on', d: 'App configurado · último acesso hoje' },
+    { n: 'Exemplo — Equipe SU2', s: 'wait', d: 'Convite enviado · ainda não configurou' }
+  ];
+  function renderPeople() {
+    $('people').innerHTML = S.people.map((p, i) => `<div class="person"><b>${p.n.replace(/</g, '&lt;')}</b><span class="pill ${p.s}">${{ on: 'ATIVO', wait: 'PENDENTE', off: 'BLOQUEADO' }[p.s]}</span><small>${p.d}</small>
+      ${i ? `<div class="acts">${p.s === 'off' ? `<button class="btn small ghost" data-act="on" data-i="${i}">Reativar</button>` : `<button class="btn small ghost" data-act="off" data-i="${i}">Bloquear</button>`}<button class="btn small ghost" data-act="reset" data-i="${i}">Resetar app</button></div>` : ''}</div>`).join('');
+  }
+  $('people').onclick = e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const p = S.people[+b.dataset.i];
+    if (b.dataset.act === 'off') { p.s = 'off'; p.d = 'Bloqueado · não entra mais, mesmo com a chave'; }
+    if (b.dataset.act === 'on') { p.s = 'on'; p.d = 'Reativado'; }
+    if (b.dataset.act === 'reset') { p.s = 'wait'; p.d = 'Precisa configurar o app de novo (ex.: trocou de celular)'; }
+    save(S); renderPeople();
+  };
+  $('b-invite').onclick = () => {
+    const n = $('in-person').value.trim(); if (!n) return $('in-person').focus();
+    const tok = b32enc(rnd(10)).toLowerCase();
+    S.people.push({ n, s: 'wait', d: 'Convite enviado · ainda não configurou' }); save(S); renderPeople();
+    $('in-person').value = '';
+    $('invite').hidden = false;
+    $('invite').innerHTML = `Convite criado para <b>${n.replace(/</g, '&lt;')}</b>. Envie este link (vale por 48 h e só uma vez):<code>${location.origin}/sir/convite#${tok}</code>`;
+  };
+  renderPeople();
+
+  document.querySelector('.tabs').onclick = e => {
+    const b = e.target.closest('[data-tab]'); if (!b) return;
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+    $('tab-user').hidden = b.dataset.tab !== 'user'; $('tab-admin').hidden = b.dataset.tab !== 'admin';
+  };
+
+  show('key');
+})();
+</script>
+</body>
+</html>
