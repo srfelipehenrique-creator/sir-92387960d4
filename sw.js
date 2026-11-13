@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v35';
+const CACHE_NAME   = 'sir-v36';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -38,6 +38,7 @@ const SHELL_ASSETS = [
   'js/data-loader.js',
   'js/layout-v2.js',
   'js/charts-v2.js',
+  'js/events.js',
   'js/siglas.js',
   'js/nodes.js',
   'js/personalizacao.js',

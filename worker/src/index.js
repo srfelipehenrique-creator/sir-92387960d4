@@ -310,6 +310,37 @@ export class NotesStore {
 
       if (path === '/notes') return jsonPlain({ notes, at: now }, 200);
 
+      /* Associar tickets (evento / vide): grava o vínculo em vários tickets de uma vez
+         body: { op:'evset', ev:{id,n,k,pt,pi}, ids:[...], clear:[...] } */
+      if (String(body.op || '') === 'evset') {
+        const cl = s => String(s || '').slice(0, 300);
+        const ids = (Array.isArray(body.ids) ? body.ids : []).map(cl).filter(Boolean).slice(0, 200);
+        const clear = (Array.isArray(body.clear) ? body.clear : []).map(cl).filter(Boolean).slice(0, 200);
+        const e = body.ev || {};
+        const ev = ids.length ? {
+          id: String(e.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24),
+          n: String(e.n || '').trim().slice(0, 60),
+          k: e.k === 'vide' ? 'vide' : 'evento',
+          pt: String(e.pt || '').slice(0, 60),
+          pi: cl(e.pi)
+        } : null;
+        if (ev && (!ev.id || !ev.n)) return jsonPlain({ error: 'evento' }, 400);
+        const by = String(body.by || '').slice(0, 40);
+        const out = {};
+        for (const id of clear) {
+          const c = norm(notes[id]); if (!c) continue;
+          delete c.ev; c.at = now;
+          if (!c.list.length && c.st === 'none' && c.tag === 'none') delete notes[id]; else notes[id] = c;
+          out[id] = notes[id] || null;
+        }
+        for (const id of ids) {
+          const c = norm(notes[id]) || { list: [], st: 'none', tag: 'none' };
+          c.ev = { ...ev, by }; c.at = now; notes[id] = c; out[id] = c;
+        }
+        await this.state.storage.put('notesmap', notes);
+        return jsonPlain({ ok: true, notes: out }, 200);
+      }
+
       const id = String(body.id || '').slice(0, 300);
       if (!id) return jsonPlain({ error: 'id' }, 400);
       const by  = String(body.by || '').slice(0, 40);
@@ -338,7 +369,7 @@ export class NotesStore {
 
       cur.at = now;
       cur.list.sort((a, b) => a.at - b.at);
-      if (!cur.list.length && cur.st === 'none' && cur.tag === 'none') delete notes[id];
+      if (!cur.list.length && cur.st === 'none' && cur.tag === 'none' && !cur.ev) delete notes[id];
       else notes[id] = cur;
       await this.state.storage.put('notesmap', notes);
       return jsonPlain({ ok: true, note: notes[id] || null }, 200);

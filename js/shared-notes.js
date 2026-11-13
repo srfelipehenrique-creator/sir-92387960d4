@@ -47,7 +47,7 @@ function _snSetLocal(identity, patch) {
   if ('notes' in patch) next.obs = next.notes.length ? next.notes[next.notes.length - 1].t : '';
   const empty = !(next.notes && next.notes.length) && !next.obs
              && (!next.obsStatus || next.obsStatus === 'none')
-             && (!next.eventColor || next.eventColor === 'none');
+             && (!next.eventColor || next.eventColor === 'none') && !next.ev;
   if (empty) delete appState.ticketStates[identity]; else appState.ticketStates[identity] = next;
   _snSaveLocal();
 }
@@ -60,7 +60,7 @@ function _snApplyServer(id, n) {
   const list = Array.isArray(n.list) ? n.list : [];
   appState.ticketStates[id] = {
     ...cur, notes: list, obs: list.length ? list[list.length - 1].t : '',
-    obsStatus: n.st || 'none', eventColor: n.tag || 'none', ts: Date.now()
+    obsStatus: n.st || 'none', eventColor: n.tag || 'none', ev: n.ev || null, ts: Date.now()
   };
   _snServerIds.add(id);
 }

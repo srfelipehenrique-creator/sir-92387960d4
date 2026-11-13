@@ -152,7 +152,7 @@ const tagFilter = new Set();    /* chaves marcadas ('none' = sem classificação
 
 function _tfLabel() {
   if (!tagFilter.size) return 'Filtrar status';
-  if (tagFilter.size === 1) { const k = [...tagFilter][0]; return k === 'none' ? 'Sem classificação' : (getTicketTag(k)?.label || k); }
+  if (tagFilter.size === 1) { const k = [...tagFilter][0]; if (k.startsWith('ev:')) { const g = typeof evInList === 'function' && evInList().get(k.slice(3)); return g ? g.ev.n : 'Evento'; } return k === 'none' ? 'Sem classificação' : (getTicketTag(k)?.label || k); }
   return `Filtrar status (${tagFilter.size})`;
 }
 function _tfButton() {
@@ -162,7 +162,7 @@ function _tfButton() {
     b.type = 'button'; b.id = 'tag-filter-btn'; b.className = 'tag-filter-btn';
     b.addEventListener('click', e => { e.stopPropagation(); toggleTagFilterMenu(b); });
   }
-  b.innerHTML = `<span class="tf-dots">${[...tagFilter].filter(k => k !== 'none').slice(0, 4).map(k => `<i style="background:${getTicketTag(k).bg}"></i>`).join('')}</span><span class="tf-text">${escapeHtml(_tfLabel())}</span><span class="tf-caret">▾</span>`;
+  b.innerHTML = `<span class="tf-dots">${[...tagFilter].filter(k => getTicketTag(k) || k.startsWith('ev:')).slice(0, 4).map(k => `<i style="background:${getTicketTag(k) ? getTicketTag(k).bg : (typeof evColor === 'function' ? evColor(k.slice(3)) : '#38bdf8')}"></i>`).join('')}</span><span class="tf-text">${escapeHtml(_tfLabel())}</span><span class="tf-caret">▾</span>`;
   b.classList.toggle('on', tagFilter.size > 0);
   b.title = tagFilter.size ? 'Filtrando por classificação — clique para alterar' : 'Mostrar só as classificações escolhidas';
   return b;
@@ -186,7 +186,7 @@ function placeTagFilter() {
   if (host && b.parentNode !== host) host.appendChild(b);
   _tfButton();
   const cp = document.getElementById('btn-modal-copy-sel');
-  if (cp) { cp.disabled = !tagFilter.size; cp.title = tagFilter.size ? 'Copiar só os tickets das classificações selecionadas' : 'Selecione em "Filtrar status ▾" para usar'; }
+  if (cp) { cp.disabled = !tagFilter.size; cp.title = tagFilter.size ? 'Copiar só os tickets dos itens selecionados (classificações e eventos)' : 'Selecione em "Filtrar status ▾" para usar'; }
 }
 
 function applyTagFilter() {
