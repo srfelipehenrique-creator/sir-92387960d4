@@ -90,7 +90,7 @@ body.layout-v2 main#main-grid { display: block; }
 /* ── Regiões ── */
 .v2-regions { display: flex; flex-direction: column; gap: 12px; }
 .v2-region {
-  display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: stretch;
+  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: stretch;   /* largura cabe "INTERIOR" e "CAPITAL" */
 }
 .v2-region-head {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
