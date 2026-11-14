@@ -726,3 +726,34 @@ td.obs-cell { min-width: 180px; }
   .ev-sp { display: none; }
   .ev-btn { order: 3; }
 }
+
+/* ══ Aviso de dados parados ══ */
+.stale-banner {
+  display: flex; align-items: center; gap: 12px; margin: 0; padding: 10px 14px; border-radius: 10px;
+  background: rgba(245,197,24,.10); border: 1px solid rgba(245,197,24,.6); color: var(--text-main);
+  box-shadow: 0 0 14px rgba(245,197,24,.15);
+}
+.stale-banner.crit { background: rgba(255,90,90,.12); border-color: rgba(255,107,107,.75); box-shadow: 0 0 14px rgba(255,90,90,.18); }
+.stale-ic { font-size: 20px; flex: none; }
+.stale-txt { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 13px; line-height: 1.4; }
+.stale-txt b { font-size: 14px; color: #ffd84d; }
+.stale-banner.crit .stale-txt b { color: #ff8a8a; }
+.stale-txt span { color: var(--text-muted); }
+.stale-btn { flex: none; font: inherit; font-size: 11.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 7px 12px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text-main); border: 1px solid var(--line-strong); }
+.stale-btn:hover { border-color: var(--text-muted); }
+.stale-x { flex: none; width: 28px; height: 28px; border-radius: 6px; border: 0; background: transparent; color: var(--text-muted); font-size: 20px; line-height: 1; cursor: pointer; }
+:root[data-mode="light"] .stale-txt b { color: #8a6500; }
+:root[data-mode="light"] .stale-banner.crit .stale-txt b { color: #b42318; }
+@media (max-width: 640px) {
+  .stale-banner { flex-wrap: wrap; gap: 8px 10px; padding: 10px 12px; }
+  .stale-txt { flex-basis: calc(100% - 70px); }
+  .stale-btn { order: 3; flex: 1; }
+}
+/* Rodapé: idade dos dados */
+.data-age { font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); margin-right: 10px; white-space: nowrap; }
+.data-age.warn { color: #e0b100; font-weight: 700; }
+.data-age.crit { color: #ff6b6b; font-weight: 700; }
+@media (max-width: 640px) {
+  .page-footer { flex-wrap: wrap; justify-content: center; row-gap: 2px; }
+  .data-age { order: 6; margin: 0 6px; }
+}
