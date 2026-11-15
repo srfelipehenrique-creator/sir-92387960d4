@@ -108,8 +108,8 @@ function _ownSource() {
   } catch (e) { return null; }
 }
 const DATA_SRC_LABEL = {
-  coletor: ['Fonte: meu coletor', 'own'],
-  espelho: ['Fonte: meu servidor', 'mir'],
+  coletor: ['Fonte: meu servidor · coletor próprio', 'own'],
+  espelho: ['Fonte: meu servidor', 'own'],
   publica: ['Fonte: pública (reserva)', 'pub'],
 };
 function setDataSource(src, at) {
@@ -127,8 +127,7 @@ function setDataSource(src, at) {
   el.className = 'data-source ds-' + cls;
   el.title = src === 'publica'
     ? 'Seu servidor não respondeu (ou falta a chave neste aparelho). Usando a fonte pública como reserva.'
-    : (src === 'coletor' ? 'Dados coletados no SIR com o seu login' : 'Dados lidos do seu servidor (cópia da fonte pública)') + (at ? ' · última mudança ' + new Date(at).toLocaleString('pt-BR') : '') + ' — toque para ver detalhes';
-  el.setAttribute('role', 'button'); el.tabIndex = 0;
+    : 'Dados lidos do seu servidor' + (at ? ' · última mudança ' + new Date(at).toLocaleString('pt-BR') : '');
 }
 
 async function fetchAndParseInline(userSavedAreas) {
