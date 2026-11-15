@@ -46,25 +46,39 @@ function _colModal() {
       <div class="coletor-body">
         <div class="col-status" id="col-status">Consultando o servidor…</div>
 
-        <h4>Coletar com o meu login</h4>
-        <p class="col-p">Faça isto <b>no computador que abre o SIR da Claro</b>. Sua senha não é guardada: o coletor só usa a sessão em que você já entrou.</p>
+        <h4>Coletor para Windows — o jeito fácil</h4>
+        <p class="col-p">No <b>computador do trabalho</b> (o que abre o SIR da Claro):</p>
         <ol class="col-steps">
-          <li>Abra este dashboard nesse computador e toque em <b>Gerar meu código</b>.</li>
-          <li>Crie um <b>favorito</b> no navegador com o nome <b>Coletor SIR</b> e cole o código no campo de endereço (URL) do favorito.</li>
-          <li>Abra o SIR, faça login normalmente e clique no favorito <b>Coletor SIR</b>.</li>
-          <li>Vai abrir uma janelinha. <b>Deixe-a aberta</b> (pode minimizar): ela envia as RAL/REC a cada 5 minutos.</li>
+          <li>Abra este dashboard nele e toque em <b>Baixar coletor</b>.</li>
+          <li>Dê <b>dois cliques</b> no arquivo baixado <b>Coletor SIR.cmd</b>. Se o Windows avisar, clique em <b>Mais informações → Executar assim mesmo</b>.</li>
+          <li>Na janela preta, digite o seu <b>usuário e senha do SIR</b> (só na primeira vez, se pedir para lembrar).</li>
+          <li><b>Deixe a janela aberta</b> (pode minimizar). Ela envia as RAL/REC a cada 5 minutos. Não precisa deixar o SIR nem o navegador abertos.</li>
         </ol>
         <div class="col-actions">
-          <button type="button" class="col-btn col-btn-primary" id="col-gen">Gerar meu código</button>
-          <button type="button" class="col-btn" id="col-copy" hidden>Copiar código</button>
-          <a class="col-drag" id="col-drag" hidden title="Arraste para a barra de favoritos">Coletor SIR</a>
+          <button type="button" class="col-btn col-btn-primary" id="col-win">Baixar coletor</button>
+          <a href="#" class="col-alt" id="col-win-zip">O navegador bloqueou? Baixar em .zip</a>
         </div>
-        <textarea id="col-code" class="col-code" readonly hidden spellcheck="false"></textarea>
         <div class="col-note" id="col-note"></div>
-        <p class="col-p col-small">O código só serve para <b>enviar</b> dados ao seu servidor. Gerar um novo cancela o anterior. Com o coletor fechado por mais de 25 minutos, o servidor volta sozinho para a cópia da fonte pública.</p>
+        <p class="col-p col-small">O arquivo leva um código que só serve para <b>enviar</b> dados ao seu servidor. Baixar de novo cancela o código anterior. A senha só fica guardada se você pedir, criptografada pelo Windows para a sua conta. Com o coletor fechado por mais de 25 minutos, o servidor volta sozinho para a fonte pública.</p>
+
+        <details class="col-more">
+          <summary>Outro jeito: favorito no navegador</summary>
+          <ol class="col-steps">
+            <li>Toque em <b>Gerar código do favorito</b> e crie um favorito com esse código no endereço (URL).</li>
+            <li>Abra o SIR, faça login e, <b>estando na aba do SIR</b>, clique no favorito.</li>
+          </ol>
+          <div class="col-actions">
+            <button type="button" class="col-btn" id="col-gen">Gerar código do favorito</button>
+            <button type="button" class="col-btn" id="col-copy" hidden>Copiar código</button>
+            <a class="col-drag" id="col-drag" hidden title="Arraste para a barra de favoritos">Coletor SIR</a>
+          </div>
+          <textarea id="col-code" class="col-code" readonly hidden spellcheck="false"></textarea>
+        </details>
       </div>
     </div>`;
   document.body.appendChild(ov);
+  ov.querySelector('#col-win').addEventListener('click', () => _colWindows(false));
+  ov.querySelector('#col-win-zip').addEventListener('click', e => { e.preventDefault(); _colWindows(true); });
   ov.querySelector('#col-gen').addEventListener('click', _colGenerate);
   ov.querySelector('#col-copy').addEventListener('click', _colCopy);
   ov.querySelector('#col-drag').addEventListener('click', e => { e.preventDefault(); _colNote('Arraste este botão até a barra de favoritos (não clique aqui).'); });
@@ -93,14 +107,10 @@ async function _colRefreshStatus() {
 async function _colGenerate() {
   const btn = document.getElementById('col-gen');
   if (!_colUrl() || !_colKey()) { _colNote('Este aparelho ainda não tem a chave de acesso salva. Entre de novo pela tela de bloqueio e tente outra vez.', true); return; }
-  if (document.getElementById('col-code').value && !confirm('Gerar um código novo cancela o anterior (o favorito antigo para de funcionar). Continuar?')) return;
+  if (!confirm('Gerar o código do favorito cancela o código anterior (um coletor do Windows já baixado para de funcionar). Continuar?')) return;
   btn.disabled = true; _colNote('Gerando…');
   try {
-    const r = await fetch(_colUrl() + '/collector/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: _colKey() }) });
-    if (r.status === 403) throw new Error('chave');
-    const j = await r.json();
-    if (!j.token) throw new Error('resposta');
-    const code = _colBookmarklet(j.token);
+    const code = _colBookmarklet(await _colToken());
     const ta = document.getElementById('col-code');
     ta.value = code; ta.hidden = false;
     document.getElementById('col-copy').hidden = false;
@@ -114,6 +124,56 @@ async function _colGenerate() {
   }
   btn.disabled = false;
 }
+/* ── Coletor para Windows: arquivo .cmd pronto (o código do coletor já vai dentro) ── */
+async function _colToken() {
+  const r = await fetch(_colUrl() + '/collector/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: _colKey() }) });
+  if (r.status === 403) throw new Error('chave');
+  const j = await r.json();
+  if (!j.token) throw new Error('resposta');
+  return j.token;
+}
+async function _colWindows(zip) {
+  const btn = document.getElementById('col-win');
+  if (!_colUrl() || !_colKey()) { _colNote('Este aparelho ainda não tem a chave de acesso salva. Entre de novo pela tela de bloqueio e tente outra vez.', true); return; }
+  btn.disabled = true; _colNote('Preparando o coletor…');
+  try {
+    const tpl = await fetch('coletor/coletor-windows.ps1?v=' + Date.now(), { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('modelo'); return r.text(); });
+    const token = await _colToken();
+    const ps = tpl.replace("'__SIR_URL__'", "'" + _colUrl() + "'").replace("'__SIR_TOKEN__'", "'" + token + "'");
+    /* Arquivo "duplo": as primeiras linhas são para o Windows (cmd) e chamam o PowerShell,
+       que lê o resto deste mesmo arquivo. Nada para instalar. */
+    const head = [
+      '<# :',
+      '@echo off',
+      'title Coletor SIR',
+      'set "SIR_SELF=%~f0"',
+      'powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText($env:SIR_SELF, [Text.Encoding]::UTF8))"',
+      'echo.',
+      'echo O coletor parou. Feche esta janela ou aperte uma tecla.',
+      'pause >nul',
+      'exit /b',
+      '#>',
+      ''
+    ].join('\r\n');
+    const body = head + ps.replace(/\r?\n/g, '\r\n');
+    const bytes = new TextEncoder().encode(body);
+    let blob, name;
+    if (zip && typeof JSZip !== 'undefined') {
+      const z = new JSZip(); z.file('Coletor SIR.cmd', bytes);
+      blob = await z.generateAsync({ type: 'blob' }); name = 'Coletor SIR.zip';
+    } else { blob = new Blob([bytes], { type: 'application/octet-stream' }); name = 'Coletor SIR.cmd'; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    _colNote(zip ? 'Baixado. Abra o .zip, tire o "Coletor SIR.cmd" de dentro e dê dois cliques nele.' : 'Baixado. Dê dois cliques em "Coletor SIR.cmd" (na pasta Downloads).');
+    _colRefreshStatus();
+  } catch (e) {
+    _colNote(e.message === 'chave' ? 'A chave de acesso deste aparelho não foi aceita.' : 'Não consegui preparar o coletor. Tente de novo em instantes.', true);
+  }
+  btn.disabled = false;
+}
+
 async function _colCopy() {
   const ta = document.getElementById('col-code');
   try { await navigator.clipboard.writeText(ta.value); }
