@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Aviso de dados parados
-   A fonte normal atualiza a cada ~6 min. Se passar de 20 min sem
+   Os dados chegam a cada ~5 min. Se passar de 20 min sem
    nenhuma atualização, aparece uma faixa no topo do painel:
      amarela  → 20 min ou mais
      vermelha → 60 min ou mais
@@ -68,9 +68,9 @@ async function updateStaleWarning() {
   bar.innerHTML = `
     <span class="stale-ic" aria-hidden="true">${level === 'crit' ? '⛔' : '⚠️'}</span>
     <div class="stale-txt"><b>Dados sem atualizar ${_staleAgo(min)}</b>
-      <span>Última atualização: ${hhmm}. A fonte normal atualiza a cada ~6 min — os números podem estar desatualizados.</span></div>
-    <button type="button" class="stale-btn" id="stale-reload">Atualizar agora</button>
-    ${typeof openColetor === 'function' ? '<button type="button" class="stale-btn" id="stale-coletor">Usar meu coletor</button>' : ''}
+      <span>Os números na tela são de ${hhmm}. Para voltar a atualizar, ligue o seu coletor.</span></div>
+    ${typeof openColetor === 'function' ? '<button type="button" class="stale-btn stale-btn-main" id="stale-coletor">Ligar meu coletor</button>' : ''}
+    <button type="button" class="stale-btn" id="stale-reload">Tentar de novo</button>
     <button type="button" class="stale-x" id="stale-x" aria-label="Fechar aviso" title="Fechar (volta se piorar)">&times;</button>`;
   bar.querySelector('#stale-reload').onclick = () => { _staleGh.checked = 0; if (typeof loadNow === 'function') loadNow(); else location.reload(); };
   const colBtn = bar.querySelector('#stale-coletor');

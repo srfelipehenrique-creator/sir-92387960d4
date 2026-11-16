@@ -1,16 +1,17 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w1)
+#  Coletor SIR para Windows  (versão w2)
 #  - Dois cliques no arquivo "Coletor SIR.cmd" e pronto.
 #  - Entra no SIR com o SEU usuário e senha, lê as listas de RAL e REC
 #    e envia ao seu servidor a cada 5 minutos, enquanto a janela estiver aberta.
 #  - Não precisa instalar nada, nem favorito, nem deixar o navegador aberto.
-#  - A senha só fica guardada se você pedir, e criptografada pelo Windows
+#  - O login fica guardado criptografado pelo Windows
 #    (só a sua conta, neste computador, consegue abrir).
+#  - Na 1ª vez cria o ícone "Coletor SIR" na Área de Trabalho.
 #  Linhas trocadas pelo SIR Dashboard ao baixar: __SIR_URL__ e __SIR_TOKEN__
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w1'
+$VERSAO   = 'w2'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $BASE     = 'http://172.30.130.133'
@@ -47,15 +48,14 @@ function Ler-Login([bool]$forcar) {
     return New-Object PSCredential($env:SIR_USER, (ConvertTo-SecureString $env:SIR_PASS -AsPlainText -Force))
   }
   Write-Host ''
-  Write-Host 'Entre com o seu login do SIR (o mesmo da tela do SIR):' -ForegroundColor Cyan
+  Write-Host '  Digite o seu login do SIR (o mesmo que você usa na tela do SIR)' -ForegroundColor Cyan
+  Write-Host '  e aperte ENTER depois de cada um. A senha não aparece enquanto você digita.' -ForegroundColor Cyan
+  Write-Host ''
   $u = Read-Host '  Usuário'
   $p = Read-Host '  Senha' -AsSecureString
   $c = New-Object PSCredential($u.Trim(), $p)
-  $r = Read-Host '  Lembrar neste computador para não perguntar de novo? (S/N)'
-  if ($r -match '^[sS]') {
-    try { $c | Export-Clixml -Path $ARQ_LOGIN; Ok 'Login guardado (criptografado pelo Windows, só para a sua conta).' }
-    catch { Aviso 'Não consegui guardar o login; vou perguntar de novo da próxima vez.' }
-  } elseif (Test-Path $ARQ_LOGIN) { Remove-Item $ARQ_LOGIN -Force }
+  # Fica guardado só neste computador, protegido pelo Windows, para não perguntar de novo
+  try { $c | Export-Clixml -Path $ARQ_LOGIN } catch {}
   return $c
 }
 function Senha-Texto($c) { return $c.GetNetworkCredential().Password }
@@ -259,26 +259,54 @@ function Enviar($ral, $rec) {
 function Explicar([string]$e) {
   $tipo = $e.Split(':')[0]
   switch ($tipo) {
-    'login'    { return 'Usuário ou senha do SIR não aceitos. Vou pedir de novo.' }
+    'login'    { return 'O SIR não aceitou o usuário ou a senha. Digite de novo.' }
     'estrutura'{ return "A tela do SIR está diferente do esperado ($e). Envie o arquivo diagnostico.txt para o Claude ajustar." }
     'formato'  { return "A lista veio com colunas diferentes ($e). Envie o arquivo diagnostico.txt para o Claude ajustar." }
     'vazio'    { return "A lista ($e) veio vazia. Tento de novo na próxima coleta." }
     'servidor' {
-      if ($e -eq 'servidor:codigo') { return 'O código deste coletor não vale mais (foi gerado outro). Baixe o coletor de novo no SIR Dashboard.' }
+      if ($e -eq 'servidor:codigo') { return 'Este coletor ficou antigo. Abra o painel, vá em Configurações > Dados > Meu coletor e baixe de novo.' }
       return "Não consegui entregar ao seu servidor ($e). A rede pode estar bloqueando workers.dev."
     }
-    default    { return "Falha: $e" }
+    default    { return "Não consegui abrir o SIR. Confira se a VPN da Claro está ligada; tento de novo sozinho. ($e)" }
   }
+}
+
+# ─────────── Atalho na Área de Trabalho (para os próximos dias) ───────────
+function Instalar-Atalho {
+  $dest = Join-Path $PASTA 'Coletor SIR.cmd'
+  try {
+    $self = $env:SIR_SELF
+    if (-not $self -or -not (Test-Path -LiteralPath $self)) { return }
+    if ([IO.Path]::GetFullPath($self) -ne [IO.Path]::GetFullPath($dest)) { Copy-Item -LiteralPath $self -Destination $dest -Force }
+  } catch { return }
+  try {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk) { return }
+    $sh = New-Object -ComObject WScript.Shell
+    $a = $sh.CreateShortcut((Join-Path $desk 'Coletor SIR.lnk'))
+    $a.TargetPath = $dest; $a.WorkingDirectory = $PASTA
+    $a.Description = 'Coletor SIR - envia RAL e REC para o seu painel'
+    $a.Save()
+    $script:TemAtalho = $true
+  } catch {}
 }
 
 # ─────────── Início ───────────
 Clear-Host
-Write-Host '══════════════════════════════════════════════' -ForegroundColor Cyan
-Write-Host '  COLETOR SIR  ·  RAL e REC para o seu painel' -ForegroundColor Cyan
-Write-Host '══════════════════════════════════════════════' -ForegroundColor Cyan
-Write-Host '  Deixe esta janela aberta (pode minimizar).'
-Write-Host '  Ela coleta e envia a cada 5 minutos. Para parar, feche a janela.'
-if ($SRV_TOK -like '__*') { Erro 'Este arquivo não tem o código do coletor. Baixe-o pelo SIR Dashboard.'; return }
+Write-Host ''
+Write-Host '  ==============================================' -ForegroundColor Cyan
+Write-Host '   COLETOR SIR' -ForegroundColor Cyan
+Write-Host '   Leva as RAL e REC do SIR para o seu painel' -ForegroundColor Cyan
+Write-Host '  ==============================================' -ForegroundColor Cyan
+Write-Host ''
+Write-Host '   1. A VPN da Claro precisa estar ligada.'
+Write-Host '   2. DEIXE ESTA JANELA ABERTA (pode minimizar).'
+Write-Host '   3. Para desligar o coletor, feche esta janela.'
+Write-Host ''
+if ($SRV_TOK -like '__*') { Erro 'Este arquivo está incompleto. Baixe o coletor de novo pelo SIR Dashboard.'; return }
+$script:TemAtalho = $false
+Instalar-Atalho
+if ($script:TemAtalho) { Ok 'Criei o ícone "Coletor SIR" na sua Área de Trabalho. Nos próximos dias, é só dar dois cliques nele.' }
 
 $cred = Ler-Login $false
 $logado = $false; $envios = 0; $falhas = 0
@@ -295,7 +323,7 @@ while ($true) {
     $j = Enviar $ral.Csv $rec.Csv
     $envios++; $falhas = 0
     $novos = if ($j.novos) { " · $($j.novos) ticket(s) novo(s)" } else { '' }
-    Ok "Entregue! RAL $($ral.N) · REC $($rec.N)$novos  (envios: $envios)"
+    Ok "FUNCIONANDO - painel atualizado: $($ral.N) RAL e $($rec.N) REC$novos"
   } catch {
     $msg = "$($_.Exception.Message)"
     $falhas++; $diag.erro = $msg; $diag.trilha = $script:Trilha
@@ -305,7 +333,9 @@ while ($true) {
     try { ($diag | ConvertTo-Json) | Set-Content -Path $ARQ_DIAG -Encoding UTF8; Info "Diagnóstico salvo em $ARQ_DIAG (sem dados de tickets nem senha)" } catch {}
   }
   if ($env:SIR_UMA_VEZ) { break }            # só para testes
-  $prox = (Get-Date).AddSeconds($INTERVALO).ToString('HH:mm')
-  Info "Próxima coleta às $prox."
-  Start-Sleep -Seconds $INTERVALO
+  if ($falhas -gt 0 -and "$msg" -eq 'login') { continue }      # login corrigido: tenta na hora
+  $espera = if ($falhas -gt 0) { 60 } else { $INTERVALO }       # depois de uma falha, tenta de novo em 1 minuto
+  $prox = (Get-Date).AddSeconds($espera).ToString('HH:mm')
+  if ($falhas -gt 0) { Info "Tento de novo às $prox." } else { Info "Próxima atualização às $prox. Pode minimizar esta janela." }
+  Start-Sleep -Seconds $espera
 }

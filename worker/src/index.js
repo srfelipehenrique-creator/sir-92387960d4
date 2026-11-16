@@ -202,7 +202,7 @@ async function processData(env, ralTxt, recTxt, src) {
   const fresh = state ? tickets.filter(t => !known.has(idOf(t))) : [];   /* 1ª execução: só memoriza */
 
   /* Se não conseguir gravar o estado, não envia nada (evita avisar o mesmo ticket de novo) */
-  try { await env.SIR_KV.put('state', JSON.stringify({ fp, dfp: fp, ids, at: ts, src })); }
+  try { await env.SIR_KV.put('state', JSON.stringify({ fp, dfp: fp, ids, at: ts, src, pfp: src === 'espelho' ? fp : lastPublicFp(state) })); }
   catch (e) { return { changed: true, erro: 'kv' }; }
   if (!fresh.length) return { changed: true, novos: 0, fonte: src };
 
@@ -225,6 +225,12 @@ async function processData(env, ralTxt, recTxt, src) {
 }
 
 /* ─────────────────────────── Verificação periódica ─────────────────────────── */
+/* Impressão digital do último conteúdo visto na fonte pública */
+function lastPublicFp(state) {
+  if (!state) return null;
+  return state.pfp || (state.src !== 'coletor' ? state.fp : null);
+}
+
 async function check(env) {
   const ts = Date.now();
   /* Seu coletor está ativo → ele mesmo entrega os dados; não usa a fonte pública */
@@ -233,6 +239,19 @@ async function check(env) {
 
   const [ralTxt, recTxt] = await Promise.all(Object.values(CSV_URLS).map(u =>
     fetch(`${u}?_=${ts}`, { cf: { cacheTtl: 0 } }).then(r => { if (!r.ok) throw new Error('CSV ' + r.status); return r.text(); })));
+
+  /* A fonte pública só entra se ELA mudou desde a última vez que foi vista.
+     Parada (mesmo conteúdo de antes), ela nunca troca dados mais novos do seu
+     coletor por dados velhos — nem dispara avisos de tickets antigos. */
+  const state = (await env.SIR_KV.get('state', 'json')) || null;
+  const fp = await sha256Hex(ralTxt + '\u0001' + recTxt);
+  const last = lastPublicFp(state);
+  if (state && last === fp) return { changed: false, fonte: state.src || 'espelho', publica: 'sem mudança' };
+  if (state && state.src === 'coletor' && !last) {
+    /* 1ª vez que vê a fonte pública depois do coletor: só memoriza */
+    try { await env.SIR_KV.put('state', JSON.stringify({ ...state, pfp: fp })); } catch (e) {}
+    return { changed: false, fonte: 'coletor', publica: 'memorizada' };
+  }
   return processData(env, ralTxt, recTxt, 'espelho');
 }
 
@@ -423,12 +442,15 @@ export default {
        /ingest {key, ral, rec, by} → recebe os CSVs do SEU coletor e passa a usá-los como fonte */
     /* Código do coletor: um segredo separado, que só serve para ENVIAR dados (/ingest).
        Assim a chave de acesso do SIR nunca precisa ficar na máquina que coleta.
-       Gerar um novo invalida o anterior. Só o hash fica guardado. */
+       Só os hashes ficam guardados. */
     if (req.method === 'POST' && url.pathname === '/collector/token') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       const token = b64u(crypto.getRandomValues(new Uint8Array(24)));
-      await env.SIR_KV.put('ingest_tok', JSON.stringify({ hash: await sha256Hex(token), at: Date.now() }));
+      /* Valem os 5 códigos mais recentes: baixar o coletor de novo não derruba o que já está rodando */
+      const prev = await env.SIR_KV.get('ingest_tok', 'json');
+      const hashes = [await sha256Hex(token), ...((prev && (prev.hashes || (prev.hash ? [prev.hash] : []))) || [])].slice(0, 5);
+      await env.SIR_KV.put('ingest_tok', JSON.stringify({ hashes, at: Date.now() }));
       return json({ ok: true, token }, 200, h);
     }
 
@@ -437,7 +459,8 @@ export default {
       let allowed = await authorized(env, body.key);
       if (!allowed && url.pathname === '/ingest' && typeof body.token === 'string' && body.token.length >= 20) {
         const tk = await env.SIR_KV.get('ingest_tok', 'json');
-        allowed = !!(tk && tk.hash === await sha256Hex(body.token));
+        const th = await sha256Hex(body.token);
+        allowed = !!(tk && ((tk.hashes || []).includes(th) || tk.hash === th));
       }
       if (!allowed) return json({ error: 'chave' }, 403, h);
 
