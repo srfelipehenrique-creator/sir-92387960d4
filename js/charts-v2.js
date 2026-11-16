@@ -1,18 +1,24 @@
 /* ══════════════════════════════════════════════════════════════
-   Gráficos do layout novo (abaixo das regiões)
-   - Esquerda: quantidade de RAL por área (CF) — colunas
-   - Direita:  quantidade de REC por área (CF)
-   Mostra as mesmas áreas do painel (todas ou só as suas).
-   Tocar num ponto abre a lista daquela área.
-   Desenho próprio em SVG (sem biblioteca externa → funciona offline).
+   Gráficos do layout novo — um par (RAL e REC) dentro de cada grupo
+   de áreas (ES, Interior, Capital)
+   - Mostra as áreas daquele grupo; em "Só minhas áreas", só as áreas
+     selecionadas de cada grupo.
    - Cada coluna segue a mesma regra de cor dos cards, pela quantidade:
-     1–5 verde · 6–9 amarelo · 10+ vermelho (a legenda fica em cada gráfico).
-   - O botão "Encolher / Expandir" esconde ou mostra os dois gráficos;
-     a escolha fica salva neste aparelho ('sir_charts_collapsed').
+     1–5 verde · 6–9 amarelo · 10+ vermelho (legenda em cada gráfico).
+   - Cada grupo tem o seu botão "Encolher / Expandir" o gráfico; a
+     escolha fica salva neste aparelho ('sir_charts_groups').
+   - Tocar numa coluna abre a lista daquela área.
+   Desenho próprio em SVG (sem biblioteca externa → funciona offline).
    ══════════════════════════════════════════════════════════════ */
 
-const LS_CHARTS_COLLAPSED = 'sir_charts_collapsed';
-function chartsCollapsed() { try { return localStorage.getItem(LS_CHARTS_COLLAPSED) === '1'; } catch (e) { return false; } }
+const LS_CHARTS_COLLAPSED = 'sir_charts_collapsed';   /* escolha antiga (todos os gráficos) */
+const LS_CHARTS_GROUPS    = 'sir_charts_groups';      /* { "ES": true, ... } → encolhido */
+function _chartsGroups() { try { const v = JSON.parse(localStorage.getItem(LS_CHARTS_GROUPS) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function chartsCollapsed(rn) {
+  const g = _chartsGroups();
+  if (rn in g) return !!g[rn];
+  try { return localStorage.getItem(LS_CHARTS_COLLAPSED) === '1'; } catch (e) { return false; }
+}
 /* Cor da coluna pela quantidade — mesma regra dos cards (_sev) */
 function _v2ChartSev(v) { return v >= 10 ? 'crit' : v >= 6 ? 'warn' : 'ok'; }
 let _v2ChartData = null;
@@ -24,7 +30,7 @@ function _v2ChartAreas(ralR, recR) {
   for (const [rn, cfs] of Object.entries(REGIONS)) {
     for (const cf of Object.keys(cfs)) {
       if (scope === 'mine' && !areas.includes(cf)) continue;
-      out.push({ cf, ral: ralR[rn].items[cf] || 0, rec: recR[rn].items[cf] || 0, mine: areas.includes(cf) && scope === 'all' });
+      out.push({ rn, cf, ral: ralR[rn].items[cf] || 0, rec: recR[rn].items[cf] || 0, mine: areas.includes(cf) && scope === 'all' });
     }
   }
   return out;
@@ -38,11 +44,11 @@ function _niceMax(v) {
   return m * p * 4;
 }
 
-function _v2ChartSVG(tk, rows, width) {
+function _v2ChartSVG(tk, rows, width, uid) {
   const W = Math.max(260, Math.round(width));
   /* Pouco espaço por área (celular) → nomes inclinados, todos visíveis */
   const tilt = rows.length && (W - 40) / rows.length < 26;
-  const H = 210, padL = 30, padR = 10, padT = 18, padB = tilt ? 36 : 26;
+  const H = 168, padL = 30, padR = 10, padT = 18, padB = tilt ? 36 : 26;
   const vals = rows.map(r => r[tk]);
   const max = _niceMax(Math.max(1, ...vals));
   const n = rows.length;
@@ -51,7 +57,7 @@ function _v2ChartSVG(tk, rows, width) {
   const x = i => padL + band * (i + 0.5);                          /* centro da coluna */
   const bw = Math.max(6, Math.min(34, band * 0.62));               /* largura da coluna */
   const y = v => padT + ih - (v / max) * ih;
-  const id = 'g' + tk;
+  const id = 'g' + tk + (uid || '');
 
   /* Um degradê por faixa de quantidade (verde, amarelo, vermelho) */
   let g = `<defs>${['ok', 'warn', 'crit'].map(sv => `<linearGradient id="${id}${sv}" x1="0" y1="0" x2="0" y2="1">
@@ -93,51 +99,52 @@ function _v2ChartSVG(tk, rows, width) {
 }
 
 function renderV2Charts() {
-  const box = document.getElementById('v2-charts');
-  if (!box || !_v2ChartData) return;
-  const rows = _v2ChartData;
-  const totRal = rows.reduce((s, r) => s + r.ral, 0), totRec = rows.reduce((s, r) => s + r.rec, 0);
-  const sum = document.getElementById('v2-charts-sum');
-  if (sum) sum.textContent = `RAL ${totRal} · REC ${totRec} · ${rows.length} área${rows.length === 1 ? '' : 's'}`;
-  if (chartsCollapsed()) return;               /* encolhido: nada para desenhar */
-  box.querySelectorAll('.v2-chart').forEach(card => {
-    const tk = card.dataset.tk;
-    const holder = card.querySelector('.v2-chart-body');
-    const w = holder.clientWidth || 400;
-    holder.innerHTML = rows.length ? _v2ChartSVG(tk, rows, w) : '<div class="v2-chart-empty">Nenhuma área para mostrar</div>';
-    card.querySelector('.v2-chart-sub').textContent = `${tk === 'ral' ? totRal : totRec} no total · ${rows.length} área${rows.length === 1 ? '' : 's'}`;
+  if (!_v2ChartData) return;
+  document.querySelectorAll('#main-grid .v2-reg-charts').forEach((box, gi) => {
+    const rn = box.dataset.regCharts;
+    if (chartsCollapsed(rn)) return;             /* encolhido: nada para desenhar */
+    const rows = _v2ChartData.filter(r => r.rn === rn);
+    box.querySelectorAll('.v2-chart').forEach(card => {
+      const tk = card.dataset.tk;
+      const holder = card.querySelector('.v2-chart-body');
+      const w = holder.clientWidth || 320;
+      holder.innerHTML = rows.length ? _v2ChartSVG(tk, rows, w, gi) : '<div class="v2-chart-empty">Nenhuma área para mostrar</div>';
+      const tot = rows.reduce((s, r) => s + r[tk], 0);
+      card.querySelector('.v2-chart-sub').textContent = `${tot} no total · ${rows.length} área${rows.length === 1 ? '' : 's'}`;
+    });
   });
 }
 
-function _v2ChartsShell() {
-  const c = chartsCollapsed();
+/* Gráficos de um grupo (ficam logo abaixo dos cards das áreas do grupo) */
+function _v2RegionChartsShell(rn) {
+  const c = chartsCollapsed(rn), name = escapeHtml(rn);
   const legend = `<span class="v2-legend v2-chart-legend" aria-label="Cores por quantidade">
       <span><i class="v2-dot v2-dot-ok"></i>1–5</span><span><i class="v2-dot v2-dot-warn"></i>6–9</span><span><i class="v2-dot v2-dot-crit"></i>10+</span></span>`;
-  const card = (tk, title) => `<div class="v2-chart" data-tk="${tk}"><div class="v2-chart-head"><span class="v2-chart-title">${title}</span>${legend}<span class="v2-chart-sub"></span></div><div class="v2-chart-body"></div></div>`;
-  return `<section class="v2-charts-wrap${c ? ' is-collapsed' : ''}" id="v2-charts-wrap">
-    <div class="v2-charts-bar">
-      <span class="v2-charts-ttl">Gráficos por área</span>
-      <span class="v2-charts-sum" id="v2-charts-sum"></span>
-      <button type="button" class="v2-charts-toggle" id="v2-charts-toggle" onclick="toggleV2Charts()" aria-expanded="${!c}" aria-controls="v2-charts">${_v2ChartsToggleLabel(c)}</button>
-    </div>
-    <section class="v2-charts" id="v2-charts"${c ? ' hidden' : ''}>
+  const card = (tk, title) => `<div class="v2-chart" data-tk="${tk}"><div class="v2-chart-head"><span class="v2-chart-title">${title} · ${name}</span>${legend}<span class="v2-chart-sub"></span></div><div class="v2-chart-body"></div></div>`;
+  return `<div class="v2-charts v2-reg-charts" data-reg-charts="${name}"${c ? ' hidden' : ''}>
       ${card('ral', 'RAL por área')}
       ${card('rec', 'REC por área')}
-    </section>
-  </section>`;
+    </div>`;
 }
-function _v2ChartsToggleLabel(collapsed) { return collapsed ? '▸ Expandir gráficos' : '▾ Encolher gráficos'; }
+function _v2ChartsToggleLabel(collapsed) { return collapsed ? '▸ Expandir gráfico' : '▾ Encolher gráfico'; }
+function _v2RegionToggleBtn(rn) {
+  const c = chartsCollapsed(rn), name = escapeHtml(rn);
+  return `<button type="button" class="v2-charts-toggle" data-reg-toggle="${name}" aria-expanded="${!c}" title="Encolher ou expandir o gráfico do grupo ${name}">${_v2ChartsToggleLabel(c)}</button>`;
+}
 
-/* Encolhe ou expande os dois gráficos */
-function toggleV2Charts() {
-  const c = !chartsCollapsed();
-  try { localStorage.setItem(LS_CHARTS_COLLAPSED, c ? '1' : '0'); } catch (e) {}
-  const wrap = document.getElementById('v2-charts-wrap'), box = document.getElementById('v2-charts'), btn = document.getElementById('v2-charts-toggle');
-  if (wrap) wrap.classList.toggle('is-collapsed', c);
+/* Encolhe ou expande o gráfico de um grupo */
+function toggleV2Charts(rn) {
+  const c = !chartsCollapsed(rn), g = _chartsGroups();
+  g[rn] = c;
+  try { localStorage.setItem(LS_CHARTS_GROUPS, JSON.stringify(g)); } catch (e) {}
+  const sec = [...document.querySelectorAll('#main-grid .v2-region')].find(s => s.dataset.region === rn);
+  if (!sec) return;
+  const box = sec.querySelector('.v2-reg-charts'), btn = sec.querySelector('[data-reg-toggle]');
   if (box) box.hidden = c;
   if (btn) { btn.textContent = _v2ChartsToggleLabel(c); btn.setAttribute('aria-expanded', String(!c)); }
   if (!c) renderV2Charts();
 }
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-reg-toggle]'); if (b) toggleV2Charts(b.dataset.regToggle); });
 
 /* Desenha os gráficos sempre que o painel (layout novo) é redesenhado */
 if (typeof renderDashboardV2 === 'function') {
@@ -146,8 +153,6 @@ if (typeof renderDashboardV2 === 'function') {
     const r = _rdv2.apply(this, arguments);
     try {
       _v2ChartData = _v2ChartAreas(ralR, recR);
-      const grid = document.getElementById('main-grid');
-      grid.insertAdjacentHTML('beforeend', _v2ChartsShell());
       renderV2Charts();
     } catch (e) { console.warn('gráficos', e); }
     return r;

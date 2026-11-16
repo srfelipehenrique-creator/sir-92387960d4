@@ -919,21 +919,26 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: #b9a5ff; }
   body.layout-v2 .inbox-section:has(#inbox-notify:not(:empty)) { max-height: none; }
 }
 
-/* ══ v42 — Gráficos: cores por quantidade + encolher/expandir ══ */
-.v2-charts-wrap { margin-top: 14px; }
-.v2-charts-wrap .v2-charts { margin-top: 8px; }
+/* ══ v43 — Gráficos dentro de cada grupo de áreas: cores por quantidade + encolher/expandir ══ */
+.v2-region-body { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.v2-reg-charts { margin-top: 0; }
 .v2-charts[hidden] { display: none; }
-.v2-charts-bar { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
-.v2-charts-ttl { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); }
-.v2-charts-sum { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
-.v2-charts-wrap:not(.is-collapsed) .v2-charts-sum { display: none; }
+.v2-reg-charts .v2-chart { padding: 10px 12px 6px; }
+.v2-reg-charts .v2-chart-title { font-size: 12.5px; }
 .v2-charts-toggle {
-  margin-left: auto; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
-  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line-strong);
-  background: var(--bg-panel-2); color: var(--text-main);
+  font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap; text-align: left;
+  margin-top: 8px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line-strong);
+  background: var(--bg-panel-2); color: var(--text-main); align-self: flex-start;
 }
 .v2-charts-toggle:hover { border-color: var(--accent); }
 .v2-chart-head { flex-wrap: wrap; align-items: center; row-gap: 4px; }
 .v2-chart-legend { margin: 0 auto 0 4px; gap: 10px; font-size: 10.5px; order: 0; width: auto; }
 .v2-chart-svg .g-zero { stroke: var(--text-muted); stroke-opacity: .3; }
-@media (max-width: 640px) { .v2-charts-toggle { padding: 8px 12px; } }
+@media (min-width: 641px) {
+  .v2-region { grid-template-columns: 132px minmax(0, 1fr); }   /* cabe o botão do gráfico */
+  .v2-region-head { justify-content: flex-start; padding-top: 6px; }
+}
+@media (max-width: 640px) {
+  .v2-region-head { flex-wrap: wrap; align-items: center; }
+  .v2-charts-toggle { margin: 0 0 0 auto; padding: 7px 10px; font-size: 11px; align-self: center; }
+}

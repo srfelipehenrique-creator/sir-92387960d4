@@ -308,12 +308,18 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
     const tiles = cfKeys.map(cf =>
       _v2Tile(cf, ralR[rn].items[cf] || 0, recR[rn].items[cf] || 0, hasMine && scope === 'all' && areas.includes(cf))
     ).join('');
-    regions += `<section class="v2-region">
+    /* Cada grupo traz o seu gráfico (RAL e REC das áreas do grupo) e o botão de encolher */
+    const hasCharts = typeof _v2RegionChartsShell === 'function';
+    regions += `<section class="v2-region" data-region="${escapeHtml(rn)}">
       <div class="v2-region-head">
         <span class="v2-region-name">${escapeHtml(rn)}</span>
         <span class="v2-region-count">${cfKeys.length} CF${cfKeys.length > 1 ? 's' : ''}</span>
+        ${hasCharts ? _v2RegionToggleBtn(rn) : ''}
       </div>
-      <div class="v2-tiles">${tiles}</div>
+      <div class="v2-region-body">
+        <div class="v2-tiles">${tiles}</div>
+        ${hasCharts ? _v2RegionChartsShell(rn) : ''}
+      </div>
     </section>`;
   }
 
@@ -373,7 +379,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v42';
+const SIR_APP_VERSION = 'v43';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
