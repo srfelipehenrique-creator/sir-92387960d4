@@ -1,0 +1,262 @@
+/* ══════════════════════════════════════════════════════════════
+   v45 — Tela de tickets (RAL / REC / Qualidade) com o novo visual
+   Só aparência: todas as funções continuam as mesmas.
+   - Cabeçalho com ícone, título e subtítulo
+   - Botões com ícone (Copiar selecionados, Associar, Copiar todos)
+   - Abas e Cards/Lista em "pílulas"
+   - Busca com lupa + botão de opções (ordenar, filtrar status, CSV)
+   - Cartão do ticket: meta com ícones, botões Detalhes e Copiar
+   - Rodapé com a contagem de tickets
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --tk-blue: #3b72f0; --tk-blue-2: #2f5fd6; --tk-green: #2f9e5b; --tk-green-2: #27864d; --tk-r: 14px;
+  --ti-ticket: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z'/%3E%3Cpath d='M13 5v2M13 17v2M13 11v2'/%3E%3C/svg%3E");
+  --ti-copy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
+  --ti-users: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E");
+  --ti-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m8.5 12 2.5 2.5 4.5-5'/%3E%3C/svg%3E");
+  --ti-grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='1.5'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1.5'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1.5'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1.5'/%3E%3C/svg%3E");
+  --ti-table: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M3 9h18M3 15h18M9 3v18'/%3E%3C/svg%3E");
+  --ti-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E");
+  --ti-card: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'/%3E%3Cpath d='M2 10h20'/%3E%3C/svg%3E");
+  --ti-list: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'/%3E%3C/svg%3E");
+  --ti-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  --ti-sliders: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 5h-7M10 5H3M21 12h-9M8 12H3M21 19h-5M12 19H3M14 3v4M8 10v4M16 17v4'/%3E%3C/svg%3E");
+  --ti-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E");
+  --ti-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+  --ti-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Cpath d='M7.5 7.5h.01'/%3E%3C/svg%3E");
+  --ti-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E");
+  --ti-search-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b93a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  --ti-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
+  --ti-download: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 10l5 5 5-5M5 21h14'/%3E%3C/svg%3E");}
+
+/* Ícone genérico por máscara (acompanha a cor do texto) */
+#modal-overlay .modal-csv-btn::before,
+#modal-overlay .list-bar .v2-seg button::before,
+#modal-overlay .btn-ticket-det::before,
+#modal-overlay .btn-copy-ticket::before,
+#modal-overlay .btn-tk-opts::before,
+#modal-overlay .tk-foot::before,
+#modal-overlay .modal-title-group::before,
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(5)::before,
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7)::before,
+#modal-overlay.v2-cards .sla-badge::before {
+  content: ''; display: inline-block; flex: none; width: 1.15em; height: 1.15em;
+  background: currentColor; -webkit-mask: var(--ti) center / contain no-repeat; mask: var(--ti) center / contain no-repeat;
+}
+
+/* ── Cabeçalho ── */
+#modal-overlay .modal-title-group { flex-wrap: nowrap; align-items: center; min-width: 0; }
+#modal-overlay .modal-title-group::before { --ti: var(--ti-ticket); width: 28px; height: 28px; color: var(--text-main); opacity: .92; }
+#modal-overlay .modal-title { display: flex; flex-direction: column; min-width: 0; font-size: 16px; font-weight: 700; line-height: 1.25; overflow: visible; }
+#modal-overlay .modal-title .mt-sep { display: none; }
+#modal-overlay .modal-title .mt-sub { font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-top: 1px; }
+#modal-overlay .modal-close-btn {
+  width: 38px; height: 38px; border-radius: 50%; flex: none; font-size: 24px;
+  background: var(--bg-elevated); border: 1px solid var(--line-strong); color: var(--text-main);
+}
+#modal-overlay .modal-close-btn:hover { background: var(--bg-hover); }
+
+/* ── Botões de ação ── */
+#modal-overlay .modal-csv-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 38px; padding: 6px 14px; border-radius: var(--tk-r);
+  font-size: 12.5px; font-weight: 600; letter-spacing: .1px; text-transform: none; line-height: 1.15;
+  background: var(--bg-elevated); border: 1px solid var(--line-strong); color: var(--text-main);
+}
+#modal-overlay .modal-csv-btn::before { width: 18px; height: 18px; }
+#modal-overlay #btn-modal-csv::before { display: none; }
+#modal-overlay #btn-modal-copy-sel { color: var(--text-main) !important; border-color: var(--line-strong) !important; }
+#modal-overlay #btn-modal-copy-sel::before { --ti: var(--ti-copy); }
+#modal-overlay #btn-modal-assoc {
+  background: linear-gradient(180deg, var(--tk-blue), var(--tk-blue-2)) !important;
+  border-color: var(--tk-blue) !important; color: #fff !important; box-shadow: 0 4px 14px rgba(59,114,240,.28);
+}
+#modal-overlay #btn-modal-assoc::before { --ti: var(--ti-users); }
+#modal-overlay #btn-modal-assoc:hover { filter: brightness(1.08); }
+#modal-overlay #btn-modal-copy-all {
+  background: rgba(47,158,91,.20) !important; border-color: rgba(47,158,91,.55) !important; color: var(--text-main) !important;
+}
+#modal-overlay #btn-modal-copy-all::before { --ti: var(--ti-check); color: #34d27b; width: 20px; height: 20px; }
+#modal-overlay #btn-modal-copy-all:hover { background: rgba(47,158,91,.30) !important; }
+#modal-overlay .btn-copy-all.copied { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
+#modal-overlay .btn-copy-all.copied::before { color: #fff !important; }
+#modal-overlay .copy-btn { border-radius: var(--tk-r); text-transform: none; }
+
+/* ── Abas e Cards/Lista ── */
+#modal-overlay .list-bar { gap: 10px 12px; }
+#modal-overlay .list-bar .v2-seg { border-radius: var(--tk-r); padding: 4px; gap: 4px; }
+#modal-overlay .list-bar .v2-seg button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 36px; padding: 6px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+#modal-overlay .list-bar .v2-seg button::before { width: 16px; height: 16px; }
+#modal-overlay .list-tabs button[data-kind="ral"]::before  { --ti: var(--ti-grid); }
+#modal-overlay .list-tabs button[data-kind="rec"]::before  { --ti: var(--ti-table); }
+#modal-overlay .list-tabs button[data-kind="qual"]::before { --ti: var(--ti-star); }
+#modal-overlay .list-view button[data-view="cards"]::before { --ti: var(--ti-card); }
+#modal-overlay .list-view button[data-view="list"]::before  { --ti: var(--ti-list); }
+#modal-overlay .list-tabs button b { font-family: inherit; font-size: inherit; font-weight: inherit; margin-left: 0; opacity: 1; }
+#modal-overlay .list-tabs button b::before { content: '('; }
+#modal-overlay .list-tabs button b::after  { content: ')'; }
+#modal-overlay .list-tabs button[data-kind="ral"].on { background: linear-gradient(180deg, #ef4b4b, #dc3a3a); box-shadow: 0 4px 14px rgba(239,68,68,.30); }
+#modal-overlay .list-view button.on {
+  background: linear-gradient(180deg, var(--tk-blue), var(--tk-blue-2)); color: #fff; box-shadow: 0 4px 14px rgba(59,114,240,.28);
+}
+
+/* ── Busca + opções ── */
+#modal-overlay .modal-filter-bar { gap: 8px; }
+#modal-overlay .modal-filter-input { min-width: 0; }
+#modal-filter-bar .tag-filter-btn { margin-left: 0; min-width: 0; }
+#modal-overlay .modal-filter-input {
+  min-height: 42px; border-radius: var(--tk-r); padding: 8px 12px 8px 40px; font-family: var(--font-sans); font-size: 14px;
+  background-image: var(--ti-search-c); background-repeat: no-repeat; background-position: 12px center; background-size: 18px 18px;
+}
+#modal-overlay .btn-tk-opts {
+  position: relative; flex: none; width: 42px; height: 42px; border-radius: var(--tk-r); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-elevated); border: 1px solid var(--line-strong); color: var(--text-main);
+}
+#modal-overlay .btn-tk-opts::before { --ti: var(--ti-sliders); width: 20px; height: 20px; }
+#modal-overlay .modal-content.tk-opts-open .btn-tk-opts { border-color: var(--tk-blue); color: var(--tk-blue); background: rgba(59,114,240,.12); }
+/* Bolinha de aviso: há filtro de status ligado */
+#modal-overlay .modal-content:has(.tag-filter-btn.on) .btn-tk-opts::after {
+  content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%;
+  background: #f59e0b; border: 2px solid var(--bg-panel-2);
+}
+/* Sem modo cartões e em tela larga não há o que abrir */
+@media (min-width: 641px) { #modal-overlay:not(.v2-cards) .btn-tk-opts { display: none; } }
+/* Cartões: a barra Ordenar / Filtrar status abre pelo botão de opções */
+#modal-overlay.v2-cards .modal-content:not(.tk-opts-open) .data-table thead { display: none; }
+#modal-overlay.v2-cards .data-table thead th.sortable,
+#modal-overlay.v2-cards .tag-filter-btn { border-radius: var(--tk-r); }
+
+/* ── Cartão do ticket ── */
+#modal-overlay.v2-cards .data-table tbody { gap: 12px; padding: 12px; }
+#modal-overlay.v2-cards tr.ticket-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 8px;
+  padding: 14px 12px 14px 16px; border-radius: var(--tk-r);
+  background: var(--bg-panel-2); border: 1px solid var(--line-strong);
+}
+#modal-overlay.v2-cards tr.ticket-row[data-event-color="none"]:not([data-tag-on]) { box-shadow: inset 4px 0 0 var(--tk-blue); }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(1)  { order: 1; flex: none; align-self: center; padding-top: 0 !important; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(2)  { order: 2; flex: none; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(3)  { order: 3; flex: 1 1 0; min-width: 0; font-size: 16px; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(6)  { order: 4; flex: none; margin-left: auto; text-align: right; max-width: 46%; }
+#modal-overlay.v2-cards tr.ticket-row::before {
+  content: ''; order: 5; flex: 1 1 100%; height: 1px; background: var(--line-strong); margin: 4px 0 2px;
+}
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(5)  { order: 6; flex: none; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7)  { order: 7; flex: 1 1 0; min-width: 0; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(4)  { order: 8; flex: 1 1 100%; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(8)  { order: 9; flex: 1 1 0; min-width: 0; width: auto; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(9)  { order: 10; flex: none; align-self: flex-start; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(10) { order: 11; flex: 1 1 100%; display: flex; gap: 10px; margin-top: 4px; white-space: normal; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(n+11) { order: 12; }
+
+#modal-overlay.v2-cards .color-cycle-dot { width: 24px; height: 24px; }
+#modal-overlay.v2-cards tr.ticket-row .cf-tag { font-size: 12px; padding: 3px 10px; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(3),
+#modal-overlay.v2-cards tr.ticket-row .ticket-link { font-family: var(--font-sans); font-size: 16px; font-weight: 800; letter-spacing: 0; text-decoration: none; }
+#modal-overlay.v2-cards .sla-badge {
+  position: relative; display: inline-block; padding: 5px 10px 5px 29px; border-radius: 12px;
+  font-family: var(--font-sans); font-size: 11.5px; font-weight: 800; line-height: 1.25; text-align: center;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+}
+#modal-overlay.v2-cards .sla-badge::before { --ti: var(--ti-clock); position: absolute; left: 8px; top: 50%; margin-top: -8px; width: 16px; height: 16px; }
+#modal-overlay.v2-cards .sla-badge > span { font-family: var(--font-mono); font-size: 11px !important; font-weight: 600 !important; }
+
+/* Data · tipo */
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(5),
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7) {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+  font-size: 12.5px !important; font-weight: 500; letter-spacing: 0; text-transform: none; text-align: left;
+  color: var(--text-soft) !important; justify-self: auto;
+}
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(5)::before { --ti: var(--ti-calendar); width: 16px; height: 16px; color: var(--text-muted); }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7) { font-family: var(--font-sans); padding-left: 12px !important; border-left: 1px solid var(--line-strong) !important; overflow: hidden; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7)::before { --ti: var(--ti-tag); width: 16px; height: 16px; color: var(--text-muted); }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(7):empty { display: none; }
+/* Designação com o ponto verde */
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(4) {
+  position: relative; padding-left: 20px !important; font-size: 13.5px; color: var(--text-soft); word-break: break-word;
+}
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(4)::before {
+  content: ''; position: absolute; left: 3px; top: .45em; width: 9px; height: 9px; border-radius: 50%;
+  background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,.55);
+}
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(4):empty { display: none; }
+
+/* Nota e status: aparecem em "Detalhes" (ou sozinhos, quando já existe nota/status) */
+#modal-overlay.v2-cards tr.ticket-row:not(.tk-det-open) td.obs-cell:not(:has(.note-item, .obs-content, .obs-input-wrap)) { display: none; }
+#modal-overlay.v2-cards tr.ticket-row:not(.tk-det-open)[data-obs-status="none"] td.obs-status-col { display: none; }
+
+/* Botões do cartão */
+#modal-overlay .btn-ticket-det { display: none; }
+#modal-overlay.v2-cards .btn-ticket-det,
+#modal-overlay.v2-cards .btn-copy-ticket {
+  flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  font-family: var(--font-sans); font-size: 13.5px; font-weight: 600; letter-spacing: 0; text-transform: none;
+}
+#modal-overlay.v2-cards .btn-ticket-det { background: transparent; border: 1px solid var(--line-strong); color: var(--text-main); }
+#modal-overlay.v2-cards .btn-ticket-det::before { --ti: var(--ti-info); width: 18px; height: 18px; }
+#modal-overlay.v2-cards .btn-ticket-det:hover { background: var(--bg-hover); }
+#modal-overlay.v2-cards tr.tk-det-open .btn-ticket-det { border-color: var(--tk-blue); color: var(--tk-blue); background: rgba(59,114,240,.10); }
+#modal-overlay.v2-cards .btn-copy-ticket {
+  background: linear-gradient(180deg, #37a866, var(--tk-green-2)); border: 1px solid #3fb574; color: #fff !important;
+  box-shadow: 0 4px 14px rgba(47,158,91,.28);
+}
+#modal-overlay.v2-cards .btn-copy-ticket::before { --ti: var(--ti-copy); width: 18px; height: 18px; }
+#modal-overlay.v2-cards .btn-copy-ticket:hover { filter: brightness(1.08); background: linear-gradient(180deg, #37a866, var(--tk-green-2)); }
+#modal-overlay.v2-cards .btn-copy-ticket.copied { background: #16a34a; }
+#modal-overlay.trash-ro .btn-ticket-det { display: none !important; }
+#modal-overlay.trash-ro.v2-cards tr.ticket-row td.obs-cell,
+#modal-overlay.trash-ro.v2-cards tr.ticket-row td.obs-status-col { display: block !important; }
+
+/* ── Rodapé: contagem ── */
+#modal-overlay .tk-foot {
+  flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  width: calc(100% - 24px); margin: 8px 12px 10px; padding: 4px 12px 8px; cursor: pointer;
+  border-radius: var(--tk-r); background: var(--bg-panel-2); border: 1px solid var(--line-strong);
+  color: var(--text-muted); font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; letter-spacing: .3px;
+}
+#modal-overlay .tk-foot::before { --ti: var(--ti-chevron); width: 18px; height: 18px; }
+#modal-overlay .tk-foot:hover { color: var(--text-main); }
+
+/* ── Celular ── */
+@media (max-width: 640px) {
+  #modal-overlay .modal-header { padding: 14px 14px 12px; row-gap: 12px; column-gap: 8px; align-items: center; }
+  #modal-overlay .modal-title-group { flex: 1 1 calc(100% - 56px); gap: 12px; }
+  #modal-overlay .modal-title { font-size: 16px; -webkit-line-clamp: unset; }
+  #modal-overlay .modal-close-btn { margin: 0 0 0 auto; width: 40px; height: 40px; }
+  #modal-overlay .modal-tools > .modal-csv-btn { flex: 1 1 0; min-width: 0; min-height: 48px; padding: 6px 8px; font-size: 12.5px; text-align: left; white-space: normal; overflow: hidden; }
+  #modal-overlay #btn-modal-copy-sel { flex: 1.25 1 0; }
+  /* CSV fica nas opções (botão ao lado da busca) */
+  #modal-overlay .modal-content:not(.tk-opts-open) #btn-modal-csv { display: none; }
+  #modal-overlay #btn-modal-csv { flex: 1 1 100%; min-height: 38px; order: 4; }
+  #modal-overlay .list-bar { padding: 10px 14px; }
+  #modal-overlay .list-bar .v2-seg button { min-height: 40px; padding: 6px 6px; font-size: 13px; }
+  #modal-overlay .list-tabs .lt-long { display: none; }
+  #modal-overlay .modal-filter-bar { padding: 10px 14px; }
+  /* Cartão cabe o número inteiro do ticket ao lado do SLA */
+  #modal-overlay.v2-cards .data-table tbody { padding: 10px; gap: 10px; }
+  #modal-overlay.v2-cards tr.ticket-row { padding: 12px 10px 12px 14px; gap: 8px 6px; }
+  #modal-overlay.v2-cards .color-cycle-dot { width: 22px; height: 22px; }
+  #modal-overlay.v2-cards tr.ticket-row .cf-tag { font-size: 11px; padding: 2px 8px; }
+  #modal-overlay.v2-cards tr.ticket-row td:nth-child(3),
+  #modal-overlay.v2-cards tr.ticket-row .ticket-link { font-size: clamp(12.5px, 3.75vw, 16px); }
+  #modal-overlay.v2-cards .sla-badge.sla-lost { letter-spacing: 0; }
+  /* Lista: busca + opções na 1ª linha, Filtrar status na 2ª */
+  #modal-overlay .modal-filter-bar { flex-wrap: wrap; }
+  #modal-overlay .modal-filter-input { flex: 1 1 60%; }
+  #modal-overlay .btn-tk-opts { order: 2; }
+  #modal-filter-bar .tag-filter-btn { order: 3; margin-left: auto; }
+  #modal-overlay.v2-cards .sla-badge { font-size: 10.5px; padding: 4px 8px 4px 26px; }
+  #modal-overlay.v2-cards .sla-badge::before { left: 7px; width: 14px; height: 14px; margin-top: -7px; }
+  #modal-overlay.v2-cards .sla-badge > span { font-size: 10px !important; }
+}
+
+/* ── Tema claro ── */
+[data-mode="light"] #modal-overlay #btn-modal-copy-all::before { color: #15803d; }
+[data-mode="light"] #modal-overlay.v2-cards .btn-copy-ticket { color: #fff !important; background: linear-gradient(180deg, #2f9e5b, #27864d); border-color: #27864d !important; }
+[data-mode="light"] #modal-overlay.v2-cards tr.ticket-row td:nth-child(4)::before { background: #22c55e; box-shadow: none; }

@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v44';
+const CACHE_NAME   = 'sir-v45';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -9,6 +9,7 @@ const SHELL_ASSETS = [
   'assets/apple-touch-icon.png',
   'css/layout-v2.css',
   'css/mobile.css',
+  'css/tickets-ui.css',
   'css/theme-light.css',
   'css/theme-neon.css',
   'js/theme-mode.js',
@@ -40,6 +41,7 @@ const SHELL_ASSETS = [
   'js/charts-v2.js',
   'js/events.js',
   'js/lista-abas.js',
+  'js/tickets-ui.js',
   'js/lixeira.js',
   'js/stale.js',
   'js/siglas.js',

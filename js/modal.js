@@ -458,7 +458,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
         <td>${escapeHtml(item.extra)}</td>
         <td class="obs-cell">${buildObsHTML('')}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>
-        <td class="copy-col"><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
+        <td class="copy-col"><button type="button" class="btn-ticket-det" onclick="toggleTicketDetails(this)" title="Mostrar ou esconder nota e status do ticket" aria-expanded="false">Detalhes</button><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
       </tr>`;
     };
 

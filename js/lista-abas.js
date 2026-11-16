@@ -49,14 +49,14 @@ function renderListBar() {
   const key = appState.currentModalKey, base = listBase(key), kind = currentListKind();
   const hasTabs = modalData.ral[QKEY + base] !== undefined;
   const n = { ral: (modalData.ral[base] || []).length, rec: (modalData.rec[base] || []).length, qual: (modalData.ral[QKEY + base] || []).length };
-  const tab = (k, label) => `<button type="button" role="tab" data-kind="${k}" class="${kind === k ? 'on' : ''}" aria-selected="${kind === k}">${label} <b>${n[k]}</b></button>`;
+  const tab = (k, label) => `<button type="button" role="tab" data-kind="${k}" class="${kind === k ? 'on' : ''}" aria-selected="${kind === k}"><span class="lt-label">${label}</span> <b>${n[k]}</b></button>`;
   const view = getTicketView();
   bar.innerHTML =
-    (hasTabs ? `<div class="v2-seg list-tabs" role="tablist" aria-label="Tipo de ticket">${tab('ral', 'RAL')}${tab('rec', 'REC')}${tab('qual', 'RAL Qualidade')}</div>` : '<span></span>') +
+    (hasTabs ? `<div class="v2-seg list-tabs" role="tablist" aria-label="Tipo de ticket">${tab('ral', 'RAL')}${tab('rec', 'REC')}${tab('qual', '<span class="lt-long">RAL </span>Qualidade')}</div>` : '<span></span>') +
     `<span class="list-bar-extra" id="list-bar-extra"></span>` +
     `<div class="v2-seg list-view" role="group" aria-label="Exibir tickets como">
-       <button type="button" data-view="cards" class="${view === 'cards' ? 'on' : ''}" title="Exibir os tickets em cards">▦ Cards</button>
-       <button type="button" data-view="list" class="${view === 'list' ? 'on' : ''}" title="Exibir os tickets em lista">☰ Lista</button>
+       <button type="button" data-view="cards" class="${view === 'cards' ? 'on' : ''}" title="Exibir os tickets em cards">Cards</button>
+       <button type="button" data-view="list" class="${view === 'list' ? 'on' : ''}" title="Exibir os tickets em lista">Lista</button>
      </div>`;
   const th = document.querySelector('#modal-overlay th.sla-col');
   if (th) th.textContent = isTrashKey(key) ? 'Saída' : kind === 'qual' ? 'Em tela' : 'Prazo SLA';
