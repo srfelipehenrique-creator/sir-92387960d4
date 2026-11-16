@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v36';
+const CACHE_NAME   = 'sir-v39';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -39,8 +39,10 @@ const SHELL_ASSETS = [
   'js/layout-v2.js',
   'js/charts-v2.js',
   'js/events.js',
+  'js/stale.js',
   'js/siglas.js',
   'js/nodes.js',
+  'js/coletor-ui.js',
   'js/personalizacao.js',
   'js/pinned.js',
   'js/qualidade.js',
@@ -83,6 +85,8 @@ self.addEventListener('fetch', e => {
   const url = req.url;
   if (!url.startsWith('http')) return;
   if (url.includes('raw.githubusercontent.com')) return;
+  if (url.includes('api.github.com') || url.includes('.workers.dev')) return;   /* sempre ao vivo (horário dos dados, servidor) */
+  if (url.includes('/coletor/')) return;                  /* coletor: sempre a versão mais nova */
 
   const sameOrigin = new URL(url).origin === self.location.origin;
 
