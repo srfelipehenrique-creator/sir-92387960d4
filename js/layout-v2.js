@@ -27,11 +27,18 @@ if (typeof saveSettings === 'function') {
   };
 }
 
-/* Lista de tickets em cartões: no layout novo (qualquer tela) e sempre no celular */
-function useTicketCards() {
+/* Lista de tickets em cartões ou em lista (tabela).
+   Você escolhe na própria tela de tickets ('sir_ticket_view'); sem escolha,
+   vale o padrão: cartões no layout novo e no celular. */
+const LS_TICKET_VIEW = 'sir_ticket_view';   // 'cards' | 'list'
+function getTicketView() {
+  const v = _lsGet(LS_TICKET_VIEW, '');
+  if (v === 'cards' || v === 'list') return v;
   const narrow = !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
-  return getLayout() === 'v2' || narrow;
+  return (getLayout() === 'v2' || narrow) ? 'cards' : 'list';
 }
+function setTicketView(v) { _lsSet(LS_TICKET_VIEW, v === 'list' ? 'list' : 'cards'); }
+function useTicketCards() { return getTicketView() === 'cards'; }
 if (typeof openModal === 'function') {
   const _openModalOrig = openModal;
   openModal = function () {
@@ -65,6 +72,51 @@ function _v2Cell(tk, cf, val, delta) {
     <span class="v2-cell-lbl">${isRal ? 'RAL' : 'REC'}</span>
     <span class="v2-cell-val animate-num" data-val="${val}">${val}</span>
     ${delta > 0 ? `<span class="v2-delta" title="Aumento desde a última atualização">+${delta}</span>` : ''}
+  </button>`;
+}
+
+/* ── RALs de Qualidade por área ──
+   Ficam em modalData.ral com a chave 'Q:<área>' (ex.: 'Q:BX1', 'Q:ALL'),
+   assim a tela de tickets é a mesma de RAL/REC: notas, classificação,
+   status, copiar, associar, filtro e CSV funcionam igual. */
+const QKEY = 'Q:';
+function isQualKey(k) { return typeof k === 'string' && k.startsWith(QKEY); }
+function _isCfKey(k) { return Object.values(REGIONS).some(cfs => k in cfs); }
+function _qualAll() {
+  return (typeof qualidadeItems !== 'undefined' ? qualidadeItems : []).map(i => ({
+    ticket: i.ticket, designacao: i.designacao, extra: 'QUALIDADE', cfOrigem: i.cfOrigem, abertura: i.abertura || ''
+  }));
+}
+function buildQualModalData(areas) {
+  const all = _qualAll();
+  const by = cfs => all.filter(i => cfs.includes(i.cfOrigem));
+  for (const [rn, cfs] of Object.entries(REGIONS)) {
+    const keys = Object.keys(cfs);
+    keys.forEach(cf => { modalData.ral[QKEY + cf] = by([cf]); });
+    modalData.ral[QKEY + rn] = by(keys);
+  }
+  modalData.ral[QKEY + 'ALL'] = all;
+  modalData.ral[QKEY + 'MY_AREAS_V2'] = by(Array.isArray(areas) ? areas : []);
+}
+function qualCount(key) { return (modalData.ral[QKEY + key] || []).length; }
+
+/* Título da tela de tickets para cada tipo (ral | rec | qual) e área */
+function listTitle(kind, base) {
+  if (_isCfKey(base)) {
+    if (kind !== 'qual') return _cfTitle(kind, base);
+    const name = CF_NAMES[base];
+    return `RAL's de Qualidade em tela no CF ${base}${name ? ' - ' + name : ''}`;
+  }
+  const label = base === 'ALL' ? 'Total RRE' : base === 'MY_AREAS_V2' ? 'Minhas áreas' : base;
+  return `${kind === 'qual' ? 'RAL Qualidade' : kind.toUpperCase()} · ${label}`;
+}
+
+function _v2QCell(cf) {
+  const n = qualCount(cf);
+  return `<button class="v2-cell v2-qual${n ? '' : ' v2-zero'}" onclick="openModal('${_q(QKEY + cf)}',true,'${_q(listTitle('qual', cf))}')"
+            title="RAL de Qualidade ${escapeHtml(cf)}">
+    <span class="v2-cell-lbl">QUAL</span>
+    <span class="v2-cell-val animate-num" data-val="${n}">${n}</span>
   </button>`;
 }
 
@@ -176,6 +228,7 @@ function _v2Tile(cf, ralV, recV, mine) {
     <div class="v2-tile-cells">
       ${_v2Cell('ral', cf, ralV, _delta('ral', cf, ralV))}
       ${_v2Cell('rec', cf, recV, _delta('rec', cf, recV))}
+      ${_v2QCell(cf)}
     </div>
     <div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(cf) : ''}</div>
   </div>`;
@@ -205,6 +258,9 @@ function _v2Kpi(label, key, ralV, recV, accent) {
       </button>
       <button class="v2-kpi-btn v2-t-${_sevTotal(recV)}" onclick="openModal('${_q(key)}',false,'${_q('REC · ' + label)}')">
         <span class="v2-kpi-type">REC</span><span class="animate-num" data-val="${recV}">${recV}</span>
+      </button>
+      <button class="v2-kpi-btn v2-kpi-qual" onclick="openModal('${_q(QKEY + key)}',true,'${_q(listTitle('qual', key))}')" title="RALs de Qualidade">
+        <span class="v2-kpi-type">QUALID.</span><span class="animate-num" data-val="${qualCount(key)}">${qualCount(key)}</span>
       </button>
     </div>
     ${exp ? `<div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(V2_MY) : ''}</div>` : ''}
@@ -275,6 +331,7 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
 /* Substitui a função global usada por onDataReady() */
 renderDashboard = function (ralRes, ralR, recRes, recR, userSavedAreas) {
   applyLayoutClass();
+  buildQualModalData(userSavedAreas);
   if (getLayout() === 'classic')
     return _renderDashboardClassic(ralRes, ralR, recRes, recR, userSavedAreas);
   return renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas);
@@ -316,7 +373,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v40';
+const SIR_APP_VERSION = 'v41';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
@@ -331,8 +388,18 @@ function _addAreasToToolGrid() {
   b.setAttribute('onclick', 'openSettings()');
   b.innerHTML = '<i data-lucide="layers"></i><span>Minhas Áreas</span>';
   bar.appendChild(b);
+  /* Lixeira ao lado de Minhas Áreas */
+  const t = document.createElement('button');
+  t.className = 'tool-group-btn tool-areas-btn tool-trash-btn';
+  t.type = 'button';
+  t.title = 'Lixeira — tickets que saíram da tela';
+  t.setAttribute('aria-label', 'Lixeira');
+  t.setAttribute('onclick', 'openTrash()');
+  t.innerHTML = '<i data-lucide="trash-2"></i><span>Lixeira</span><b class="trash-count" hidden></b>';
+  bar.appendChild(t);
   bar.closest('.header-actions')?.classList.add('has-tool-areas');
-  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [b.querySelector('[data-lucide]')] });
+  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [b.querySelector('[data-lucide]'), t.querySelector('[data-lucide]')] });
+  if (typeof updateTrashBadge === 'function') updateTrashBadge();
 }
 
 /* O app sempre abre no topo, com os botões à vista */

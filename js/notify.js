@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Notificações de RAL/REC novas (somente das suas Minhas Áreas)
-   - Pop-up dentro do app para cada ticket novo que entrar no Inbox
+   - Aviso (balão) para cada ticket novo, dentro do cartão "Novas Entradas"
    - Notificação do sistema quando o SIR está aberto em segundo plano
      (aba escondida no PC, app minimizado no celular)
    - Botão de sino no topo: liga/desliga (salvo em 'sir_notify')
@@ -37,6 +37,20 @@ function _ntContainer() {
   return c;
 }
 
+/* Avisos de RAL/REC novas: aparecem só dentro do cartão "Novas Entradas" */
+function _ntInboxContainer() {
+  let c = document.getElementById('inbox-notify');
+  if (c) return c;
+  const sec = document.getElementById('inbox-section');
+  if (!sec) return _ntContainer();
+  c = document.createElement('div');
+  c.id = 'inbox-notify';
+  c.setAttribute('aria-live', 'polite');
+  const wrap = document.getElementById('inbox-body-wrap');
+  sec.insertBefore(c, wrap || null);
+  return c;
+}
+
 function _ntRemove(card) {
   if (!card || card._closing) return;
   card._closing = true;
@@ -60,8 +74,8 @@ function _ntPause(card) {
   card.classList.add('nt-paused');
 }
 
-function _ntShowCard(html, onBuild) {
-  const stack = _ntContainer();
+function _ntShowCard(html, onBuild, inInbox) {
+  const stack = inInbox ? _ntInboxContainer() : _ntContainer();
   const card = document.createElement('div');
   card.className = 'nt-card';
   card.innerHTML = html + '<div class="nt-progress"></div>';
@@ -122,7 +136,7 @@ function _ntTicketCard(item) {
         _waFlash(e.target.closest('[data-act]'), ok);
       }
     });
-  });
+  }, true);
 }
 
 function _ntSummaryCard(rest) {
@@ -133,15 +147,15 @@ function _ntSummaryCard(rest) {
       <span class="nt-badge nt-sum">+${rest.length} novos</span>
       <button class="nt-close" type="button" aria-label="Fechar">×</button>
     </div>
-    <div class="nt-desig">Mais ${_ntEsc(parts)} nas suas áreas. Veja todos em <b>Novas Entradas</b>.</div>
-    <div class="nt-actions"><button type="button" class="nt-btn nt-primary" data-act="inbox">Abrir Novas Entradas</button></div>`;
+    <div class="nt-desig">Mais ${_ntEsc(parts)} nas suas áreas, na lista abaixo.</div>
+    <div class="nt-actions"><button type="button" class="nt-btn nt-primary" data-act="inbox">Ver a lista</button></div>`;
   _ntShowCard(html, card => {
     card.querySelector('[data-act="inbox"]').addEventListener('click', () => {
       const sec = document.getElementById('inbox-section');
       if (sec) { if (!appState.inboxBodyVisible && typeof toggleInboxBody === 'function') toggleInboxBody(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       _ntRemove(card);
     });
-  });
+  }, true);
 }
 
 /* Notificação do sistema (fora do navegador) — só com o SIR em segundo plano */

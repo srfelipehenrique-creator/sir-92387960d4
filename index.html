@@ -42,27 +42,10 @@
         <i data-lucide="layers"></i>
         Minhas Áreas
       </button>
+      <button class="btn-settings btn-icon btn-trash" id="btn-trash" onclick="openTrash()" title="Lixeira — tickets que saíram da tela nas últimas 24h" aria-label="Lixeira">
+        <i data-lucide="trash-2"></i><b class="trash-count" hidden></b>
+      </button>
     </div>
-  </div>
-  <div class="header-right">
-    <span class="status-flash" id="status-flash">ATUALIZADO</span>
-    <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
-      <i data-lucide="cloud-sync"></i>
-    </button>
-    <button class="btn-settings btn-icon" id="btn-notify" onclick="toggleNotifications()" title="Notificações" aria-label="Notificações" style="background:transparent;border-color:transparent;">
-      <i data-lucide="bell-ring"></i>
-    </button>
-    <button class="btn-settings btn-icon" id="btn-theme-mode" onclick="cycleThemeMode()" title="Tema" aria-label="Tema" style="background:transparent;border-color:transparent;">
-      <i data-lucide="sun-moon"></i>
-    </button>
-    <button class="btn-settings btn-icon" onclick="openPersonalizacao()" title="Configurações" aria-label="Configurações" style="background:transparent;border-color:transparent;">
-      <i data-lucide="settings"></i>
-    </button>
-    <!-- Mantido oculto para compatibilidade com a lógica de PWA install -->
-    <button id="btn-pwa-install" onclick="triggerPWAInstall()" style="display:none;" aria-hidden="true"></button>
-    <div id="countdown">Sincronizando...</div>
-    <div id="last-update" title="Horário da última atualização">Última atualização: --:--:--</div>
-    <div class="pulse-dot" id="status-dot"></div> 
   </div>
 </header>
 
@@ -134,6 +117,27 @@
     <span class="footer-ql-lbl">qualidade</span>
     <span class="footer-ql-count" id="footer-ql-count"></span>
   </button>
+  <!-- Controles do painel (antes ficavam no topo) -->
+  <div class="footer-ctrls" id="footer-ctrls">
+    <span class="status-flash" id="status-flash">ATUALIZADO</span>
+    <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
+      <i data-lucide="cloud-sync"></i>
+    </button>
+    <button class="btn-settings btn-icon" id="btn-notify" onclick="toggleNotifications()" title="Notificações" aria-label="Notificações" style="background:transparent;border-color:transparent;">
+      <i data-lucide="bell-ring"></i>
+    </button>
+    <button class="btn-settings btn-icon" id="btn-theme-mode" onclick="cycleThemeMode()" title="Tema" aria-label="Tema" style="background:transparent;border-color:transparent;">
+      <i data-lucide="sun-moon"></i>
+    </button>
+    <button class="btn-settings btn-icon" onclick="openPersonalizacao()" title="Configurações" aria-label="Configurações" style="background:transparent;border-color:transparent;">
+      <i data-lucide="settings"></i>
+    </button>
+    <!-- Mantido oculto para compatibilidade com a lógica de PWA install -->
+    <button id="btn-pwa-install" onclick="triggerPWAInstall()" style="display:none;" aria-hidden="true"></button>
+    <div id="countdown">Sincronizando...</div>
+    <div id="last-update" title="Horário da última atualização">Última atualização: --:--:--</div>
+    <div class="pulse-dot" id="status-dot"></div> 
+    </div>
 </div>
 
 <!-- MODAL TORPEDOS -->
@@ -755,6 +759,8 @@
 <script src="js/pinned.js"></script>
 <script src="js/qualidade.js"></script>
 <script src="js/events.js"></script>
+<script src="js/lista-abas.js"></script>
+<script src="js/lixeira.js"></script>
 <script src="js/stale.js"></script>
 <script src="js/app.js"></script>
 </body>
