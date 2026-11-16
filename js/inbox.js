@@ -43,29 +43,49 @@ function renderInboxType(tk, items) {
     return;
   }
   empty.style.display = 'none';
+  /* Mesmo visual do aviso de ticket novo (cartão com SLA e botões Ver / Copiar / Ciente) */
+  const typeLbl  = isRal ? 'RAL' : 'REC';
+  const extraLbl = isRal ? 'Tipo' : 'Cliente';
   container.innerHTML = items.map(item => {
-    const ticketHTML = makeTicketHTML(item.ticket, isRal, item.designacao);
-    const desigHTML  = makeDesigHTML(item.designacao, isRal);
-    const timeStr    = item.abertura ? item.abertura.replace(' - ', ' · ') : '—';
-    return `<div class="inbox-entry${item.isBrandNew ? ' brand-new' : ''}">
-      <div class="inbox-entry-cf"><span class="cf-tag">${escapeHtml(item.cfOrigem)}</span></div>
-      <div class="inbox-entry-body">
-        <div class="inbox-entry-top">
-          <span class="inbox-entry-ticket">${ticketHTML}</span>
-          <span class="inbox-entry-desig">${desigHTML}</span>
-        </div>
-        <div class="inbox-entry-bottom">
-          <span class="inbox-entry-extra">${escapeHtml(item.extra || '—')}</span>
-          <span class="inbox-entry-time">${escapeHtml(timeStr)}</span>
-        </div>
+    const ticketHTML = item.ticket ? makeTicketHTML(item.ticket, isRal, item.designacao) : 'N/D';
+    const desigHTML  = item.designacao ? makeDesigHTML(item.designacao, isRal) : '—';
+    const sla        = typeof _ntSla === 'function' ? _ntSla(item, isRal) : null;
+    const hasExtra   = item.extra && item.extra !== 'N/D';
+    return `<div class="nt-card nt-in inbox-card" data-identity="${escapeHtml(item.identity)}">
+      <div class="nt-head">
+        <span class="nt-badge nt-${tk}">${typeLbl} nova</span>
+        <span class="cf-tag">${escapeHtml(item.cfOrigem)}</span>
+        ${sla ? `<span class="nt-sla nt-sla-${sla.cls}">${escapeHtml(sla.txt)}</span>` : ''}
       </div>
-      <div class="inbox-entry-action">
-        <button class="btn-ack" onclick="acknowledgeInboxItem('${escapeHtml(item.identity)}')">Ciente</button>
+      <div class="nt-ticket">${ticketHTML}</div>
+      <div class="nt-desig">${desigHTML}</div>
+      <div class="nt-meta">
+        ${hasExtra ? `<span>${extraLbl}: ${escapeHtml(item.extra)}</span>` : ''}
+        ${item.abertura ? `<span>Abertura ${escapeHtml(item.abertura.replace(' - ', ' · '))}</span>` : ''}
+      </div>
+      <div class="nt-actions">
+        <button type="button" class="nt-btn nt-primary" data-act="ver">Ver</button>
+        <button type="button" class="nt-btn nt-copy" data-act="copiar">Copiar</button>
+        <button type="button" class="nt-btn" data-act="ciente">Ciente</button>
       </div>
     </div>`;
   }).join('');
 
-  container.onclick = e => {
+  container.onclick = async e => {
+    const actBtn = e.target.closest('[data-act]');
+    if (actBtn) {
+      const identity = actBtn.closest('.inbox-card')?.dataset.identity;
+      const item = appState.inboxItems.find(i => i.identity === identity);
+      if (!item) return;
+      const act = actBtn.dataset.act;
+      if (act === 'ciente') acknowledgeInboxItem(item.identity);
+      if (act === 'ver' && typeof notifyOpenTicket === 'function') notifyOpenTicket(item.cfOrigem, tk, item.ticket);
+      if (act === 'copiar' && typeof formatTicketWA === 'function' && typeof _waWrite === 'function') {
+        const ok = await _waWrite(formatTicketWA(item, isRal));
+        if (typeof _waFlash === 'function') _waFlash(actBtn, ok);
+      }
+      return;
+    }
     const tl = e.target.closest('.ticket-link');
     if (tl && tl.dataset.url) { openTicketWindow(tl.dataset.url); return; }
     const dl = e.target.closest('.desig-link');

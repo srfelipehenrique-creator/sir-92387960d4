@@ -942,3 +942,10 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: #b9a5ff; }
   .v2-region-head { flex-wrap: wrap; align-items: center; }
   .v2-charts-toggle { margin: 0 0 0 auto; padding: 7px 10px; font-size: 11px; align-self: center; }
 }
+
+/* ══ v44 — Lista de Novas Entradas com o mesmo cartão do aviso de ticket novo ══ */
+.inbox-entries .inbox-card { margin: 8px 10px; box-shadow: none; transition: none; }
+.inbox-card .nt-sla { margin-right: 2px; }
+.inbox-card .ticket-link, .inbox-card .desig-link { font: inherit; letter-spacing: inherit; text-align: left; }
+.inbox-card .nt-ticket .ticket-link { color: var(--text-main); }
+.inbox-card .nt-desig .desig-link { color: inherit; }
