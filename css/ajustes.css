@@ -221,3 +221,34 @@ body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: au
 .off-btn-main { background: #F5A524; color: #1A1206; }
 .off-btn-main:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 640px) { .off-zones { grid-template-columns: 1fr; } .off-head { padding: 14px; } .off-body { padding: 12px 14px; } }
+
+/* ══ Linha do Tempo em janela suspensa, aberta pelo botãozinho do grupo (v51) ══ */
+.tl-open-btn {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; margin-left: 6px; vertical-align: middle;
+  border-radius: 7px; border: 1px solid var(--line-strong); background: var(--bg-panel-2); color: #22d3ee; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.tl-open-btn:hover, .tl-open-btn.on { border-color: #22d3ee; background: rgba(34,211,238,0.12); }
+body.layout-v2 .v2-region-head:has(.tl-open-btn) .v2-region-name { display: inline; }
+.tl-pop-overlay {
+  position: fixed; inset: 0; z-index: 2600; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(4,8,14,0.55); backdrop-filter: blur(2px); opacity: 0; transition: opacity .15s;
+}
+:root[data-mode="light"] .tl-pop-overlay { background: rgba(30,40,60,0.28); }
+.tl-pop-overlay.show { opacity: 1; }
+.tl-pop-overlay .v2-timeline.tl-pop {
+  margin: 0; width: min(920px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45); transform: translateY(6px); transition: transform .15s;
+}
+.tl-pop-overlay.show .v2-timeline.tl-pop { transform: none; }
+.v2-timeline .tl-close {
+  flex: none; align-self: flex-start; width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--line-strong);
+  background: var(--bg-panel-2); color: var(--text-main); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.v2-timeline .tl-close:hover { border-color: var(--v2-crit); color: var(--v2-crit); }
+@media (max-width: 640px) {
+  .tl-pop-overlay { align-items: flex-end; padding: 0; }
+  .tl-pop-overlay .v2-timeline.tl-pop { width: 100%; max-height: 88vh; border-radius: 16px 16px 0 0; }
+  .v2-timeline .tl-head { position: relative; padding-right: 36px; }
+  .v2-timeline .tl-close { position: absolute; top: 0; right: 0; }
+}
