@@ -21,6 +21,21 @@ function loadNow(userSavedAreas) {
 }
 
 /* ── Inline CSV parser (used on file:// where Workers are blocked) ── */
+/* "REC-1/2026 ^ Cliente ^ Designação ^ Abertura ^ Tipo | REC-2/2026 ^ ..." → lista */
+function parseRecsAssoc(v) {
+  const out = [], seen = new Set();
+  String(v || '').split('|').forEach(part => {
+    const f = part.split('^').map(x => x.trim());
+    const m = (f[0] || '').match(/(\d{4,8})\s*\/\s*(20\d\d)/);
+    if (!m) return;
+    const ticket = `REC-${m[1]}/${m[2]}`;
+    if (seen.has(ticket)) return;
+    seen.add(ticket);
+    out.push({ ticket, cliente: f[1] || '', designacao: f[2] || '', abertura: f[3] || '', tipo: f[4] || '' });
+  });
+  return out;
+}
+
 function parseRawInline(text, isRal) {
   const lines = text.split('\n');
   if (lines.length < 2) return { counts:{}, details:{}, total:0 };
@@ -49,6 +64,9 @@ function parseRawInline(text, isRal) {
   const tipoIdx     = getIdx('TIPO RAL');
   const cliIdx      = getIdx('CLIENTE');
   const aberturaIdx = getIdx('ABERTURA');
+  /* RECs associadas à RAL: "Ass." = quantidade; "RECs Assoc." = lista (só o seu coletor envia) */
+  const assIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'ASS.' || n === 'ASS'; });
+  const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
   const counts = {}, details = {}, qualidadeDetails = {};
@@ -90,7 +108,12 @@ function parseRawInline(text, isRal) {
         let extra = 'N/D';
         if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
         else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
-        details[p].push({ ticket, designacao: desig, extra, cfOrigem: patternToCF[p], abertura });
+        const it = { ticket, designacao: desig, extra, cfOrigem: patternToCF[p], abertura };
+        if (isRal && assIdx > -1) {
+          it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
+          if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
+        }
+        details[p].push(it);
       }
     }
   }
@@ -201,8 +224,12 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (typeof buildQualidadeData === 'function' && ralRes.qualidadeDetails)
     buildQualidadeData(ralRes.qualidadeDetails);
 
+  /* RECs associadas às RAL entram na tela de REC (sem repetir tickets) */
+  if (typeof mergeAssociatedRecs === 'function') mergeAssociatedRecs(ralRes, recRes);
+
   const ralR = buildRegionData(ralRes.counts, ralRes.details, true);
   const recR = buildRegionData(recRes.counts, recRes.details, false);
+  if (typeof buildRecVideMap === 'function') buildRecVideMap();
   computeFlatCFCounts(ralR, recR);
 
   appState.currentSnapshot.ral = buildSnapshotMap('ral');
@@ -237,6 +264,7 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   saveInboxState();
 
   isFirstLoad = false;
+  if (typeof _assocToast === 'function') _assocToast();
   appState.isOffline = false;
   setOfflineBanner(false);
 

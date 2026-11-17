@@ -89,8 +89,8 @@ function layoutEventGroups() {
           <span class="ev-count">${members.length} ticket${members.length === 1 ? '' : 's'}</span>
           <span class="ev-sp"></span>
           <button type="button" class="ev-btn" data-evact="copy" title="Copiar só os tickets deste ${e.k === 'vide' ? 'vínculo' : 'evento'}">Copiar</button>
-          <button type="button" class="ev-btn" data-evact="edit" title="Incluir ou tirar tickets">Editar</button>
-          <button type="button" class="ev-btn ev-btn-del" data-evact="del" title="Desfazer a associação (os tickets voltam para a lista)">Desfazer</button>
+          ${e.auto ? `<span class="ev-auto" title="Vínculo automático: RECs associadas a esta RAL no SIR">automático</span>` : `<button type="button" class="ev-btn" data-evact="edit" title="Incluir ou tirar tickets">Editar</button>
+          <button type="button" class="ev-btn ev-btn-del" data-evact="del" title="Desfazer a associação (os tickets voltam para a lista)">Desfazer</button>`}
         </div></td>`;
       frag.appendChild(head);
       members.forEach((r, i) => {

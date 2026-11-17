@@ -1,5 +1,7 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w2)
+#  Coletor SIR para Windows  (versão w3)
+#  - w3: abre o link do número de RECs associadas (coluna Ass.) de cada RAL
+#    das suas áreas e envia a lista dessas RECs junto (coluna "RECs Assoc.").
 #  - Dois cliques no arquivo "Coletor SIR.cmd" e pronto.
 #  - Entra no SIR com o SEU usuário e senha, lê as listas de RAL e REC
 #    e envia ao seu servidor a cada 5 minutos, enquanto a janela estiver aberta.
@@ -11,7 +13,7 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w2'
+$VERSAO   = 'w3'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $BASE     = 'http://172.30.130.133'
@@ -157,17 +159,21 @@ function Texto-Celula([string]$s) {
 # Mesma regra do robô original: fica com as linhas que têm o número de colunas mais comum
 function Linhas-Tabela([string]$html) {
   $linhas = New-Object Collections.Generic.List[object]
+  $brutas = New-Object Collections.Generic.List[object]
   $partes = [regex]::Split($html, '(?i)<tr\b[^>]*>')
   for ($i = 1; $i -lt $partes.Length; $i++) {
     $tr = [regex]::Split($partes[$i], '(?i)</tr\s*>')[0]
     $cel = [regex]::Split($tr, '(?i)<t[dh]\b[^>]*>')
     if ($cel.Length -lt 2) { continue }
-    $row = @(); for ($j = 1; $j -lt $cel.Length; $j++) { $row += (Texto-Celula ([regex]::Split($cel[$j], '(?i)</t[dh]\s*>')[0])) }
-    if (($row | Where-Object { $_ }).Count -gt 0) { $linhas.Add($row) }
+    $row = @(); $raw = @()
+    for ($j = 1; $j -lt $cel.Length; $j++) { $c = [regex]::Split($cel[$j], '(?i)</t[dh]\s*>')[0]; $raw += $c; $row += (Texto-Celula $c) }
+    if (($row | Where-Object { $_ }).Count -gt 0) { $linhas.Add($row); $brutas.Add($raw) }
   }
   $cont = @{}; foreach ($r in $linhas) { $cont[$r.Count] = 1 + [int]$cont[$r.Count] }
   $cols = 0; $max = 0; foreach ($k in $cont.Keys) { if ($cont[$k] -gt $max) { $max = $cont[$k]; $cols = $k } }
-  return @{ Cols = $cols; Linhas = @($linhas | Where-Object { $_.Count -eq $cols }) }
+  $ln = @(); $br = @()
+  for ($i = 0; $i -lt $linhas.Count; $i++) { if ($linhas[$i].Count -eq $cols) { $ln += ,$linhas[$i]; $br += ,$brutas[$i] } }
+  return @{ Cols = $cols; Linhas = $ln; Brutas = $br }
 }
 function Para-Csv($res, [string[]]$cab, [string]$nome) {
   if ($res.Cols -ne $cab.Count) { throw "formato:${nome}: esperava $($cab.Count) colunas, veio $($res.Cols)" }
@@ -211,7 +217,7 @@ function Coletar-Rec {
 # Desce pelos quadros (primeiro os nomes conhecidos) até achar a tabela de 13 colunas
 function Achar-Lista([string]$html, [string]$url, [int]$prof) {
   $r = Linhas-Tabela $html
-  if ($r.Cols -eq 13 -and $r.Linhas.Count -gt 0) { return $r }
+  if ($r.Cols -eq 13 -and $r.Linhas.Count -gt 0) { $r.Url = $url; return $r }
   if ($prof -ge 4) { return $null }
   $qs = Quadros $html
   $ord = @($qs | Where-Object { $F_LISTA -contains $_.Nome }) + @($qs | Where-Object { $F_LISTA -notcontains $_.Nome -and $_.Nome -ne $F_FILTRO })
@@ -222,6 +228,120 @@ function Achar-Lista([string]$html, [string]$url, [int]$prof) {
   }
   return $null
 }
+# ─────────── RECs associadas às RAL (link do número na coluna "Ass.") ───────────
+# Só as RAL das áreas do painel (RJ/ES). Cada RAL com Ass. > 0 tem o número como
+# link; o coletor abre esse link e lê as RECs listadas. Para não pesar no SIR,
+# relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 3 coletas (15 min).
+$CFS_PAINEL = @('RT/VTA /MTN/FFA/FO','RT/VTA /MTS/FFA/FO','RT/VTA /NOR/FFA/FO','RT/VTA /SUL/FFA/FO',
+  'RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO','RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO','RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO',
+  'RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO','RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO','RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO',
+  'RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO','RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO','RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO',
+  'RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO','RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO','RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO')
+$script:CacheAss = @{}
+$script:Ciclo = 0
+$RX_REC = '(?i)^(?:REC\s*-?\s*)?(\d{4,8})\s*/\s*(20\d\d)$'
+
+function Link-Da-Celula([string]$raw) {
+  foreach ($m in [regex]::Matches($raw, '(?is)\bhref\s*=\s*["'']([^"'']+)["'']')) {
+    $v = [Net.WebUtility]::HtmlDecode($m.Groups[1].Value).Trim()
+    if ($v -and $v -notmatch '^(?i)(javascript:|#)') { return $v }
+  }
+  # link feito por script: window.open('pagina.cfm?...') / location='...'
+  $m = [regex]::Match($raw, '(?is)["'']([^"'']*?\.cfm[^"'']*)["'']')
+  if ($m.Success) { return [Net.WebUtility]::HtmlDecode($m.Groups[1].Value).Trim() }
+  return $null
+}
+function Limpo([string]$t) { return (([string]$t) -replace '[|^;\r\n"]', ' ' -replace '\s+', ' ').Trim() }
+
+# Lê as RECs de uma página (e dos quadros dentro dela)
+function Recs-Da-Pagina([string]$html, [string]$url, [string]$ralNum, [int]$prof, $achadas) {
+  $cab = $null
+  $partes = [regex]::Split($html, '(?i)<tr\b[^>]*>')
+  for ($i = 1; $i -lt $partes.Length; $i++) {
+    $tr = [regex]::Split($partes[$i], '(?i)</tr\s*>')[0]
+    $cel = [regex]::Split($tr, '(?i)<t[dh]\b[^>]*>')
+    if ($cel.Length -lt 2) { continue }
+    $row = @(); for ($j = 1; $j -lt $cel.Length; $j++) { $row += (Texto-Celula ([regex]::Split($cel[$j], '(?i)</t[dh]\s*>')[0])) }
+    $k = -1; for ($j = 0; $j -lt $row.Count; $j++) { if ($row[$j] -match $RX_REC) { $k = $j; break } }
+    if ($k -lt 0) {
+      if (($row -join ' ') -match '(?i)cliente|designa|abertura') { $cab = $row }
+      continue
+    }
+    $m = [regex]::Match($row[$k], $RX_REC)
+    $num = 'REC-' + $m.Groups[1].Value + '/' + $m.Groups[2].Value
+    if ($num -eq ($ralNum -replace '^RAL', 'REC') -or $achadas.Contains($num)) { continue }
+    $it = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = '' }
+    if ($cab -and $cab.Count -eq $row.Count) {
+      for ($j = 0; $j -lt $cab.Count; $j++) {
+        $h = $cab[$j].ToUpper()
+        if ($h -match 'CLIENTE') { $it.Cliente = $row[$j] }
+        elseif ($h -match 'DESIGNA') { $it.Desig = $row[$j] }
+        elseif ($h -match 'ABERTURA') { $it.Abertura = $row[$j] }
+        elseif ($h -match 'TIPO|SERVI|PRODUTO|ANORM') { if (-not $it.Tipo) { $it.Tipo = $row[$j] } }
+      }
+    } else {
+      foreach ($c in $row) { if (-not $it.Abertura -and $c -match '^\d\d/\d\d/\d{4}') { $it.Abertura = $c } }
+    }
+    $achadas[$num] = $it
+  }
+  if ($achadas.Count -eq 0) {
+    # sem tabela: procura os números de REC soltos no texto
+    foreach ($m in [regex]::Matches((Texto-Celula $html), '(?i)\bREC\s*-?\s*(\d{4,8})\s*/\s*(20\d\d)')) {
+      $num = 'REC-' + $m.Groups[1].Value + '/' + $m.Groups[2].Value
+      if (-not $achadas.Contains($num)) { $achadas[$num] = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = '' } }
+    }
+  }
+  if ($prof -lt 3) {
+    foreach ($q in (Quadros $html)) {
+      try { $p = Abrir (Juntar $url $q.Src); if (Eh-Login $p.Html) { throw 'sessao' }; Recs-Da-Pagina $p.Html $p.Url $ralNum ($prof + 1) $achadas }
+      catch { if ("$($_.Exception.Message)" -eq 'sessao') { throw } }
+    }
+  }
+}
+
+function Anexar-Associadas($lista) {
+  $script:Ciclo++
+  $novas = @(); $nRal = 0; $nRec = 0; $semLink = 0; $exemplo = ''
+  for ($i = 0; $i -lt $lista.Linhas.Count; $i++) {
+    $r = $lista.Linhas[$i]; $val = ''
+    $ralNum = $r[3]; $ass = 0
+    if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $CFS_PAINEL -contains $r[7] -and $ralNum -match '^RAL') {
+      $nRal++
+      $c = $script:CacheAss[$ralNum]
+      if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 3) { $val = $c.Val }
+      else {
+        $link = Link-Da-Celula $lista.Brutas[$i][8]
+        if (-not $link) {
+          $semLink++
+          if (-not $exemplo) { $exemplo = ($lista.Brutas[$i][8] -replace '\d', '9').Substring(0, [Math]::Min(400, $lista.Brutas[$i][8].Length)) }
+          if ($c) { $val = $c.Val }
+        } else {
+          try {
+            $p = Abrir (Juntar $lista.Url $link)
+            if (Eh-Login $p.Html) { throw 'sessao' }
+            $ach = [ordered]@{}
+            Recs-Da-Pagina $p.Html $p.Url $ralNum 0 $ach
+            $val = (@($ach.Values | ForEach-Object { (@($_.Rec, $_.Cliente, $_.Desig, $_.Abertura, $_.Tipo) | ForEach-Object { Limpo $_ }) -join ' ^ ' }) -join ' | ')
+            $script:CacheAss[$ralNum] = @{ N = $ass; Val = $val; Ciclo = $script:Ciclo }
+            if ($ach.Count -ne $ass) { Aviso "RAL $ralNum mostra $ass REC(s) associada(s), li $($ach.Count)." }
+          } catch {
+            if ("$($_.Exception.Message)" -eq 'sessao') { throw }
+            if ($c) { $val = $c.Val }
+          }
+        }
+      }
+      if ($val) { $nRec += ($val -split ' \| ').Count }
+    }
+    $novas += ,(@($r) + $val)
+  }
+  # tira do cache as RAL que saíram da lista
+  $vivas = @{}; foreach ($r in $lista.Linhas) { $vivas[$r[3]] = 1 }
+  foreach ($k in @($script:CacheAss.Keys)) { if (-not $vivas.ContainsKey($k)) { $script:CacheAss.Remove($k) } }
+  $script:DiagAss = @{ rals = $nRal; recs = $nRec; semLink = $semLink; exemploCelula = $exemplo }
+  if ($nRal) { Info "RECs associadas: $nRec em $nRal RAL das suas áreas$(if ($semLink) { " ($semLink sem link reconhecido)" })" }
+  return @{ Cols = $lista.Cols + 1; Linhas = $novas; Url = $lista.Url }
+}
+
 function Coletar-Ral {
   $top = Abrir ($BASE + $RAL_PATH)
   if (Eh-Login $top.Html) { throw 'sessao' }
@@ -242,7 +362,8 @@ function Coletar-Ral {
     $lista = Achar-Lista $top2.Html $top2.Url 0
   }
   if (-not $lista) { throw 'estrutura:lista de RAL não encontrada depois do filtro' }
-  return Para-Csv $lista $HEAD_RAL 'RAL'
+  $lista = Anexar-Associadas $lista
+  return Para-Csv $lista ($HEAD_RAL + 'RECs Assoc.') 'RAL'
 }
 function Enviar($ral, $rec) {
   $corpo = @{ token = $SRV_TOK; ral = $ral; rec = $rec; by = "Coletor Windows $VERSAO" } | ConvertTo-Json -Compress
@@ -318,7 +439,7 @@ while ($true) {
     Info 'Lendo RAL e REC no SIR...'
     try { $rec = Coletar-Rec; $ral = Coletar-Ral }
     catch { if ("$($_.Exception.Message)" -eq 'sessao') { $logado = $false; Entrar $cred; $logado = $true; $rec = Coletar-Rec; $ral = Coletar-Ral } else { throw } }
-    $diag.ral = $ral.N; $diag.rec = $rec.N
+    $diag.ral = $ral.N; $diag.rec = $rec.N; $diag.associadas = $script:DiagAss
     Info "Enviando ao seu servidor (RAL $($ral.N) · REC $($rec.N))..."
     $j = Enviar $ral.Csv $rec.Csv
     $envios++; $falhas = 0

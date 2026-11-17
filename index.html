@@ -56,8 +56,8 @@
 <div class="warning-toast" id="warning-toast">
   <div class="toast-label">Atenção</div>
   <div class="toast-msg">
-    Este dashboard ainda não contabiliza RECs associadas dentro de RALs.
-    Lembre-se de que a quantidade real de RECs pode estar divergente do exibido no painel.
+    As RECs associadas às RAL só entram na contagem quando os dados vêm do seu coletor.
+    Com a fonte pública, a quantidade real de RECs pode estar divergente do exibido no painel.
   </div>
   <button class="toast-close" onclick="dismissToast()" aria-label="Fechar">&times;</button>
   <div class="toast-progress" id="toast-progress"></div>
@@ -756,6 +756,7 @@
 <script src="js/pinned.js"></script>
 <script src="js/qualidade.js"></script>
 <script src="js/events.js"></script>
+<script src="js/rec-assoc.js"></script>
 <script src="js/lista-abas.js"></script>
 <script src="js/tickets-ui.js"></script>
 <script src="js/lixeira.js"></script>

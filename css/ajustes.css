@@ -84,3 +84,10 @@
 
 /* Versão: destaque discreto (só um tom mais claro que o resto) */
 #app-version { color: var(--text-main); opacity: .85; font-weight: 600; white-space: nowrap; }
+
+/* RECs associadas às RAL — conferência no rodapé e VIDE automático (v51) */
+#assoc-status { font-size: 10px; font-family: var(--font-mono); margin-right: 10px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; color: var(--ft-soft, var(--text-dim)); cursor: help; }
+#assoc-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #2e7d32; flex: none; }
+#assoc-status.as-warn::before { background: #d49800; }
+@media (max-width: 640px) { #assoc-status { order: 6; margin: 2px 10px 0 0; } }
+.ev-auto { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .75; padding: 2px 6px; border: 1px dashed var(--evc, currentColor); border-radius: 6px; }
