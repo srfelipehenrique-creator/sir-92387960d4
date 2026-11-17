@@ -6,7 +6,7 @@
    - Abre pelo botão da lixeira ao lado de "Minhas Áreas", na mesma tela
      de tickets (cards ou lista), só para consulta: não dá para adicionar,
      editar ou excluir notas, nem mudar classificação/status. Só copiar.
-   - Cada ticket é apagado 24 horas depois de entrar na lixeira.
+   - Cada ticket é apagado 7 dias depois de entrar na lixeira (v51; antes 24h).
      Se o ticket voltar para a tela, sai da lixeira.
    - Fica guardada neste aparelho ('sir_trash_v1').
    ══════════════════════════════════════════════════════════════ */
@@ -14,7 +14,8 @@
 const LS_TRASH       = 'sir_trash_v1';
 const LS_TRASH_LAST  = 'sir_trash_last_v1';
 const LS_TRASH_SCOPE = 'sir_trash_scope';     // 'mine' | 'all'
-const TRASH_TTL      = 24 * 3600 * 1000;
+const TRASH_TTL      = 7 * 24 * 3600 * 1000;   /* 7 dias */
+const TRASH_MAX      = 4000;                    /* teto de segurança do armazenamento do aparelho */
 
 let _trash = [];          /* [{ id, tk: 'ral'|'rec'|'qual', item, st, at }] */
 let _trashBlocked = 0;
@@ -25,6 +26,7 @@ function _trashSave() { _trashWrite(LS_TRASH, _trash); }
 function _trashPurge() {
   const cut = Date.now() - TRASH_TTL, n = _trash.length;
   _trash = _trash.filter(e => e && e.id && e.item && e.at > cut);
+  if (_trash.length > TRASH_MAX) _trash = _trash.sort((a, b) => b.at - a.at).slice(0, TRASH_MAX);
   if (_trash.length !== n) _trashSave();
 }
 function _trashLoad() { const v = _trashRead(LS_TRASH, []); _trash = Array.isArray(v) ? v : []; _trashPurge(); }
@@ -109,7 +111,8 @@ function _trashWhen(ts) {
 }
 function _trashLeft(at) {
   const ms = Math.max(0, at + TRASH_TTL - Date.now());
-  const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+  const d = Math.floor(ms / 86400000), h = Math.floor((ms % 86400000) / 3600000), m = Math.floor((ms % 3600000) / 60000);
+  if (d > 0) return `${d}d ${h}h`;
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`;
 }
 
@@ -127,7 +130,7 @@ function trashDecorate() {
     m.title = 'Quando saiu da tela e em quanto tempo será apagado da lixeira';
   });
   const empty = tb.querySelector('.empty-state');
-  if (empty) empty.textContent = 'Nenhum ticket deste tipo saiu da tela nas últimas 24 horas.';
+  if (empty) empty.textContent = 'Nenhum ticket deste tipo saiu da tela nos últimos 7 dias.';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -149,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const _lt = listTitle;
   listTitle = function (kind, base) {
     if (base !== TRASH_KEY) return _lt.apply(this, arguments);
-    return `Lixeira · ${kind === 'qual' ? 'RAL Qualidade' : kind.toUpperCase()} — saíram da tela nas últimas 24h`;
+    return `Lixeira · ${kind === 'qual' ? 'RAL Qualidade' : kind.toUpperCase()} — saíram da tela nos últimos 7 dias`;
   };
 
   /* No lugar do SLA: "Saiu da tela" */
@@ -195,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
          <button type="button" data-tscope="mine" class="${sc === 'mine' ? 'on' : ''}">Minhas áreas</button>
          <button type="button" data-tscope="all" class="${sc === 'all' ? 'on' : ''}">Todas</button>
        </div>` : '') +
-      `<span class="trash-note">Somente consulta e cópia · cada ticket é apagado 24h depois de sair</span>`;
+      `<span class="trash-note">Somente consulta e cópia · cada ticket é apagado 7 dias depois de sair</span>`;
   });
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#list-bar [data-tscope]');
