@@ -6,30 +6,50 @@
    - Abre pelo botão da lixeira ao lado de "Minhas Áreas", na mesma tela
      de tickets (cards ou lista), só para consulta: não dá para adicionar,
      editar ou excluir notas, nem mudar classificação/status. Só copiar.
-   - Cada ticket é apagado 7 dias depois de entrar na lixeira (v51; antes 24h).
+   - Cada ticket é apagado 60 dias depois de entrar na lixeira (v51; antes 24h).
      Se o ticket voltar para a tela, sai da lixeira.
-   - Fica guardada neste aparelho ('sir_trash_v1').
+   - Fica guardada neste aparelho, no banco do navegador (IndexedDB, 'trash_v1'),
+     que aguenta os 60 dias; a cópia antiga do localStorage é migrada.
    ══════════════════════════════════════════════════════════════ */
 
 const LS_TRASH       = 'sir_trash_v1';
 const LS_TRASH_LAST  = 'sir_trash_last_v1';
 const LS_TRASH_SCOPE = 'sir_trash_scope';     // 'mine' | 'all'
-const TRASH_TTL      = 7 * 24 * 3600 * 1000;   /* 7 dias */
-const TRASH_MAX      = 4000;                    /* teto de segurança do armazenamento do aparelho */
+const TRASH_TTL      = 60 * 24 * 3600 * 1000;  /* 60 dias */
+const TRASH_MAX      = 25000;                   /* teto de segurança do armazenamento do aparelho */
 
 let _trash = [];          /* [{ id, tk: 'ral'|'rec'|'qual', item, st, at }] */
 let _trashBlocked = 0;
 
 function _trashRead(k, d) { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
 function _trashWrite(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-function _trashSave() { _trashWrite(LS_TRASH, _trash); }
+let _trashLoaded = false, _trashDirty = false;
+/* Guarda no IndexedDB (cabe muito mais que o localStorage). Até a leitura
+   inicial terminar, só marca que precisa salvar — para não apagar o que já estava lá. */
+function _trashSave() {
+  if (!_trashLoaded || typeof tx !== 'function') { _trashDirty = true; if (typeof tx !== 'function') _trashWrite(LS_TRASH, _trash); return; }
+  tx('snapshots', 'readwrite', st => st.put({ key: 'trash_v1', list: _trash, ts: Date.now() }))
+    .then(() => { try { localStorage.removeItem(LS_TRASH); } catch (e) {} })
+    .catch(() => _trashWrite(LS_TRASH, _trash));
+}
 function _trashPurge() {
   const cut = Date.now() - TRASH_TTL, n = _trash.length;
   _trash = _trash.filter(e => e && e.id && e.item && e.at > cut);
   if (_trash.length > TRASH_MAX) _trash = _trash.sort((a, b) => b.at - a.at).slice(0, TRASH_MAX);
-  if (_trash.length !== n) _trashSave();
+  if (_trash.length !== n && _trashLoaded) _trashSave();
 }
-function _trashLoad() { const v = _trashRead(LS_TRASH, []); _trash = Array.isArray(v) ? v : []; _trashPurge(); }
+function _trashLoad() {
+  const v = _trashRead(LS_TRASH, []);
+  _trash = Array.isArray(v) ? v : [];
+  const done = () => { _trashLoaded = true; _trashPurge(); if (_trashDirty || _trash.length) _trashSave(); _trashDirty = false; if (typeof updateTrashBadge === 'function') updateTrashBadge(); };
+  if (typeof tx !== 'function') { _trashLoaded = true; _trashPurge(); return; }
+  tx('snapshots', 'readonly', st => st.get('trash_v1')).then(rec => {
+    const saved = rec && Array.isArray(rec.list) ? rec.list : [];
+    const ids = new Set(_trash.map(e => e && e.id));
+    for (const e of saved) if (e && !ids.has(e.id)) { _trash.push(e); ids.add(e.id); }   /* junta com o que já entrou nesta sessão */
+    done();
+  }).catch(done);
+}
 function _trashSlim(i) { return { ticket: i.ticket, designacao: i.designacao, extra: i.extra, cfOrigem: i.cfOrigem, abertura: i.abertura || '' }; }
 function _trashIdTk(tk) { return tk === 'rec' ? 'rec' : 'ral'; }
 
@@ -130,7 +150,7 @@ function trashDecorate() {
     m.title = 'Quando saiu da tela e em quanto tempo será apagado da lixeira';
   });
   const empty = tb.querySelector('.empty-state');
-  if (empty) empty.textContent = 'Nenhum ticket deste tipo saiu da tela nos últimos 7 dias.';
+  if (empty) empty.textContent = 'Nenhum ticket deste tipo saiu da tela nos últimos 60 dias.';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -152,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const _lt = listTitle;
   listTitle = function (kind, base) {
     if (base !== TRASH_KEY) return _lt.apply(this, arguments);
-    return `Lixeira · ${kind === 'qual' ? 'RAL Qualidade' : kind.toUpperCase()} — saíram da tela nos últimos 7 dias`;
+    return `Lixeira · ${kind === 'qual' ? 'RAL Qualidade' : kind.toUpperCase()} — saíram da tela nos últimos 60 dias`;
   };
 
   /* No lugar do SLA: "Saiu da tela" */
@@ -198,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
          <button type="button" data-tscope="mine" class="${sc === 'mine' ? 'on' : ''}">Minhas áreas</button>
          <button type="button" data-tscope="all" class="${sc === 'all' ? 'on' : ''}">Todas</button>
        </div>` : '') +
-      `<span class="trash-note">Somente consulta e cópia · cada ticket é apagado 7 dias depois de sair</span>`;
+      `<span class="trash-note">Somente consulta e cópia · cada ticket é apagado 60 dias depois de sair</span>`;
   });
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#list-bar [data-tscope]');
