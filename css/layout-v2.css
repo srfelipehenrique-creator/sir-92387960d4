@@ -32,7 +32,28 @@
 .v2-seg button:hover:not(:disabled) { color: var(--text-main); background: var(--bg-hover); }
 .v2-seg button.on { background: var(--bg-elevated); color: var(--text-main); box-shadow: var(--sh-sm); }
 .v2-seg button:disabled { opacity: .35; cursor: not-allowed; }
-.v2-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-right: auto; }
+.v2-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* Interruptores (escopo + layout) lado a lado, numa única linha */
+.v2-switches { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; }
+.v2-sw {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px 6px; border-radius: var(--r);
+  background: var(--bg-panel); border: 1px solid var(--line);
+  white-space: nowrap; min-width: 0;
+}
+.v2-sw-lbl {
+  border: 0; background: transparent; cursor: pointer;
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  color: var(--text-muted); opacity: .7;
+  padding: 4px 4px; border-radius: var(--r-sm);
+  transition: color var(--t) var(--ease), opacity var(--t) var(--ease);
+}
+.v2-sw-lbl:hover:not(:disabled) { color: var(--text-main); opacity: 1; }
+.v2-sw-lbl.on { color: var(--accent); font-weight: 800; opacity: 1; }
+.v2-sw .v2-sw-btn { padding: 2px; }
+.v2-sw-dis { opacity: .45; }
+.v2-sw-dis button { cursor: not-allowed; }
 .v2-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .v2-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .v2-dot-ok   { background: var(--v2-ok); }

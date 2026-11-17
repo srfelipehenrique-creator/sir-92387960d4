@@ -68,8 +68,12 @@ header {
 
   /* Barra de controles */
   #v2-bar { gap: 8px; }
-  #v2-bar .v2-seg { flex: 1 1 auto; }
-  #v2-bar .v2-seg button { flex: 1; padding: 6px 8px; }
+  #v2-bar .v2-switches { width: 100%; gap: 6px; }
+  #v2-bar .v2-sw { flex: 1 1 0; justify-content: center; padding: 2px 4px; }
+  #v2-bar .v2-sw-lbl { font-size: 10.5px; padding: 6px 2px; letter-spacing: 0; }
+  #v2-bar .v2-sw .cfg-toggle-track { width: 36px; height: 20px; }
+  #v2-bar .v2-sw .cfg-toggle-thumb { width: 14px; height: 14px; }
+  #v2-bar .v2-sw .cfg-toggle-track.on .cfg-toggle-thumb { left: 19px; }
   .v2-legend { order: 3; width: 100%; justify-content: center; margin: 0; }
 
   /* Totais: total geral ocupa a linha inteira */

@@ -350,20 +350,29 @@ function renderV2Bar() {
   const layout  = getLayout();
   const hasMine = getUserSavedAreas().length > 0;
   const scope   = hasMine ? getV2Scope() : 'all';
+  /* Interruptor de duas opções: clicar no nome escolhe a opção; clicar no
+     interruptor alterna. A opção selecionada fica destacada. */
+  const sw = (aria, a, b, isB, fnA, fnB, dis) => `
+    <div class="v2-sw${dis ? ' v2-sw-dis' : ''}" role="group" aria-label="${aria}"${dis ? ' title="Selecione suas áreas em Minhas Áreas"' : ''}>
+      <button type="button" class="v2-sw-lbl${isB ? '' : ' on'}" onclick="${fnA}" ${dis ? 'disabled' : ''}>${a}</button>
+      <button type="button" class="cfg-toggle-btn v2-sw-btn" role="switch" aria-checked="${isB}" aria-label="${aria}"
+              onclick="${isB ? fnA : fnB}" ${dis ? 'disabled' : ''}>
+        <span class="cfg-toggle-track${isB ? ' on' : ''}"><span class="cfg-toggle-thumb"></span></span>
+      </button>
+      <button type="button" class="v2-sw-lbl${isB ? ' on' : ''}" onclick="${fnB}" ${dis ? 'disabled' : ''}>${b}</button>
+    </div>`;
   bar.innerHTML = `
-    ${layout === 'v2' ? `<div class="v2-seg" role="group" aria-label="Escopo">
-      <button class="${scope === 'all' ? 'on' : ''}" onclick="setV2Scope('all')">Todas as áreas</button>
-      <button class="${scope === 'mine' ? 'on' : ''}" onclick="setV2Scope('mine')" ${hasMine ? '' : 'disabled title="Selecione suas áreas em Minhas Áreas"'}>Só minhas áreas</button>
+    <div class="v2-switches">
+      ${layout === 'v2' ? sw('Escopo', 'Todas as áreas', 'Só minhas', scope === 'mine',
+                             "setV2Scope('all')", "setV2Scope('mine')", !hasMine) : ''}
+      ${sw('Layout', 'Layout novo', 'Clássico', layout === 'classic',
+           "setLayout('v2')", "setLayout('classic')", false)}
     </div>
-    <div class="v2-legend">
+    ${layout === 'v2' ? `<div class="v2-legend">
       <span><i class="v2-dot v2-dot-ok"></i>1–5</span>
       <span><i class="v2-dot v2-dot-warn"></i>6–9</span>
       <span><i class="v2-dot v2-dot-crit"></i>10+</span>
-    </div>` : '<div></div>'}
-    <div class="v2-seg" role="group" aria-label="Layout">
-      <button class="${layout === 'v2' ? 'on' : ''}" onclick="setLayout('v2')">Layout novo</button>
-      <button class="${layout === 'classic' ? 'on' : ''}" onclick="setLayout('classic')">Clássico</button>
-    </div>`;
+    </div>` : ''}`;
 }
 
 function _rerender() {
@@ -379,7 +388,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v53';
+const SIR_APP_VERSION = 'v54';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
