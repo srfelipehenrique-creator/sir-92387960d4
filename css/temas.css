@@ -8,6 +8,8 @@
      • Eco-Militar    <html data-skin="campo">      (base escura)
      • Cyberpunk      <html data-skin="cyber">      (base escura)
      • Lavanda e Areia <html data-skin="lavanda">   (base clara)
+   v51 — mais um:
+     • Painel Noturno <html data-skin="noturno">    (base escura; cores iguais à foto do painel)
    Cada tema só troca as cores; nada de função muda.
    As cores de destaque dos botões (Configurações → Tema de cor) continuam valendo.
    ══════════════════════════════════════════════════════════════ */
@@ -168,3 +170,43 @@
 :root[data-skin] .sla-days { color: var(--sk-qual-fg); }
 :root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-warn { color: var(--v2-warn); }
 :root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-crit { color: var(--v2-crit); }
+
+/* ── 7. Painel Noturno (grafite com verde, âmbar, vermelho e índigo — igual à foto do painel) ──
+   Fica no fim do arquivo para valer por cima das regras gerais dos temas escuros. */
+:root[data-skin="noturno"] {
+  --bg-dark: #0F1115; --bg-panel: #171A20; --bg-panel-2: #1D2128; --bg-panel-3: #12151A;
+  --bg-elevated: #22262E; --bg-float: #2A2F38; --bg-hover: rgba(255,255,255,0.05);
+  --text-main: #ECEEF2; --text-soft: rgba(236,238,242,0.80); --text-muted: rgba(236,238,242,0.56); --text-dim: rgba(236,238,242,0.30);
+  --line: rgba(255,255,255,0.07); --line-strong: rgba(255,255,255,0.14);
+  --sk-card: #181B21; --sk-card-line: rgba(255,255,255,0.09); --sk-inner: #1F2329; --sk-inner-line: rgba(255,255,255,0.07);
+  --sk-header: rgba(15,17,21,0.94);
+  --sk-qual-bg: #2D2B63; --sk-qual-fg: #C7CCFF; --sk-qual-line: rgba(124,124,240,0.75);
+  --v2-ok: #4ADE80;   --v2-ok-bg: #1A3A2B;   --sk-ok-line: rgba(74,222,128,0.42);
+  --v2-warn: #F5B82E; --v2-warn-bg: #43350F; --sk-warn-line: rgba(245,184,46,0.85);
+  --v2-crit: #F0565B; --v2-crit-bg: #571E21; --sk-crit-line: rgba(240,86,91,0.90);
+  --sk-zero-bg: #1F2329;
+  --nt-band: #14171C; --nt-kpi-rec: #FACC15; --nt-blue: #3B82F6;
+}
+/* Faixas de grupo (ES / Interior / Capital) em painel um pouco mais claro que o fundo */
+:root[data-skin="noturno"] body.layout-v2 .v2-region { background: var(--nt-band); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+:root[data-skin="noturno"] body.layout-v2 .v2-region-head { border-left-color: var(--nt-blue) !important; }
+:root[data-skin="noturno"] body.layout-v2 .v2-region-name { color: #F4F5F7; font-weight: 800; }
+:root[data-skin="noturno"] body.layout-v2 .v2-tile-cf { color: #F4F5F7; }
+:root[data-skin="noturno"] body.layout-v2 .v2-tile-name { color: rgba(236,238,242,0.78); }
+/* Números: claros dentro das caixas coloridas, como na foto */
+:root[data-skin="noturno"] body.layout-v2 .v2-ok   .v2-cell-val { color: #DDFBE8; }
+:root[data-skin="noturno"] body.layout-v2 .v2-warn .v2-cell-val { color: #FFE9A8; }
+:root[data-skin="noturno"] body.layout-v2 .v2-crit .v2-cell-val { color: #FFD6D6; }
+:root[data-skin="noturno"] body.layout-v2 .v2-warn .v2-cell-lbl { color: var(--v2-warn); opacity: .9; }
+:root[data-skin="noturno"] body.layout-v2 .v2-crit .v2-cell-lbl { color: var(--v2-crit); opacity: .9; }
+:root[data-skin="noturno"] body.layout-v2 .v2-zero .v2-cell-lbl,
+:root[data-skin="noturno"] body.layout-v2 .v2-zero .v2-cell-val { color: #9AA1AC; }
+:root[data-skin="noturno"] body.layout-v2 .v2-cell.v2-qual .v2-cell-val { color: #E6E8FF; }
+:root[data-skin="noturno"] body.layout-v2 .v2-cell.v2-qual.v2-zero { background: var(--sk-zero-bg); border-color: var(--sk-inner-line); color: #9AA1AC; }
+:root[data-skin="noturno"] body.layout-v2 .v2-cell.v2-qual.v2-zero :is(.v2-cell-lbl, .v2-cell-val) { color: #9AA1AC; }
+/* Totais do topo: RAL em branco, REC em amarelo, Qualidade em índigo */
+:root[data-skin="noturno"] body.layout-v2 .v2-kpi-btn { color: #F4F5F7; }
+:root[data-skin="noturno"] body.layout-v2 .v2-kpi-vals > .v2-kpi-btn:nth-child(2) { color: var(--nt-kpi-rec) !important; }
+:root[data-skin="noturno"] body.layout-v2 .v2-kpi-vals > .v2-kpi-btn:nth-child(1) { color: #F4F5F7 !important; }
+:root[data-skin="noturno"] body.layout-v2 .v2-kpi-btn .v2-kpi-type { color: rgba(236,238,242,0.82); }
+:root[data-skin="noturno"] body.layout-v2 .v2-kpi-btn.v2-kpi-qual > .animate-num { color: #F4F5F7; }
