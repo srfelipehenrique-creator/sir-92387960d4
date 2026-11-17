@@ -260,3 +260,14 @@
 [data-mode="light"] #modal-overlay #btn-modal-copy-all::before { color: #15803d; }
 [data-mode="light"] #modal-overlay.v2-cards .btn-copy-ticket { color: #fff !important; background: linear-gradient(180deg, #2f9e5b, #27864d); border-color: #27864d !important; }
 [data-mode="light"] #modal-overlay.v2-cards tr.ticket-row td:nth-child(4)::before { background: #22c55e; box-shadow: none; }
+
+/* Celular — REC: "Copiar Designações" desce para baixo do título,
+   assim o título fica legível como na RAL (antes era espremido em uma letra por linha) */
+@media (max-width: 640px) {
+  #modal-overlay .modal-title-group:has(#copy-desig-btn:not([style*="none"])) { flex-wrap: wrap; row-gap: 8px; }
+  #modal-overlay .modal-title-group .modal-title { flex: 1 1 calc(100% - 40px); }
+  #modal-overlay .modal-title-group #copy-desig-btn {
+    flex: 0 0 auto; margin-left: 40px; min-height: 32px; padding: 5px 12px;
+    font-size: 11.5px; white-space: nowrap;
+  }
+}
