@@ -133,3 +133,38 @@
   .v2-timeline .tl-area { margin-left: 0; max-width: 100%; flex: 1; }
   .v2-timeline .tl-toggle { margin-left: auto; }
 }
+
+/* ══ Novas Entradas: Cards ou Lista compacta (v51) ══ */
+.inbox-view-seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--line-strong); border-radius: var(--r-sm, 8px); }
+.inbox-view-seg button {
+  font: inherit; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  padding: 3px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.inbox-view-seg button.on { background: var(--bg-panel-2); color: var(--text-main); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.inbox-entries.inbox-as-list { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 10px; max-height: 300px; overflow-y: auto; }
+.inbox-row {
+  display: flex; align-items: center; gap: 10px; position: relative;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-strong);
+  background: var(--bg-panel-2); cursor: pointer; transition: border-color .15s, background .15s;
+}
+.inbox-row:hover, .inbox-row:focus-visible { border-color: color-mix(in srgb, var(--text-main) 30%, transparent); outline: none; }
+.inbox-row .ir-main { flex: 1; min-width: 0; }
+.inbox-row .ir-ticket { font-size: 14px; font-weight: 800; color: var(--text-main); letter-spacing: .1px; font-family: var(--font-mono); }
+.inbox-row .ir-sub { font-size: 12px; font-weight: 600; color: var(--text-soft, var(--text-muted)); text-transform: uppercase; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inbox-row .ir-cf { flex: none; font-size: 11.5px; font-weight: 800; padding: 3px 8px; border-radius: 6px; font-family: var(--font-mono); }
+.inbox-row-ral .ir-cf { color: #FB8F5A; background: rgba(239,90,60,0.22); }
+.inbox-row-rec .ir-cf { color: #FACC15; background: rgba(234,179,8,0.20); }
+:root[data-mode="light"] .inbox-row-ral .ir-cf { color: #B4431F; }
+:root[data-mode="light"] .inbox-row-rec .ir-cf { color: #8A6100; }
+.inbox-row .ir-ok {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line-strong);
+  background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s;
+}
+.inbox-row:hover .ir-ok, .inbox-row:focus-within .ir-ok { opacity: 1; }
+.inbox-row .ir-ok:hover { color: var(--v2-ok); border-color: var(--v2-ok); }
+@media (hover: none) { .inbox-row .ir-ok { opacity: .8; } }
+.inbox-entries.inbox-as-list .inbox-card.inbox-row { margin: 0; box-shadow: none; }
+/* Cabeçalho das Novas Entradas: com o seletor Cards/Lista, quebra linha quando falta espaço em vez de sobrepor */
+body.layout-v2 .inbox-header, .inbox-header { flex-wrap: wrap; row-gap: 6px; }
+body.layout-v2 .inbox-title-wrap, .inbox-title-wrap { flex: none; }
+body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: auto; }

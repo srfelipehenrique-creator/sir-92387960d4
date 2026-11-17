@@ -43,10 +43,25 @@ function renderInboxType(tk, items) {
     return;
   }
   empty.style.display = 'none';
+  const listView = getInboxView() === 'list';
+  container.classList.toggle('inbox-as-list', listView);
+  if (listView) {
+    /* Lista compacta: número, designação (RAL) ou cliente (REC) e o CF à direita */
+    container.innerHTML = items.map(item => {
+      const sub = isRal ? (item.designacao && item.designacao !== 'N/D' ? item.designacao : (item.extra || ''))
+                        : (item.extra && item.extra !== 'N/D' ? item.extra : (item.designacao || ''));
+      return `<div class="inbox-card inbox-row inbox-row-${tk}" data-identity="${escapeHtml(item.identity)}" role="button" tabindex="0" title="Toque para abrir o ticket na lista do CF">
+        <div class="ir-main"><div class="ir-ticket">${escapeHtml(item.ticket || 'N/D')}</div><div class="ir-sub">${escapeHtml(sub || '—')}</div></div>
+        <span class="ir-cf">${escapeHtml(item.cfOrigem)}</span>
+        <button type="button" class="ir-ok" data-act="ciente" title="Ciente (tirar da lista)" aria-label="Ciente">✓</button>
+      </div>`;
+    }).join('');
+  } else
   /* Mesmo visual do aviso de ticket novo (cartão com SLA e botões Ver / Copiar / Ciente) */
+  container.innerHTML = (() => {
   const typeLbl  = isRal ? 'RAL' : 'REC';
   const extraLbl = isRal ? 'Tipo' : 'Cliente';
-  container.innerHTML = items.map(item => {
+  return items.map(item => {
     const ticketHTML = item.ticket ? makeTicketHTML(item.ticket, isRal, item.designacao) : 'N/D';
     const desigHTML  = item.designacao ? makeDesigHTML(item.designacao, isRal) : '—';
     const sla        = typeof _ntSla === 'function' ? _ntSla(item, isRal) : null;
@@ -70,6 +85,7 @@ function renderInboxType(tk, items) {
       </div>
     </div>`;
   }).join('');
+  })();
 
   container.onclick = async e => {
     const actBtn = e.target.closest('[data-act]');
@@ -86,6 +102,12 @@ function renderInboxType(tk, items) {
       }
       return;
     }
+    const row = e.target.closest('.inbox-row');
+    if (row) {
+      const item = appState.inboxItems.find(i => i.identity === row.dataset.identity);
+      if (item && typeof notifyOpenTicket === 'function') notifyOpenTicket(item.cfOrigem, tk, item.ticket);
+      return;
+    }
     const tl = e.target.closest('.ticket-link');
     if (tl && tl.dataset.url) { openTicketWindow(tl.dataset.url); return; }
     const dl = e.target.closest('.desig-link');
@@ -95,6 +117,27 @@ function renderInboxType(tk, items) {
     }
   };
 }
+
+/* Novas Entradas em Cards (padrão) ou Lista compacta — escolha salva neste aparelho */
+const LS_INBOX_VIEW = 'sir_inbox_view';
+function getInboxView() { try { return localStorage.getItem(LS_INBOX_VIEW) === 'list' ? 'list' : 'cards'; } catch (e) { return 'cards'; } }
+function _paintInboxViewSeg() {
+  const v = getInboxView();
+  document.querySelectorAll('[data-inbox-view]').forEach(b => { const on = b.dataset.inboxView === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  document.getElementById('inbox-section')?.classList.toggle('inbox-list-mode', v === 'list');
+}
+function setInboxView(v) {
+  try { localStorage.setItem(LS_INBOX_VIEW, v === 'list' ? 'list' : 'cards'); } catch (e) {}
+  _paintInboxViewSeg();
+  renderInboxType('ral', appState.inboxItems.filter(i => i.typeKey === 'ral'));
+  renderInboxType('rec', appState.inboxItems.filter(i => i.typeKey === 'rec'));
+}
+document.addEventListener('DOMContentLoaded', _paintInboxViewSeg);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const row = e.target.closest && e.target.closest('.inbox-row');
+  if (row && e.target === row) row.click();
+});
 
 function acknowledgeAllInboxItems() {
   appState.inboxItems.forEach(i => appState.acknowledgedInboxKeys.add(i.identity));

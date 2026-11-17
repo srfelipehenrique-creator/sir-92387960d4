@@ -71,6 +71,10 @@
         <div class="inbox-badge" id="inbox-count">0</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
+        <div class="inbox-view-seg" role="group" aria-label="Exibir novas entradas como">
+          <button type="button" data-inbox-view="cards" onclick="setInboxView('cards')" title="Exibir em cards (com SLA e botões)">Cards</button>
+          <button type="button" data-inbox-view="list" onclick="setInboxView('list')" title="Exibir em lista compacta">Lista</button>
+        </div>
         <button class="btn-inbox-toggle" id="btn-inbox-ack-all" onclick="acknowledgeAllInboxItems()" style="display:none;">Marcar Tudo</button>
         <button class="btn-inbox-toggle" id="btn-inbox-toggle" onclick="toggleInboxBody()">Ocultar</button>
       </div>
