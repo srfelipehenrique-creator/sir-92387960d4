@@ -42,6 +42,7 @@ const SHELL_ASSETS = [
   'js/data-loader.js',
   'js/layout-v2.js',
   'js/charts-v2.js',
+  'js/timeline.js',
   'js/events.js',
   'js/rec-assoc.js',
   'js/lista-abas.js',
