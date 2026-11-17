@@ -1,10 +1,8 @@
 /* ══════════════════════════════════════════════════════════════
-   v46 — Ajustes de leitura e equilíbrio (só aparência)
+   Ajustes de leitura (só aparência) — v46/v47
    1. Tela de tickets: nada cortado no cartão (número do ticket,
       SLA, cliente e designação sempre inteiros)
-   2. Rodapé: textos suaves, porém legíveis; só a versão em destaque
-   3. Painel: cards em linhas equilibradas em qualquer tela
-      (a conta das colunas é feita por js/equilibrio.js)
+   2. Rodapé: textos suaves, porém legíveis; versão com destaque discreto
    ══════════════════════════════════════════════════════════════ */
 
 /* ── 1. Tela de tickets ─────────────────────────────────────── */
@@ -71,13 +69,6 @@
 .page-footer { --ft-soft: color-mix(in srgb, var(--text-main) 60%, transparent); color: var(--ft-soft); }
 .footer-brand { opacity: 1; color: var(--ft-soft); }
 
-.footer-ql-trigger,
-.footer-ql-trigger.ql-has-rals,
-.footer-ql-trigger.ql-has-critical { opacity: 1; color: var(--ft-soft); animation: none; }
-.footer-ql-trigger:hover { opacity: 1; color: var(--text-main); }
-.footer-ql-trigger.ql-has-critical .footer-ql-icon { color: #ef5350; }   /* o aviso fica só no ícone */
-.footer-ql-count { background: color-mix(in srgb, currentColor 14%, transparent); }
-
 #data-source { color: var(--ft-soft); }
 #data-source:hover { color: var(--text-main); }
 
@@ -91,25 +82,5 @@
 .footer-ctrls { color: var(--ft-soft); }
 .footer-ctrls #countdown { color: var(--ft-soft); font-weight: 500; }
 
-/* Único destaque do rodapé */
-#app-version {
-  color: var(--text-main); font-weight: 700; font-size: 10.5px; letter-spacing: .4px;
-  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
-}
-:root:not([data-mode="light"]) #app-version { color: #fff; }
-@media (max-width: 900px) { #app-version { margin-left: 0; } }
-
-/* ── 3. Painel: cards equilibrados ──────────────────────────── */
-/* As colunas são definidas por js/equilibrio.js; aqui só o acabamento */
-.v2-kpis.eq-on, .v2-tiles.eq-on { justify-content: start; }
-.v2-kpis.eq-on .v2-kpi, .v2-tiles.eq-on .v2-tile { min-width: 0; }
-.v2-kpi-lbl, .v2-kpi-toggle { min-width: 0; }
-/* Números grandes cabem no card sem cortar */
-.v2-kpi-btn > .animate-num { max-width: 100%; }
-@media (max-width: 380px) {
-  .v2-kpi-btn { font-size: 17px; padding-left: 6px; padding-right: 6px; }
-  .v2-cell-val { font-size: 18px; }
-  .v2-cell-lbl { letter-spacing: .6px; }
-}
+/* Versão: destaque discreto (só um tom mais claro que o resto) */
+#app-version { color: var(--text-main); opacity: .85; font-weight: 600; white-space: nowrap; }
