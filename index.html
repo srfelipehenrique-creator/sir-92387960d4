@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="css/temas.css">
 <link rel="stylesheet" href="css/tickets-compact.css">
 <link rel="stylesheet" href="css/visual-3d.css">
+<link rel="stylesheet" href="css/menu.css">
 <script src="js/theme-mode.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -38,21 +39,39 @@
 <body>
 
 <header>
-  <div class="header-left">
-    <div class="header-actions">
-      <!-- Botões configuráveis — renderizados por personalizacao.js -->
-      <div id="header-action-btns"></div>
-
-      <button class="btn-settings btn-settings-areas" onclick="openSettings()">
-        <i data-lucide="layers"></i>
-        Minhas Áreas
-      </button>
-      <button class="btn-settings btn-icon btn-trash" id="btn-trash" onclick="openTrash()" title="Lixeira — tickets que saíram da tela nos últimos 60 dias" aria-label="Lixeira">
-        <i data-lucide="trash-2"></i><b class="trash-count" hidden></b>
-      </button>
-    </div>
+  <div class="app-bar">
+    <button type="button" class="app-menu-btn" id="btn-app-menu" onclick="openAppMenu()"
+            aria-label="Abrir menu" aria-controls="app-menu" aria-expanded="false" title="Menu">
+      <i data-lucide="menu"></i>
+    </button>
+    <span class="app-bar-title">SIR</span>
   </div>
 </header>
+
+<!-- MENU LATERAL — todas as ferramentas (os botões continuam os mesmos, só mudaram de lugar) -->
+<div class="app-menu-backdrop" id="app-menu-backdrop" onclick="closeAppMenu()"></div>
+<nav class="app-menu" id="app-menu" aria-label="Menu" aria-hidden="true" inert>
+  <div class="app-menu-head">
+    <span class="app-menu-title">Menu</span>
+    <button type="button" class="app-menu-close" onclick="closeAppMenu()" aria-label="Fechar menu">&times;</button>
+  </div>
+  <div class="app-menu-body">
+      <div class="header-left">
+        <div class="header-actions">
+          <!-- Botões configuráveis — renderizados por personalizacao.js -->
+          <div id="header-action-btns"></div>
+
+          <button class="btn-settings btn-settings-areas" onclick="openSettings()">
+            <i data-lucide="layers"></i>
+            Minhas Áreas
+          </button>
+          <button class="btn-settings btn-icon btn-trash" id="btn-trash" onclick="openTrash()" title="Lixeira — tickets que saíram da tela nos últimos 60 dias" aria-label="Lixeira">
+            <i data-lucide="trash-2"></i><b class="trash-count" hidden></b>
+          </button>
+        </div>
+      </div>
+  </div>
+</nav>
 
 <div class="warning-toast" id="warning-toast">
   <div class="toast-label">Atenção</div>
@@ -768,6 +787,7 @@
 <script src="js/tickets-ui.js"></script>
 <script src="js/lixeira.js"></script>
 <script src="js/stale.js"></script>
+<script src="js/menu.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

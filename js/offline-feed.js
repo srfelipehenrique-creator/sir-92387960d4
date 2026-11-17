@@ -435,9 +435,9 @@ function clearOfflineFeed() {
   if (typeof loadNow === 'function') loadNow();
 }
 
-/* Botão discreto no topo, antes de "Minhas Áreas" */
+/* Botão no menu, antes de "Minhas Áreas" */
 document.addEventListener('DOMContentLoaded', () => {
-  const ref = document.querySelector('header .btn-settings-areas');
+  const ref = document.querySelector('.header-actions .btn-settings-areas');
   if (!ref || document.getElementById('btn-offline-feed')) return;
   const b = document.createElement('button');
   b.type = 'button';

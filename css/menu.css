@@ -1,0 +1,131 @@
+/* ══════════════════════════════════════════════════════════════
+   Menu lateral (☰) — barra superior enxuta + gaveta com as ferramentas
+   Carregado por último: sobrepõe as regras antigas da barra de botões.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Barra superior: só o botão de menu e o nome ── */
+header {
+  position: sticky !important; top: 0;
+  flex-direction: row !important; align-items: center !important; justify-content: flex-start !important;
+  padding-top: max(6px, env(safe-area-inset-top)) !important; padding-bottom: 6px !important;
+  padding-left: max(10px, env(safe-area-inset-left)) !important;
+  min-height: 48px;
+}
+.app-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.app-menu-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; padding: 0; border-radius: 50%;
+  background: transparent; border: 0; color: var(--text-main); cursor: pointer;
+  transition: background var(--t) var(--ease);
+}
+.app-menu-btn:hover, .app-menu-btn:focus-visible { background: var(--bg-hover); }
+.app-menu-btn:active { background: var(--accent-soft); }
+.app-menu-btn svg, .app-menu-btn i { width: 22px; height: 22px; }
+.app-bar-title { font-size: 15px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-main); }
+
+/* ── Fundo escurecido ── */
+.app-menu-backdrop {
+  position: fixed; inset: 0; z-index: 9990;
+  background: rgba(0,0,0,.42);
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s var(--ease);
+}
+body.app-menu-open .app-menu-backdrop { opacity: 1; pointer-events: auto; }
+body.app-menu-open { overflow: hidden; }
+
+/* ── Gaveta ── */
+.app-menu {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 9991;
+  width: min(300px, 84vw);
+  display: flex; flex-direction: column;
+  background: var(--bg-float, var(--bg-panel));
+  border-right: 1px solid var(--line);
+  box-shadow: 0 0 40px rgba(0,0,0,.28);
+  padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  transform: translateX(-102%); visibility: hidden;
+  transition: transform .26s cubic-bezier(.2,.8,.2,1), visibility 0s linear .26s;
+}
+body.app-menu-open .app-menu {
+  transform: none; visibility: visible;
+  transition: transform .26s cubic-bezier(.2,.8,.2,1), visibility 0s;
+}
+.app-menu-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 10px 10px 20px; border-bottom: 1px solid var(--line);
+}
+.app-menu-title { font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); }
+.app-menu-close {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent;
+  color: var(--text-muted); font-size: 26px; line-height: 1; cursor: pointer;
+}
+.app-menu-close:hover { background: var(--bg-hover); color: var(--text-main); }
+.app-menu-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
+
+/* ── Itens: os botões antigos viram linhas da lista ── */
+#app-menu .header-left,
+#app-menu .header-actions,
+#app-menu #header-action-btns {
+  display: block !important; width: 100% !important; min-width: 0;
+  overflow: visible !important; flex: none !important; margin: 0; padding: 0;
+}
+#app-menu #header-action-btns .tool-bar-grouped {
+  display: flex !important; flex-direction: column; gap: 2px;
+  height: auto !important; width: 100%;
+  background: none !important; border: 0 !important; border-radius: 0; overflow: visible !important;
+}
+/* Separador entre grupos (Incidente / Consulta / Utilitários / Painel) */
+#app-menu #header-action-btns .tool-group-sep { display: block !important; }
+#app-menu #header-action-btns .tool-group-sep {
+  width: auto; height: 1px; margin: 6px 12px; padding: 0;
+  background: var(--line) !important; border: 0 !important;
+}
+#app-menu #header-action-btns .tool-group-btn,
+#app-menu .btn-offline-feed {
+  position: relative;
+  display: flex !important; flex-direction: row !important;
+  align-items: center !important; justify-content: flex-start !important; gap: 16px !important;
+  width: 100% !important; height: 46px !important; min-height: 46px; margin: 0 !important;
+  padding: 0 14px !important; border-radius: 10px !important;
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+  color: var(--text-main) !important; opacity: 1 !important; transform: none !important;
+  font: 500 14px/1.2 var(--font-sans) !important; letter-spacing: .1px !important;
+  text-align: left; text-transform: none !important; white-space: nowrap; cursor: pointer;
+  overflow: visible !important;
+}
+#app-menu #header-action-btns .tool-group-btn > span:not(.ql-tb-badge) {
+  flex: 1; min-width: 0; max-width: none !important; overflow: hidden; text-overflow: ellipsis;
+}
+#app-menu #header-action-btns .tool-group-btn:hover,
+#app-menu .btn-offline-feed:hover { background: var(--bg-hover) !important; }
+#app-menu #header-action-btns .tool-group-btn:active,
+#app-menu .btn-offline-feed:active { background: var(--accent-soft) !important; }
+#app-menu #header-action-btns .tool-group-btn svg,
+#app-menu #header-action-btns .tool-group-btn i {
+  width: 20px !important; height: 20px !important; flex: none; color: var(--text-muted);
+}
+#app-menu .tool-group-btn::before, #app-menu .tool-group-btn::after { display: none !important; }
+
+/* Minhas Áreas e Lixeira: grupo "Painel", sempre dentro da lista */
+#app-menu .tool-areas-btn { display: flex !important; }
+#app-menu .tool-areas-btn:not(.tool-trash-btn) { margin-top: 13px !important; }
+#app-menu .tool-areas-btn:not(.tool-trash-btn)::after {
+  content: '' !important; display: block !important; position: absolute; top: -7px; left: 12px; right: 12px;
+  height: 1px; background: var(--line);
+}
+/* Os botões originais (repetidos) ficam escondidos */
+#app-menu .header-actions.has-tool-areas > .btn-settings-areas,
+#app-menu .header-actions.has-tool-areas > #btn-trash { display: none !important; }
+
+/* Alimentar off-line: último item */
+#app-menu .btn-offline-feed { margin-top: 2px !important; }
+#app-menu .btn-offline-feed span { width: 20px; text-align: center; font-size: 18px; color: var(--text-muted); margin: 0 !important; }
+
+/* Contadores (Qualidade, Lixeira) alinhados à direita */
+#app-menu .ql-tb-badge,
+#app-menu .tool-trash-btn .trash-count {
+  position: static !important; margin-left: auto; flex: none;
+  min-width: 24px; height: 20px; padding: 0 7px !important; border-radius: 10px;
+  font: 700 11px/20px var(--font-mono) !important; text-align: center;
+}
+#app-menu .tool-trash-btn .trash-count[hidden] { display: none !important; }
