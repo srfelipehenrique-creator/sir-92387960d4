@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v45';
+const CACHE_NAME   = 'sir-v46';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -12,6 +12,7 @@ const SHELL_ASSETS = [
   'css/tickets-ui.css',
   'css/theme-light.css',
   'css/theme-neon.css',
+  'css/ajustes-v46.css',
   'js/theme-mode.js',
   'assets/icon.svg',
   'css/styles.css',
@@ -38,6 +39,7 @@ const SHELL_ASSETS = [
   'js/timer.js',
   'js/data-loader.js',
   'js/layout-v2.js',
+  'js/equilibrio.js',
   'js/charts-v2.js',
   'js/events.js',
   'js/lista-abas.js',
