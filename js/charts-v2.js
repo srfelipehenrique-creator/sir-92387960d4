@@ -36,6 +36,35 @@ function _v2ChartAreas(ralR, recR) {
   return out;
 }
 
+
+/* ── Barra em 3D (frente com degradê + lateral escura + tampa clara) ──
+   x = esquerda da frente · w = largura · top/base = y do topo e da base
+   fillId = id do degradê da frente · col = cor (CSS) · d = profundidade */
+function _bar3D(x, w, top, base, fillId, col, d, opt) {
+  opt = opt || {};
+  const h = Math.max(0, base - top);
+  if (h <= 0) return '';
+  const f = n => n.toFixed(1), cls = opt.cls ? ` class="${opt.cls}"` : '';
+  const side = `M${f(x + w)} ${f(base)} L${f(x + w + d)} ${f(base - d)} L${f(x + w + d)} ${f(top - d)} L${f(x + w)} ${f(top)} Z`;
+  const cap  = `M${f(x)} ${f(top)} L${f(x + d)} ${f(top - d)} L${f(x + w + d)} ${f(top - d)} L${f(x + w)} ${f(top)} Z`;
+  return `<g${cls}>
+    <path d="${side}" style="fill:${col}" fill-opacity=".9"/><path d="${side}" fill="#000" fill-opacity=".42"/>
+    <rect x="${f(x)}" y="${f(top)}" width="${f(w)}" height="${f(h)}" fill="url(#${fillId})" style="stroke:${col}" stroke-opacity=".7" stroke-width=".8"/>
+    ${opt.shineId ? `<rect x="${f(x)}" y="${f(top)}" width="${f(w)}" height="${f(h)}" fill="url(#${opt.shineId})" pointer-events="none"/>` : ''}
+    ${opt.noCap ? '' : `<path d="${cap}" style="fill:${col}"/><path d="${cap}" fill="#fff" fill-opacity=".38"/>`}
+  </g>`;
+}
+/* Degradê de "brilho" lateral (dá volume à frente da barra) */
+function _shineDef(id) {
+  return `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#fff" stop-opacity=".05"/><stop offset="28%" stop-color="#fff" stop-opacity=".28"/>
+    <stop offset="55%" stop-color="#fff" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".28"/></linearGradient>`;
+}
+/* Degradê vertical leve de uma cor */
+function _vGradDef(id, col, a1, a2) {
+  return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:${col}" stop-opacity="${a1}"/><stop offset="100%" style="stop-color:${col}" stop-opacity="${a2}"/></linearGradient>`;
+}
+
 /* Topo do eixo Y em número "redondo" (4 faixas iguais) */
 function _niceMax(v) {
   if (v <= 4) return 4;
@@ -48,21 +77,20 @@ function _v2ChartSVG(tk, rows, width, uid) {
   const W = Math.max(260, Math.round(width));
   /* Pouco espaço por área (celular) → nomes inclinados, todos visíveis */
   const tilt = rows.length && (W - 40) / rows.length < 26;
-  const H = 168, padL = 30, padR = 10, padT = 18, padB = tilt ? 36 : 26;
+  const H = 172, padL = 30, padR = 10, padT = 24, padB = tilt ? 36 : 26;
   const vals = rows.map(r => r[tk]);
   const max = _niceMax(Math.max(1, ...vals));
   const n = rows.length;
   const iw = W - padL - padR, ih = H - padT - padB;
   const band = n ? iw / n : iw;                                   /* espaço de cada área */
   const x = i => padL + band * (i + 0.5);                          /* centro da coluna */
-  const bw = Math.max(6, Math.min(34, band * 0.62));               /* largura da coluna */
+  const dep = Math.max(3, Math.min(8, band * 0.12));               /* profundidade 3D */
+  const bw = Math.max(6, Math.min(34, band * 0.62 - dep));         /* largura da coluna */
   const y = v => padT + ih - (v / max) * ih;
   const id = 'g' + tk + (uid || '');
 
-  /* Um degradê por faixa de quantidade (verde, amarelo, vermelho) */
-  let g = `<defs>${['ok', 'warn', 'crit'].map(sv => `<linearGradient id="${id}${sv}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" style="stop-color:var(--v2-${sv})" stop-opacity=".95"/><stop offset="100%" style="stop-color:var(--v2-${sv})" stop-opacity=".28"/></linearGradient>`).join('')}
-      <filter id="${id}f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  /* Um degradê leve por faixa de quantidade (verde, amarelo, vermelho) + brilho 3D */
+  let g = `<defs>${['ok', 'warn', 'crit'].map(sv => _vGradDef(id + sv, `var(--v2-${sv})`, 1, .62)).join('')}${_shineDef(id + 'sh')}</defs>`;
   /* linhas de grade + eixo Y */
   for (let k = 0; k <= 4; k++) {
     const v = (max / 4) * k, yy = y(v);
@@ -80,18 +108,17 @@ function _v2ChartSVG(tk, rows, width, uid) {
     const y0 = y(0);
     rows.forEach((r, i) => {
       const v = r[tk], cx = x(i), top = y(v), h = Math.max(0, y0 - top);
-      const rad = Math.min(4, bw / 2, h);
       const sv = _v2ChartSev(v), col = `var(--v2-${sv})`;
       const label = `${tk.toUpperCase()} ${r.cf}: ${v}`;
-      /* coluna com cantos de cima arredondados */
+      /* coluna em 3D */
       const bar = h > 0
-        ? `<path class="g-bar" d="M${(cx - bw / 2).toFixed(1)} ${y0} V${(top + rad).toFixed(1)} Q${(cx - bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx - bw / 2 + rad).toFixed(1)} ${top.toFixed(1)} H${(cx + bw / 2 - rad).toFixed(1)} Q${(cx + bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx + bw / 2).toFixed(1)} ${(top + rad).toFixed(1)} V${y0} Z" fill="url(#${id}${sv})" style="stroke:${col}" stroke-width="1" filter="url(#${id}f)"/>`
+        ? _bar3D(cx - (bw + dep) / 2, bw, top, y0, id + sv, col, dep, { cls: 'g-bar', shineId: id + 'sh' })
         : `<line class="g-zero" x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke-width="2"/>`;
       g += `<g class="g-col" data-chart-cf="${escapeHtml(r.cf)}" data-chart-tk="${tk}" role="button" tabindex="0" aria-label="${label}">
         <title>${label} — toque para abrir a lista</title>
         <rect class="g-hit" x="${(cx - band / 2).toFixed(1)}" y="${padT - 8}" width="${band.toFixed(1)}" height="${ih + 8}"/>
         ${bar}
-        ${v ? `<text class="g-val" x="${cx}" y="${top - 6}" text-anchor="middle" style="fill:${col}">${v}</text>` : ''}
+        ${v ? `<text class="g-val" x="${cx}" y="${top - dep - 5}" text-anchor="middle" style="fill:${col}">${v}</text>` : ''}
       </g>`;
     });
   }
@@ -126,10 +153,10 @@ function _v2RegionChartsShell(rn) {
       ${card('rec', 'REC por área')}
     </div>`;
 }
-function _v2ChartsToggleLabel(collapsed) { return collapsed ? '▸ Expandir gráfico' : '▾ Encolher gráfico'; }
+function _v2ChartsToggleLabel(collapsed) { return collapsed ? 'Mostrar gráfico' : 'Esconder gráfico'; }
 function _v2RegionToggleBtn(rn) {
   const c = chartsCollapsed(rn), name = escapeHtml(rn);
-  return `<button type="button" class="v2-charts-toggle" data-reg-toggle="${name}" aria-expanded="${!c}" title="Encolher ou expandir o gráfico do grupo ${name}">${_v2ChartsToggleLabel(c)}</button>`;
+  return `<button type="button" class="v2-charts-toggle v2-charts-icon${c ? '' : ' on'}" data-reg-toggle="${name}" aria-expanded="${!c}" aria-label="${_v2ChartsToggleLabel(c)} do grupo ${name}" title="${_v2ChartsToggleLabel(c)} do grupo ${name}"><span aria-hidden="true">📊</span></button>`;
 }
 
 /* Encolhe ou expande o gráfico de um grupo */
@@ -141,7 +168,11 @@ function toggleV2Charts(rn) {
   if (!sec) return;
   const box = sec.querySelector('.v2-reg-charts'), btn = sec.querySelector('[data-reg-toggle]');
   if (box) box.hidden = c;
-  if (btn) { btn.textContent = _v2ChartsToggleLabel(c); btn.setAttribute('aria-expanded', String(!c)); }
+  if (btn) {
+    const t = `${_v2ChartsToggleLabel(c)} do grupo ${rn}`;
+    btn.classList.toggle('on', !c); btn.setAttribute('aria-expanded', String(!c));
+    btn.setAttribute('aria-label', t); btn.title = t;
+  }
   if (!c) renderV2Charts();
 }
 document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-reg-toggle]'); if (b) toggleV2Charts(b.dataset.regToggle); });

@@ -1,0 +1,101 @@
+/* ══════════════════════════════════════════════════════════════
+   v53 — Visual 3D
+   - RAL / REC / QUAL nos cards com aparência de botão 3D
+     (relevo, borda de luz em cima, sombra embaixo, afunda ao tocar)
+   - Botão do gráfico de cada grupo vira ícone 📊
+   - Fundo dos gráficos com leve degradê
+   Carregado por último para valer sobre os temas.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Botões 3D: RAL / REC / QUAL dos cards e dos totais ── */
+html:root body.layout-v2 .v2-cell,
+html:root body.layout-v2 .v2-kpi-btn {
+  background-image: linear-gradient(180deg,
+    rgba(255,255,255,.20) 0%, rgba(255,255,255,.06) 42%, rgba(0,0,0,0) 55%, rgba(0,0,0,.26) 100%) !important;
+  border: 1px solid color-mix(in srgb, currentColor 38%, transparent) !important;
+  border-bottom-color: color-mix(in srgb, currentColor 22%, #000) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -2px 0 rgba(0,0,0,.30),
+    0 4px 0 color-mix(in srgb, currentColor 32%, #000 68%),
+    0 6px 12px rgba(0,0,0,.40) !important;
+  transform: translateY(-2px);
+  transition: transform .12s ease, box-shadow .12s ease, filter .15s ease !important;
+}
+html:root body.layout-v2 .v2-cell:hover,
+html:root body.layout-v2 .v2-kpi-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    inset 0 -2px 0 rgba(0,0,0,.30),
+    0 5px 0 color-mix(in srgb, currentColor 32%, #000 68%),
+    0 9px 16px rgba(0,0,0,.45) !important;
+}
+html:root body.layout-v2 .v2-cell:active,
+html:root body.layout-v2 .v2-kpi-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,.35),
+    0 1px 0 color-mix(in srgb, currentColor 32%, #000 68%),
+    0 2px 4px rgba(0,0,0,.35) !important;
+}
+/* Número com leve relevo */
+html:root body.layout-v2 .v2-cell-val,
+html:root body.layout-v2 .v2-kpi-btn > .animate-num { text-shadow: 0 1px 0 rgba(0,0,0,.45), 0 0 1px rgba(0,0,0,.3); }
+/* Zero: botão "apagado", mas ainda com volume */
+html:root body.layout-v2 .v2-cell.v2-zero { box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -2px 0 rgba(0,0,0,.25), 0 3px 0 rgba(0,0,0,.45), 0 4px 8px rgba(0,0,0,.3) !important; }
+/* Espaço para a sombra de baixo não encostar */
+body.layout-v2 .v2-tile-cells, body.layout-v2 .v2-kpi-vals { padding-bottom: 4px; }
+
+/* Tema claro: sombras mais suaves */
+[data-mode="light"] body.layout-v2 .v2-cell,
+[data-mode="light"] body.layout-v2 .v2-kpi-btn {
+  background-image: linear-gradient(180deg, rgba(255,255,255,.75) 0%, rgba(255,255,255,.25) 45%, rgba(0,0,0,.06) 100%) !important;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.08),
+    0 3px 0 color-mix(in srgb, currentColor 30%, #fff 20%), 0 5px 10px rgba(0,0,0,.14) !important;
+}
+[data-mode="light"] body.layout-v2 .v2-cell-val,
+[data-mode="light"] body.layout-v2 .v2-kpi-btn > .animate-num { text-shadow: 0 1px 0 rgba(255,255,255,.8); }
+
+@media (prefers-reduced-motion: reduce) {
+  html:root body.layout-v2 .v2-cell, html:root body.layout-v2 .v2-kpi-btn { transition: none !important; }
+}
+
+/* ── Botão do gráfico do grupo: ícone 📊 ── */
+.v2-charts-toggle.v2-charts-icon {
+  width: 38px; height: 34px; padding: 0; margin-top: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1; border-radius: 10px;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.16), rgba(0,0,0,.2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 3px 0 rgba(0,0,0,.45), 0 5px 10px rgba(0,0,0,.3);
+  transform: translateY(-1px); transition: transform .12s, box-shadow .12s, border-color .15s; opacity: .75;
+}
+.v2-charts-toggle.v2-charts-icon.on { opacity: 1; border-color: var(--accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 0 2px var(--accent-soft, transparent), 0 3px 0 rgba(0,0,0,.45), 0 5px 10px rgba(0,0,0,.3); }
+.v2-charts-toggle.v2-charts-icon:hover { opacity: 1; }
+.v2-charts-toggle.v2-charts-icon:active { transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.45); }
+@media (max-width: 640px) { .v2-charts-toggle.v2-charts-icon { margin: 0 0 0 auto; } }
+
+/* ── Gráficos: fundo com leve degradê ── */
+.v2-chart-body, .v2-timeline .tl-chart {
+  border-radius: 10px; padding-top: 4px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent, #22d3ee) 9%, transparent) 0%,
+    color-mix(in srgb, var(--accent, #22d3ee) 3%, transparent) 55%,
+    rgba(0,0,0,.10) 100%);
+}
+[data-mode="light"] .v2-chart-body, [data-mode="light"] .v2-timeline .tl-chart {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #22d3ee) 8%, transparent), rgba(0,0,0,.03));
+}
+.v2-chart-svg .g-col:hover g { filter: brightness(1.15); }
+
+/* ── Linha do Tempo por hora ── */
+.v2-timeline .tl-sub .tl-key { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin: 0 3px 0 6px; vertical-align: -1px; }
+.v2-timeline .tl-key-le { background: #22d3ee; }
+.v2-timeline .tl-key-gt { background: var(--v2-crit); }
+.v2-timeline .tl-tick { stroke: var(--text-muted); stroke-opacity: .55; stroke-width: 1; }
+.v2-timeline .tl-ax-t { font-size: 9.5px; opacity: .85; }
+.v2-timeline .tl-now { stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #22d3ee); }
+.v2-timeline .tl-now-dot { fill: #22d3ee; filter: drop-shadow(0 0 4px #22d3ee); }
+.v2-timeline .tl-now-tag rect { fill: #22d3ee; fill-opacity: .18; stroke: #22d3ee; stroke-opacity: .7; }
+.v2-timeline .tl-now-tag text { fill: var(--text-main); font-size: 9.5px; font-weight: 800; font-family: var(--font-mono); }
