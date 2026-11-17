@@ -2,7 +2,7 @@
    Layout v2 — painel compacto (notebook) + inbox lateral
    Substitui apenas a renderização do grid. Dados, modal, inbox
    e ferramentas continuam usando o código original.
-   Alternância Novo/Clássico salva em localStorage ('sir_layout').
+   Alternância Painel/Grafana (antes Novo/Clássico) salva em localStorage ('sir_layout').
    ══════════════════════════════════════════════════════════════ */
 
 const LS_LAYOUT   = 'sir_layout';      // 'v2' | 'classic'
@@ -343,36 +343,41 @@ renderDashboard = function (ralRes, ralR, recRes, recR, userSavedAreas) {
   return renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas);
 };
 
-/* ── Barra de controles (escopo + layout) ── */
+/* ── Controles do painel ──
+   Escopo (Todas as áreas / Só minhas): na barra de cima, ao lado de "SIR".
+   Layout (Painel / Grafana): dentro do menu lateral (☰).
+   A legenda de cores (1–5 · 6–9 · 10+) fica só dentro dos gráficos. */
 function renderV2Bar() {
-  const bar = document.getElementById('v2-bar');
-  if (!bar) return;
   const layout  = getLayout();
   const hasMine = getUserSavedAreas().length > 0;
   const scope   = hasMine ? getV2Scope() : 'all';
-  /* Interruptor de duas opções: clicar no nome escolhe a opção; clicar no
-     interruptor alterna. A opção selecionada fica destacada. */
-  const sw = (aria, a, b, isB, fnA, fnB, dis) => `
-    <div class="v2-sw${dis ? ' v2-sw-dis' : ''}" role="group" aria-label="${aria}"${dis ? ' title="Selecione suas áreas em Minhas Áreas"' : ''}>
-      <button type="button" class="v2-sw-lbl${isB ? '' : ' on'}" onclick="${fnA}" ${dis ? 'disabled' : ''}>${a}</button>
-      <button type="button" class="cfg-toggle-btn v2-sw-btn" role="switch" aria-checked="${isB}" aria-label="${aria}"
-              onclick="${isB ? fnA : fnB}" ${dis ? 'disabled' : ''}>
-        <span class="cfg-toggle-track${isB ? ' on' : ''}"><span class="cfg-toggle-thumb"></span></span>
-      </button>
-      <button type="button" class="v2-sw-lbl${isB ? ' on' : ''}" onclick="${fnB}" ${dis ? 'disabled' : ''}>${b}</button>
-    </div>`;
-  bar.innerHTML = `
-    <div class="v2-switches">
-      ${layout === 'v2' ? sw('Escopo', 'Todas as áreas', 'Só minhas', scope === 'mine',
-                             "setV2Scope('all')", "setV2Scope('mine')", !hasMine) : ''}
-      ${sw('Layout', 'Layout novo', 'Clássico', layout === 'classic',
-           "setLayout('v2')", "setLayout('classic')", false)}
-    </div>
-    ${layout === 'v2' ? `<div class="v2-legend">
-      <span><i class="v2-dot v2-dot-ok"></i>1–5</span>
-      <span><i class="v2-dot v2-dot-warn"></i>6–9</span>
-      <span><i class="v2-dot v2-dot-crit"></i>10+</span>
-    </div>` : ''}`;
+
+  const bar = document.getElementById('v2-bar');
+  if (bar) bar.innerHTML = '';
+
+  const hs = document.getElementById('hdr-scope');
+  if (hs) {
+    if (layout !== 'v2') { hs.innerHTML = ''; hs.hidden = true; }
+    else {
+      hs.hidden = false;
+      const opt = (val, lbl) => `<button type="button" class="hdr-scope-opt${scope === val ? ' on' : ''}"
+          aria-pressed="${scope === val}" onclick="setV2Scope('${val}')" ${!hasMine ? 'disabled' : ''}>${lbl}</button>`;
+      hs.innerHTML = `<div class="hdr-scope-grp${hasMine ? '' : ' dis'}" role="group" aria-label="Áreas exibidas"${hasMine ? '' : ' title="Selecione suas áreas em Minhas Áreas"'}>
+          ${opt('all', 'Todas as áreas')}<span class="hdr-scope-sep" aria-hidden="true">|</span>${opt('mine', 'Só minhas')}
+        </div>`;
+    }
+  }
+
+  const ml = document.getElementById('menu-layout');
+  if (ml) {
+    const opt = (val, lbl, icon) => `<button type="button" class="menu-layout-opt${layout === val ? ' on' : ''}"
+        aria-pressed="${layout === val}" onclick="setLayout('${val}')">
+        <i data-lucide="${icon}"></i><span>${lbl}</span>${layout === val ? '<i data-lucide="check" class="menu-layout-check"></i>' : ''}</button>`;
+    ml.innerHTML = `<div class="menu-layout-title">Layout</div>
+      ${opt('v2', 'Painel', 'layout-dashboard')}
+      ${opt('classic', 'Grafana', 'bar-chart-3')}`;
+    if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: Array.from(ml.querySelectorAll('[data-lucide]')) });
+  }
 }
 
 function _rerender() {
@@ -388,7 +393,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v54';
+const SIR_APP_VERSION = 'v55';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */

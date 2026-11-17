@@ -129,3 +129,47 @@ body.app-menu-open .app-menu {
   font: 700 11px/20px var(--font-mono) !important; text-align: center;
 }
 #app-menu .tool-trash-btn .trash-count[hidden] { display: none !important; }
+
+/* ── Escopo na barra de cima (Todas as áreas | Só minhas) — sem interruptor ── */
+.app-bar { flex: 1; }
+.hdr-scope { display: flex; align-items: center; margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--line); min-width: 0; }
+.hdr-scope[hidden] { display: none; }
+.hdr-scope-grp { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.hdr-scope-opt {
+  border: 0; background: transparent; cursor: pointer;
+  font: 700 14px/1.2 var(--font-sans); letter-spacing: .2px;
+  color: var(--text-muted); padding: 7px 8px; border-radius: 8px;
+  transition: color var(--t) var(--ease), background var(--t) var(--ease);
+}
+.hdr-scope-opt:hover:not(:disabled) { color: var(--text-main); background: var(--bg-hover); }
+.hdr-scope-opt.on { color: var(--accent); }
+.hdr-scope-sep { color: var(--line); font-size: 16px; }
+.hdr-scope-grp.dis { opacity: .45; }
+.hdr-scope-grp.dis button { cursor: not-allowed; }
+@media (max-width: 380px) {
+  .hdr-scope { margin-left: 4px; padding-left: 6px; }
+  .hdr-scope-opt { font-size: 13px; padding: 7px 5px; }
+}
+
+/* A antiga barra de controles fica vazia */
+#v2-bar:empty { display: none !important; }
+
+/* ── Layout (Painel / Grafana) dentro do menu ── */
+.menu-layout { position: relative; margin-top: 13px; padding-top: 6px; }
+.menu-layout::before { content: ''; position: absolute; top: -7px; left: 12px; right: 12px; height: 1px; background: var(--line); }
+.menu-layout-title {
+  padding: 8px 14px 4px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.menu-layout-opt {
+  display: flex; align-items: center; gap: 16px;
+  width: 100%; height: 46px; padding: 0 14px; border-radius: 10px;
+  background: transparent; border: 0; cursor: pointer;
+  color: var(--text-main); font: 500 14px/1.2 var(--font-sans); text-align: left;
+}
+.menu-layout-opt:hover { background: var(--bg-hover); }
+.menu-layout-opt:active { background: var(--accent-soft); }
+.menu-layout-opt svg, .menu-layout-opt i { width: 20px; height: 20px; flex: none; color: var(--text-muted); }
+.menu-layout-opt span { flex: 1; }
+.menu-layout-opt.on { color: var(--accent); font-weight: 700; }
+.menu-layout-opt.on svg { color: var(--accent); }
