@@ -1,0 +1,114 @@
+/* ══════════════════════════════════════════════════════════════
+   v48 — Tela de tickets com cabeçalho compacto
+   Só aparência: todas as funções continuam as mesmas.
+   - Título curto ("CF NO1" + área) e botões na mesma linha
+   - Copiar todos / Copiar selecionados viram botões só com ícone
+     (Copiar selecionados aparece quando há status marcado no filtro)
+   - Abas RAL / REC / Qualidade sublinhadas, sem "pílula"
+   - Cards/Lista vira um botão ao lado da busca (um toque alterna)
+   Carregado por último: vale sobre tickets-ui.css, mobile.css e ajustes.css.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --ti-clipboard: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3C/svg%3E");
+  --tk-tab-ral: #ef5350; --tk-tab-rec: #f59e0b; --tk-tab-qual: #a78bfa;
+}
+
+/* ── Cabeçalho: ícone + título + botões em uma linha ── */
+#modal-overlay .modal-header {
+  flex-wrap: wrap; align-items: center; gap: 10px 8px;
+  padding: 14px 16px 10px; border-bottom: 0;
+}
+#modal-overlay .modal-title-group { flex: 1 1 0; min-width: 0; gap: 12px; order: 1; }
+#modal-overlay .modal-title { font-size: 17px; font-weight: 800; letter-spacing: .2px; }
+#modal-overlay .modal-title .mt-sub { font-size: 12.5px; font-weight: 500; letter-spacing: 0; }
+/* Com as abas na tela, "RAL's em tela no " é redundante: fica só "CF NO1" */
+#modal-overlay .modal-content:has(.list-tabs) .modal-title .mt-pre { display: none; }
+
+#modal-overlay .modal-tools { flex: none; flex-wrap: nowrap; gap: 8px; margin-left: auto; order: 2; }
+#modal-overlay #btn-modal-copy-sel { order: 2; }
+#modal-overlay #btn-modal-copy-all { order: 3; }
+#modal-overlay #btn-modal-assoc    { order: 4; }
+#modal-overlay #btn-modal-csv      { order: 5; }
+#modal-overlay .modal-close-btn    { order: 6; width: 40px; height: 40px; margin: 0; }
+
+#modal-overlay .modal-tools > .modal-csv-btn {
+  flex: none; height: 40px; min-height: 40px; padding: 0 12px; border-radius: 10px;
+  font-size: 14px; white-space: nowrap; text-align: center; overflow: visible;
+}
+/* Só ícone */
+#modal-overlay #btn-modal-copy-all,
+#modal-overlay #btn-modal-copy-sel { flex: none; width: 40px; padding: 0; gap: 0; font-size: 0; }
+#modal-overlay #btn-modal-copy-all {
+  background: rgba(47,158,91,.18) !important; border-color: rgba(47,158,91,.38) !important;
+}
+#modal-overlay #btn-modal-copy-all::before { --ti: var(--ti-clipboard); color: #34d27b; width: 20px; height: 20px; }
+#modal-overlay #btn-modal-copy-sel::before { width: 20px; height: 20px; }
+/* Copiar selecionados só aparece quando há o que copiar (status marcado no filtro) */
+#modal-overlay #btn-modal-copy-sel:disabled { display: none; }
+/* Associar: azul suave */
+#modal-overlay #btn-modal-assoc {
+  background: rgba(59,114,240,.16) !important; border-color: transparent !important;
+  color: #7aa5ff !important; box-shadow: none; gap: 7px;
+}
+#modal-overlay #btn-modal-assoc:hover { background: rgba(59,114,240,.26) !important; filter: none; }
+#modal-overlay #btn-modal-csv { font-size: 12.5px; }
+
+/* ── Abas sublinhadas ── */
+#modal-overlay .list-bar { padding: 0 16px; gap: 0 12px; border-bottom: 0; }
+#modal-overlay .list-bar .list-tabs {
+  flex: 1 1 100%; max-width: 100%; padding: 0; gap: 0;
+  background: none; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; box-shadow: none;
+}
+#modal-overlay .list-bar .list-tabs button {
+  flex: 0 0 auto; min-height: 44px; padding: 6px 18px; margin-bottom: -1px;
+  background: none; box-shadow: none; border-radius: 0; border-bottom: 2px solid transparent;
+  color: var(--text-muted); font-size: 14px; font-weight: 600;
+}
+#modal-overlay .list-bar .list-tabs button::before { display: none; }
+#modal-overlay .list-bar .list-tabs button:hover:not(.on) { background: none; color: var(--text-main); }
+#modal-overlay .list-bar .list-tabs button.on { background: none; box-shadow: none; color: var(--tk-tab); border-bottom-color: var(--tk-tab); }
+#modal-overlay .list-tabs button[data-kind="ral"]  { --tk-tab: var(--tk-tab-ral); }
+#modal-overlay .list-tabs button[data-kind="rec"]  { --tk-tab: var(--tk-tab-rec); }
+#modal-overlay .list-tabs button[data-kind="qual"] { --tk-tab: var(--tk-tab-qual); }
+/* Cards/Lista agora é o botão ao lado da busca */
+#modal-overlay .list-bar .list-view { display: none; }
+#modal-overlay .list-bar-extra { padding: 8px 0; }
+
+/* ── Busca + opções + Cards/Lista ── */
+#modal-overlay .modal-filter-bar { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+#modal-overlay .btn-tk-view {
+  flex: none; width: 42px; height: 42px; border-radius: var(--tk-r); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-elevated); border: 1px solid var(--line-strong); color: var(--text-main);
+}
+#modal-overlay .btn-tk-view::before {
+  content: ''; display: inline-block; flex: none; width: 20px; height: 20px; background: currentColor;
+  -webkit-mask: var(--ti) center / contain no-repeat; mask: var(--ti) center / contain no-repeat;
+}
+#modal-overlay .btn-tk-view[data-view-now="cards"] { --ti: var(--ti-grid); }
+#modal-overlay .btn-tk-view[data-view-now="list"]  { --ti: var(--ti-list); }
+#modal-overlay .btn-tk-view:hover { background: var(--bg-hover); }
+
+/* ── Celular ── */
+@media (max-width: 640px) {
+  #modal-overlay .modal-header { padding: 14px 14px 8px; }
+  #modal-overlay .modal-title-group { flex: 1 1 0; }
+  /* CSV continua nas opções (botão ao lado da busca), em linha própria */
+  #modal-overlay #btn-modal-csv { order: 7; }
+  #modal-overlay .list-bar { padding: 0 14px; }
+  #modal-overlay .list-bar .list-tabs button { flex: 1 1 0; padding: 6px 6px; }
+  #modal-overlay .modal-filter-bar { padding: 12px 14px; }
+  #modal-overlay .btn-tk-view { order: 2; }
+}
+/* Tela estreita, ou Copiar selecionados à mostra: Associar fica só com o ícone */
+@media (max-width: 360px) {
+  #modal-overlay #btn-modal-assoc { width: 40px; padding: 0; gap: 0; font-size: 0; }
+}
+@media (max-width: 430px) {
+  #modal-overlay .modal-header:has(#btn-modal-copy-sel:not(:disabled)) #btn-modal-assoc { width: 40px; padding: 0; gap: 0; font-size: 0; }
+}
+
+/* ── Tema claro ── */
+[data-mode="light"] #modal-overlay #btn-modal-assoc { color: var(--tk-blue-2) !important; background: rgba(59,114,240,.12) !important; }
+[data-mode="light"] #modal-overlay #btn-modal-copy-all::before { color: #15803d; }
+[data-mode="light"] { --tk-tab-ral: #dc2626; --tk-tab-rec: #b45309; --tk-tab-qual: #7c3aed; }

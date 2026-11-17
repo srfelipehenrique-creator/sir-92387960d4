@@ -11,15 +11,50 @@ const LS_TK_OPTS = 'sir_ticket_opts';   // '1' = opções abertas
 function _tkContent() { return document.querySelector('#modal-overlay .modal-content'); }
 
 /* Título: "RAL's em tela no CF NO2 - Norte 2 - RJ" → título + subtítulo.
-   O texto do elemento continua igual (o nome do CSV usa esse texto). */
+   O texto do elemento continua igual (o nome do CSV usa esse texto).
+   O trecho "RAL's em tela no " fica em .mt-pre: com as abas na tela ele é
+   escondido (a aba já diz o tipo) e o título vira só "CF NO2". */
 function _tkSplitTitle() {
   const el = document.getElementById('modal-title');
   if (!el || el.querySelector('.mt-main')) return;
   const txt = el.textContent, i = txt.indexOf(' - ');
-  if (i < 1) return;
+  const mainTxt = i > 0 ? txt.slice(0, i) : txt;
+  const pre = mainTxt.match(/^(.*\bem tela no )(CF .+)$/);
+  if (i < 1 && !pre) return;
   el.textContent = '';
-  const mk = (cls, t) => { const s = document.createElement('span'); s.className = cls; s.textContent = t; el.appendChild(s); };
-  mk('mt-main', txt.slice(0, i)); mk('mt-sep', ' - '); mk('mt-sub', txt.slice(i + 3));
+  const mk = (parent, cls, t) => { const s = document.createElement('span'); s.className = cls; s.textContent = t; parent.appendChild(s); return s; };
+  const main = mk(el, 'mt-main', pre ? '' : mainTxt);
+  if (pre) { mk(main, 'mt-pre', pre[1]); main.appendChild(document.createTextNode(pre[2])); }
+  if (i > 0) { mk(el, 'mt-sep', ' - '); mk(el, 'mt-sub', txt.slice(i + 3)); }
+}
+
+/* Botão Cards/Lista ao lado da busca: um toque alterna a exibição.
+   Usa os mesmos botões (agora escondidos) da barra de abas, então a troca
+   continua passando pelo caminho de sempre. */
+function _tkEnsureViewBtn() {
+  let btn = document.getElementById('btn-tk-view');
+  if (!btn) {
+    const fb = document.getElementById('modal-filter-bar');
+    if (!fb) return;
+    btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'btn-tk-view'; btn.className = 'btn-tk-view';
+    btn.addEventListener('click', () => {
+      const other = document.querySelector('#list-bar .list-view [data-view]:not(.on)');
+      if (other) other.click();
+    });
+    fb.appendChild(btn);
+  }
+  const cards = typeof getTicketView === 'function' ? getTicketView() === 'cards' : true;
+  btn.dataset.viewNow = cards ? 'cards' : 'list';
+  btn.title = cards ? 'Exibindo em cards — toque para ver em lista' : 'Exibindo em lista — toque para ver em cards';
+  btn.setAttribute('aria-label', btn.title);
+}
+
+/* Botões só com ícone precisam de nome para leitores de tela */
+function _tkLabelIconBtns() {
+  const a = document.getElementById('btn-modal-copy-all'), s = document.getElementById('btn-modal-copy-sel');
+  if (a && !a.getAttribute('aria-label')) a.setAttribute('aria-label', 'Copiar todos');
+  if (s && !s.getAttribute('aria-label')) s.setAttribute('aria-label', 'Copiar selecionados');
 }
 
 function _tkSetOpts(open) {
@@ -93,9 +128,11 @@ function _tkUpdateFoot() {
 
 document.addEventListener('DOMContentLoaded', () => {
   _tkEnsureOptsBtn();
+  _tkEnsureViewBtn();
+  _tkLabelIconBtns();
   _tkEnsureFoot();
   /* Disparado por lista-abas.js sempre que a tela de tickets abre ou troca de aba */
-  document.addEventListener('sir-list-bar', () => { _tkEnsureOptsBtn(); _tkSplitTitle(); _tkUpdateFoot(); });
+  document.addEventListener('sir-list-bar', () => { _tkEnsureOptsBtn(); _tkEnsureViewBtn(); _tkLabelIconBtns(); _tkSplitTitle(); _tkUpdateFoot(); });
   const tbody = document.getElementById('modal-tbody');
   if (tbody && 'MutationObserver' in window) {
     new MutationObserver(_tkUpdateFoot).observe(tbody, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden'] });
