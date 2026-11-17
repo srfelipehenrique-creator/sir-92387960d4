@@ -1,16 +1,17 @@
 /* ══════════════════════════════════════════════════════════════
-   LINHA DO TEMPO (RAL / REC) — fica logo abaixo dos grupos de áreas
+   LINHA DO TEMPO (RAL / REC) — uma em cada grupo de áreas (ES, Interior,
+   Capital), logo abaixo dos gráficos de barras do grupo
    - Distribui os tickets pelo tempo desde a abertura:
      0–2h · 2–4h · 4–6h · 6–12h · 12–24h | 24–48h · 48–72h · +72h
    - Dois cartões no topo: dentro de 24h e mais de 24h (quantidade e %).
-   - Escolhas: RAL ou REC · Todas, ≤ 24h ou > 24h · área (todas, minhas
-     ou uma só). Ficam salvas neste aparelho.
-   - Botão Recolher / Expandir (também salvo neste aparelho).
+   - Escolhas de cada grupo: RAL ou REC · Todas, ≤ 24h ou > 24h · área
+     (todas do grupo ou uma só). Ficam salvas neste aparelho.
+   - Cada grupo tem o seu botão Recolher / Expandir (também salvo).
    - Tocar numa coluna abre a lista dos tickets daquela faixa.
    Desenho próprio em SVG (sem biblioteca externa → funciona offline).
    ══════════════════════════════════════════════════════════════ */
 
-const LS_TL = 'sir_timeline_v1';   /* { tk, win, area, closed } */
+const LS_TL = 'sir_timeline_v2';   /* { "ES": { tk, win, area, closed }, ... } */
 const TL_BUCKETS = [
   { k: '0-2',   lo: 0,  hi: 2,        t: '0–2h' },
   { k: '2-4',   lo: 2,  hi: 4,        t: '2–4h' },
@@ -23,35 +24,37 @@ const TL_BUCKETS = [
 ];
 const TL_SLA = { ral: '4-6', rec: '2-4' };   /* faixa em que o SLA vence: RAL 6h · REC 4h */
 
-function _tlOpts() {
-  let o = {};
-  try { o = JSON.parse(localStorage.getItem(LS_TL) || '{}') || {}; } catch (e) {}
-  return { tk: o.tk === 'rec' ? 'rec' : 'ral', win: ['le', 'gt'].includes(o.win) ? o.win : 'all', area: o.area || '', closed: !!o.closed };
+function _tlAll() { try { const v = JSON.parse(localStorage.getItem(LS_TL) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function _tlOpts(rn) {
+  const o = _tlAll()[rn] || {};
+  return { tk: o.tk === 'rec' ? 'rec' : 'ral', win: ['le', 'gt'].includes(o.win) ? o.win : 'all', area: o.area || 'ALL', closed: !!o.closed };
 }
-function _tlSave(p) { const o = { ..._tlOpts(), ...p }; try { localStorage.setItem(LS_TL, JSON.stringify(o)); } catch (e) {} return o; }
+function _tlSave(rn, p) {
+  const all = _tlAll(), o = { ..._tlOpts(rn), ...p };
+  all[rn] = o;
+  try { localStorage.setItem(LS_TL, JSON.stringify(all)); } catch (e) {}
+  return o;
+}
 
-function _tlCfList() { const out = []; for (const cfs of Object.values(REGIONS)) out.push(...Object.keys(cfs)); return out; }
-function _tlArea(o) {
+/* Áreas do grupo que aparecem no painel (em "Só minhas áreas", só as suas) */
+function _tlGroupCfs(rn) {
+  let cfs = Object.keys(REGIONS[rn] || {});
   const mine = getUserSavedAreas();
-  let a = o.area;
-  if (!a) a = (mine.length && typeof getV2Scope === 'function' && getV2Scope() === 'mine') ? 'MINE' : 'ALL';
-  if (a === 'MINE' && !mine.length) a = 'ALL';
-  if (a !== 'ALL' && a !== 'MINE' && !_tlCfList().includes(a)) a = 'ALL';
-  return a;
+  if (mine.length && typeof getV2Scope === 'function' && getV2Scope() === 'mine') cfs = cfs.filter(cf => mine.includes(cf));
+  return cfs;
 }
-function _tlItems(tk, area) {
+function _tlArea(rn, o) { return o.area !== 'ALL' && _tlGroupCfs(rn).includes(o.area) ? o.area : 'ALL'; }
+function _tlItems(tk, rn, area) {
   const md = (modalData && modalData[tk]) || {};
-  if (area === 'ALL') return md['ALL'] || [];
-  if (area === 'MINE') return getUserSavedAreas().flatMap(cf => md[cf] || []);
-  return md[area] || [];
+  return (area === 'ALL' ? _tlGroupCfs(rn) : [area]).flatMap(cf => md[cf] || []);
 }
 
 /* Separa os tickets nas faixas de tempo */
-function _tlData(tk, area) {
+function _tlData(tk, rn, area) {
   const now = Date.now(), b = {};
   TL_BUCKETS.forEach(x => b[x.k] = []);
   let semData = 0;
-  for (const it of _tlItems(tk, area)) {
+  for (const it of _tlItems(tk, rn, area)) {
     const t = parseAbertura(it.abertura);
     if (!t) { semData++; continue; }
     const h = Math.max(0, (now - t) / 3600000);
@@ -63,19 +66,19 @@ function _tlData(tk, area) {
   return { b, le, gt, total: le + gt, semData };
 }
 
-function _tlSVG(tk, d, win, width) {
+function _tlSVG(tk, d, win, width, uid) {
   const list = TL_BUCKETS.filter(x => win === 'all' || (win === 'le' ? x.hi <= 24 : x.lo >= 24));
   const W = Math.max(280, Math.round(width));
   const n = list.length, tilt = (W - 40) / n < 48;
-  const H = 200, padL = 30, padR = 10, padT = 22, padB = tilt ? 40 : 28;
+  const H = 190, padL = 30, padR = 10, padT = 22, padB = tilt ? 40 : 28;
   const max = _niceMax(Math.max(1, ...list.map(x => d.b[x.k].length)));
   const iw = W - padL - padR, ih = H - padT - padB, band = iw / n;
   const x = i => padL + band * (i + 0.5), y = v => padT + ih - (v / max) * ih;
   const bw = Math.max(10, Math.min(46, band * 0.5));
   let g = `<defs>
-    <linearGradient id="tl-le" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".95"/><stop offset="100%" stop-color="#22d3ee" stop-opacity=".45"/></linearGradient>
-    <linearGradient id="tl-gt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--v2-crit)" stop-opacity=".98"/><stop offset="100%" style="stop-color:var(--v2-crit)" stop-opacity=".5"/></linearGradient>
-    <pattern id="tl-dots" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".8" fill="#fff" fill-opacity=".22"/></pattern></defs>`;
+    <linearGradient id="tl-le${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".95"/><stop offset="100%" stop-color="#22d3ee" stop-opacity=".45"/></linearGradient>
+    <linearGradient id="tl-gt${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--v2-crit)" stop-opacity=".98"/><stop offset="100%" style="stop-color:var(--v2-crit)" stop-opacity=".5"/></linearGradient>
+    <pattern id="tl-dots${uid}" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".8" fill="#fff" fill-opacity=".22"/></pattern></defs>`;
   for (let k = 0; k <= 4; k++) {
     const v = (max / 4) * k, yy = y(v);
     g += `<line class="g-grid" x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}" stroke-dasharray="${k ? '3 4' : ''}" opacity="${k ? .55 : .9}"/>`;
@@ -90,12 +93,12 @@ function _tlSVG(tk, d, win, width) {
   const y0 = y(0);
   list.forEach((bk, i) => {
     const v = d.b[bk.k].length, cx = x(i), top = y(v), h = Math.max(0, y0 - top);
-    const late = bk.lo >= 24, fill = late ? 'url(#tl-gt)' : 'url(#tl-le)', col = late ? 'var(--v2-crit)' : '#22d3ee';
+    const late = bk.lo >= 24, fill = `url(#${late ? 'tl-gt' : 'tl-le'}${uid})`, col = late ? 'var(--v2-crit)' : '#22d3ee';
     const rad = Math.min(4, bw / 2, h);
     const lbl = bk.t + (TL_SLA[tk] === bk.k ? ' (SLA)' : '');
     const bar = h > 0
       ? `<path d="M${(cx - bw / 2).toFixed(1)} ${y0} V${(top + rad).toFixed(1)} Q${(cx - bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx - bw / 2 + rad).toFixed(1)} ${top.toFixed(1)} H${(cx + bw / 2 - rad).toFixed(1)} Q${(cx + bw / 2).toFixed(1)} ${top.toFixed(1)} ${(cx + bw / 2).toFixed(1)} ${(top + rad).toFixed(1)} V${y0} Z" fill="${fill}" style="stroke:${col}" stroke-width="1"/>
-         <path d="M${(cx - bw / 2).toFixed(1)} ${y0} V${top.toFixed(1)} H${(cx + bw / 2).toFixed(1)} V${y0} Z" fill="url(#tl-dots)" pointer-events="none"/>`
+         <path d="M${(cx - bw / 2).toFixed(1)} ${y0} V${top.toFixed(1)} H${(cx + bw / 2).toFixed(1)} V${y0} Z" fill="url(#tl-dots${uid})" pointer-events="none"/>`
       : `<line class="g-zero" x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke-width="2"/>`;
     const lx = tilt
       ? `<text class="g-x" x="${cx}" y="${H - padB + 12}" text-anchor="end" transform="rotate(-40 ${cx} ${H - padB + 12})" style="font-size:9px">${lbl}</text>`
@@ -111,9 +114,9 @@ function _tlSVG(tk, d, win, width) {
   return `<svg class="v2-chart-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Linha do tempo ${tk.toUpperCase()}">${g}</svg>`;
 }
 
-function _tlShellHTML() {
-  const o = _tlOpts();
-  return `<section class="v2-timeline${o.closed ? ' tl-closed' : ''}" id="v2-timeline">
+function _tlShellHTML(rn) {
+  const o = _tlOpts(rn);
+  return `<section class="v2-timeline${o.closed ? ' tl-closed' : ''}" data-tl-reg="${escapeHtml(rn)}">
     <div class="tl-head">
       <div class="tl-title-wrap">
         <span class="tl-dot"></span>
@@ -125,7 +128,7 @@ function _tlShellHTML() {
         <select class="tl-area" aria-label="Área"></select>
         <span class="tl-pill"></span>
       </div>
-      <button type="button" class="v2-charts-toggle tl-toggle" aria-expanded="${!o.closed}">${o.closed ? '▸ Expandir' : '▾ Recolher'}</button>
+      <button type="button" class="v2-charts-toggle tl-toggle" aria-expanded="${!o.closed}" title="Recolher ou expandir a linha do tempo do grupo ${escapeHtml(rn)}">${o.closed ? '▸ Expandir' : '▾ Recolher'}</button>
     </div>
     <div class="tl-body"${o.closed ? ' hidden' : ''}>
       <div class="tl-cards">
@@ -139,22 +142,22 @@ function _tlShellHTML() {
 }
 
 function renderTimeline() {
-  const sec = document.getElementById('v2-timeline');
-  if (!sec || !modalData || !modalData.ral) return;
-  const o = _tlOpts(), tk = o.tk, area = _tlArea(o);
+  document.querySelectorAll('#main-grid .v2-timeline[data-tl-reg]').forEach(sec => _tlRenderOne(sec, sec.dataset.tlReg));
+}
+function _tlRenderOne(sec, uid) {
+  if (!modalData || !modalData.ral) return;
+  const rn = sec.dataset.tlReg, o = _tlOpts(rn), tk = o.tk, area = _tlArea(rn, o);
   const T = tk.toUpperCase();
-  sec.querySelector('.tl-title').textContent = `Linha do Tempo · ${T}`;
+  sec.querySelector('.tl-title').textContent = `Linha do Tempo · ${T} · ${rn}`;
   sec.querySelectorAll('.tl-seg').forEach(s => s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === o[s.dataset.tlSet])));
 
-  /* lista de áreas */
-  const sel = sec.querySelector('.tl-area'), mine = getUserSavedAreas(), cfs = _tlCfList();
-  sel.innerHTML = `<option value="ALL">Todas as áreas (${cfs.length} CFs)</option>` +
-    (mine.length ? `<option value="MINE">Minhas áreas (${mine.length} CF${mine.length > 1 ? 's' : ''})</option>` : '') +
-    Object.entries(REGIONS).map(([rn, c]) => `<optgroup label="${escapeHtml(rn)}">${Object.keys(c).map(cf => `<option value="${escapeHtml(cf)}">${escapeHtml(cf)}${CF_NAMES[cf] ? ' — ' + escapeHtml(CF_NAMES[cf]) : ''}</option>`).join('')}</optgroup>`).join('');
+  /* áreas do grupo */
+  const sel = sec.querySelector('.tl-area'), cfs = _tlGroupCfs(rn);
+  sel.innerHTML = `<option value="ALL">Todas as áreas (${cfs.length} CF${cfs.length === 1 ? '' : 's'})</option>` +
+    cfs.map(cf => `<option value="${escapeHtml(cf)}">${escapeHtml(cf)}${CF_NAMES[cf] ? ' — ' + escapeHtml(CF_NAMES[cf]) : ''}</option>`).join('');
   sel.value = area;
 
-  const d = _tlData(tk, area);
-  sec._tlData = d;
+  const d = _tlData(tk, rn, area);
   sec.querySelector('.tl-pill').innerHTML = `<b>${d.total}</b> ${tk === 'ral' ? 'RALs de falha' : 'RECs'}`;
   const pct = v => d.total ? Math.round(v / d.total * 100) : 0;
   const le = sec.querySelector('.tl-le'), gt = sec.querySelector('.tl-gt');
@@ -166,55 +169,61 @@ function renderTimeline() {
 
   if (o.closed) return;
   const holder = sec.querySelector('.tl-chart');
-  holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600);
+  holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600, uid);
   sec.querySelector('.tl-note').textContent = d.semData ? `${d.semData} ${T} sem data de abertura não entra${d.semData > 1 ? 'm' : ''} no gráfico.` : '';
 }
 
 /* Abre a lista de uma faixa (as duas abas, RAL e REC, mostram a mesma faixa) */
-function _tlOpenBucket(k) {
-  const o = _tlOpts(), area = _tlArea(o), bk = TL_BUCKETS.find(x => x.k === k);
+function _tlOpenBucket(rn, k) {
+  const o = _tlOpts(rn), area = _tlArea(rn, o), bk = TL_BUCKETS.find(x => x.k === k);
   if (!bk) return;
-  const key = 'TL_' + k;
-  for (const tk of ['ral', 'rec']) modalData[tk][key] = _tlData(tk, area).b[k];
-  const aname = area === 'ALL' ? 'Todas as áreas' : area === 'MINE' ? 'Minhas áreas' : area;
-  openModal(key, o.tk === 'ral', `${o.tk.toUpperCase()} :: ${bk.t} · ${aname}`);
+  const key = `TL_${rn}_${k}`;
+  for (const tk of ['ral', 'rec']) modalData[tk][key] = _tlData(tk, rn, area).b[k];
+  openModal(key, o.tk === 'ral', `${o.tk.toUpperCase()} :: ${bk.t} · ${area === 'ALL' ? rn : area}`);
 }
 
 document.addEventListener('click', e => {
-  const sec = e.target.closest && e.target.closest('#v2-timeline');
+  const sec = e.target.closest && e.target.closest('.v2-timeline[data-tl-reg]');
   if (!sec) return;
+  const rn = sec.dataset.tlReg;
   const segBtn = e.target.closest('.tl-seg button');
-  if (segBtn) { _tlSave({ [segBtn.parentElement.dataset.tlSet]: segBtn.dataset.v }); renderTimeline(); return; }
+  if (segBtn) { _tlSave(rn, { [segBtn.parentElement.dataset.tlSet]: segBtn.dataset.v }); _tlRenderOne(sec, rn); return; }
   if (e.target.closest('.tl-toggle')) {
-    const o = _tlSave({ closed: !_tlOpts().closed });
+    const o = _tlSave(rn, { closed: !_tlOpts(rn).closed });
     sec.classList.toggle('tl-closed', o.closed);
     sec.querySelector('.tl-body').hidden = o.closed;
     const b = sec.querySelector('.tl-toggle');
     b.textContent = o.closed ? '▸ Expandir' : '▾ Recolher';
     b.setAttribute('aria-expanded', String(!o.closed));
-    renderTimeline();
+    _tlRenderOne(sec, rn);
     return;
   }
   const col = e.target.closest('[data-tl-bucket]');
-  if (col) _tlOpenBucket(col.dataset.tlBucket);
+  if (col) _tlOpenBucket(rn, col.dataset.tlBucket);
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const col = e.target.closest && e.target.closest('[data-tl-bucket]');
-  if (col) _tlOpenBucket(col.dataset.tlBucket);
+  if (col) _tlOpenBucket(col.closest('.v2-timeline').dataset.tlReg, col.dataset.tlBucket);
 });
 document.addEventListener('change', e => {
-  if (e.target.matches && e.target.matches('#v2-timeline .tl-area')) { _tlSave({ area: e.target.value }); renderTimeline(); }
+  const sel = e.target.matches && e.target.matches('.v2-timeline .tl-area') ? e.target : null;
+  if (!sel) return;
+  const sec = sel.closest('.v2-timeline');
+  _tlSave(sec.dataset.tlReg, { area: sel.value }); _tlRenderOne(sec, sec.dataset.tlReg);
 });
 
-/* Entra logo abaixo dos grupos de áreas sempre que o painel é redesenhado */
+/* Entra em cada grupo, logo abaixo dos gráficos de barras, sempre que o painel é redesenhado */
 if (typeof renderDashboardV2 === 'function') {
   const _rdTl = renderDashboardV2;
   renderDashboardV2 = function () {
     const r = _rdTl.apply(this, arguments);
     try {
-      const regs = document.querySelector('#main-grid .v2-regions');
-      if (regs) { regs.insertAdjacentHTML('afterend', _tlShellHTML()); renderTimeline(); }
+      document.querySelectorAll('#main-grid .v2-region[data-region]').forEach(sec => {
+        const body = sec.querySelector('.v2-region-body');
+        if (body) body.insertAdjacentHTML('beforeend', _tlShellHTML(sec.dataset.region));
+      });
+      renderTimeline();
     } catch (e) { console.warn('linha do tempo', e); }
     return r;
   };

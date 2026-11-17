@@ -94,7 +94,7 @@
 
 /* ══ Linha do Tempo (RAL/REC por tempo decorrido) — abaixo das áreas (v51) ══ */
 .v2-timeline {
-  margin-top: 18px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r);
+  margin-top: 12px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r);
   padding: 14px 16px 10px;
 }
 .v2-timeline .tl-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
