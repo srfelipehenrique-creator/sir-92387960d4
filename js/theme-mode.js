@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    Tema: automático / claro / escuro + Cinza Chumbo / Solarized Dark / Sépia Suave
    - Preferência salva em localStorage 'sir_mode':
-     'auto' | 'light' | 'dark' | 'chumbo' | 'solarized' | 'sepia'
+     'auto' | 'light' | 'dark' | 'chumbo' | 'solarized' | 'sepia' | 'campo' | 'cyber' | 'lavanda'
    - Os três temas extras usam uma base (escura ou clara) e trocam as cores
      por cima dela (<html data-skin="…">, cores em css/temas.css)
    - 'auto' segue o tema do celular ou do computador e muda junto com ele
@@ -10,11 +10,11 @@
    ══════════════════════════════════════════════════════════════ */
 (function () {
   var KEY = 'sir_mode';
-  var ORDER = ['auto', 'light', 'dark', 'chumbo', 'solarized', 'sepia'];
-  var LABEL = { auto: 'Automático', light: 'Claro', dark: 'Escuro', chumbo: 'Cinza Chumbo', solarized: 'Solarized Dark', sepia: 'Sépia Suave' };
-  var ICON  = { auto: 'sun-moon', light: 'sun', dark: 'moon', chumbo: 'moon-star', solarized: 'waves', sepia: 'book-open' };
+  var ORDER = ['auto', 'light', 'dark', 'chumbo', 'solarized', 'sepia', 'campo', 'cyber', 'lavanda'];
+  var LABEL = { auto: 'Automático', light: 'Claro', dark: 'Escuro', chumbo: 'Cinza Chumbo', solarized: 'Solarized Dark', sepia: 'Sépia Suave', campo: 'Eco-Militar', cyber: 'Cyberpunk Digital', lavanda: 'Lavanda e Areia' };
+  var ICON  = { auto: 'sun-moon', light: 'sun', dark: 'moon', chumbo: 'moon-star', solarized: 'waves', sepia: 'book-open', campo: 'trees', cyber: 'zap', lavanda: 'flower-2' };
   /* Temas extras: base (claro/escuro) e cor da barra do navegador */
-  var SKIN  = { chumbo: ['dark', '#121212'], solarized: ['dark', '#002B36'], sepia: ['light', '#FDF6E3'] };
+  var SKIN  = { chumbo: ['dark', '#121212'], solarized: ['dark', '#002B36'], sepia: ['light', '#FDF6E3'], campo: ['dark', '#1F1A14'], cyber: ['dark', '#0D0F12'], lavanda: ['light', '#F6F1E9'] };
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
   function getPref() {

@@ -4,6 +4,10 @@
      • Cinza Chumbo   <html data-skin="chumbo">     (base escura)
      • Solarized Dark <html data-skin="solarized">  (base escura)
      • Sépia Suave    <html data-skin="sepia">      (base clara)
+   v50 — mais três:
+     • Eco-Militar    <html data-skin="campo">      (base escura)
+     • Cyberpunk      <html data-skin="cyber">      (base escura)
+     • Lavanda e Areia <html data-skin="lavanda">   (base clara)
    Cada tema só troca as cores; nada de função muda.
    As cores de destaque dos botões (Configurações → Tema de cor) continuam valendo.
    ══════════════════════════════════════════════════════════════ */
@@ -49,16 +53,69 @@
   --v2-ok: #5F6B1E;   --v2-ok-bg: rgba(133,153,0,0.22);
   --v2-warn: #8A6100; --v2-warn-bg: rgba(181,137,0,0.24);
   --v2-crit: #B52B27; --v2-crit-bg: rgba(220,50,47,0.16);
+  --sk-overlay: rgba(88,70,30,0.38); --sk-strong: #46585E;
   --sh-sm: 0 1px 2px rgba(88,70,30,0.08); --sh: 0 4px 14px rgba(88,70,30,0.10);
   --sh-lg: 0 12px 36px rgba(88,70,30,0.16); --sh-xl: 0 24px 60px rgba(88,70,30,0.20);
 }
-:root[data-skin="sepia"] body { background: var(--bg-dark); background-image: none; }
-:root[data-skin="sepia"] header { background-color: var(--sk-header); }
-:root[data-skin="sepia"] .header-brand { background: none; -webkit-text-fill-color: currentColor; color: var(--text-main); }
-:root[data-skin="sepia"] .modal-overlay { background: rgba(88,70,30,0.38); }
-:root[data-skin="sepia"] .v2-tile-cf, :root[data-skin="sepia"] .v2-region-name { color: #46585E; }
-:root[data-skin="sepia"] .sla-ok { color: #5F6B1E; background: rgba(133,153,0,0.18); }
-:root[data-skin="sepia"] .status-flash { color: #5F6B1E; }
+:root[data-skin][data-mode="light"] body { background: var(--bg-dark); background-image: none; }
+:root[data-skin][data-mode="light"] header { background-color: var(--sk-header); }
+:root[data-skin][data-mode="light"] .header-brand { background: none; -webkit-text-fill-color: currentColor; color: var(--text-main); }
+:root[data-skin][data-mode="light"] .modal-overlay { background: var(--sk-overlay); }
+:root[data-skin][data-mode="light"] .v2-tile-cf, :root[data-skin][data-mode="light"] .v2-region-name { color: var(--sk-strong); }
+:root[data-skin][data-mode="light"] .sla-ok { color: var(--v2-ok); background: var(--v2-ok-bg); }
+:root[data-skin][data-mode="light"] .status-flash { color: var(--v2-ok); }
+
+/* ── 4. Eco-Militar / Natureza Urbana (marrom com verde) ── */
+:root[data-skin="campo"] {
+  --bg-dark: #1F1A14; --bg-panel: #2A231B; --bg-panel-2: #312920; --bg-panel-3: #1A1611;
+  --bg-elevated: #3A3127; --bg-float: #42382C; --bg-hover: rgba(200,190,165,0.06);
+  --text-main: #D8D0BE; --text-soft: rgba(216,208,190,0.80); --text-muted: rgba(216,208,190,0.56); --text-dim: rgba(216,208,190,0.30);
+  --line: rgba(200,190,165,0.10); --line-strong: rgba(200,190,165,0.20);
+  --sk-card: #2A231B; --sk-card-line: rgba(138,154,91,0.38); --sk-inner: #1F1A14; --sk-inner-line: rgba(200,190,165,0.10);
+  --sk-header: rgba(31,26,20,0.92);
+  --sk-qual-bg: #3B3A1E; --sk-qual-fg: #C9C27A; --sk-qual-line: rgba(201,194,122,0.42);
+  --v2-ok: #8BC34A;   --v2-ok-bg: #2E3A1C;   --sk-ok-line: rgba(139,195,74,0.30);
+  --v2-warn: #E0A84A; --v2-warn-bg: #4A3417; --sk-warn-line: rgba(224,168,74,0.60);
+  --v2-crit: #E4705A; --v2-crit-bg: #4B2219; --sk-crit-line: rgba(228,112,90,0.62);
+  --sk-zero-bg: #241E17;
+}
+
+/* ── 5. Cyberpunk Digital (grafite com fluorescentes) ── */
+:root[data-skin="cyber"] {
+  --bg-dark: #0D0F12; --bg-panel: #16191E; --bg-panel-2: #1C2026; --bg-panel-3: #101317;
+  --bg-elevated: #222730; --bg-float: #2A303A; --bg-hover: rgba(0,229,255,0.06);
+  --text-main: #E6F1F5; --text-soft: rgba(230,241,245,0.78); --text-muted: rgba(230,241,245,0.54); --text-dim: rgba(230,241,245,0.28);
+  --line: rgba(0,229,255,0.12); --line-strong: rgba(0,229,255,0.26);
+  --sk-card: #16191E; --sk-card-line: rgba(0,229,255,0.34); --sk-inner: #0D0F12; --sk-inner-line: rgba(0,229,255,0.12);
+  --sk-header: rgba(13,15,18,0.92);
+  --sk-qual-bg: #33102A; --sk-qual-fg: #FF2EA6; --sk-qual-line: rgba(255,46,166,0.55);
+  --v2-ok: #39FF14;   --v2-ok-bg: #0F2A12;   --sk-ok-line: rgba(57,255,20,0.40);
+  --v2-warn: #F7FF00; --v2-warn-bg: #2E2F08; --sk-warn-line: rgba(247,255,0,0.65);
+  --v2-crit: #FF3864; --v2-crit-bg: #3A0F1C; --sk-crit-line: rgba(255,56,100,0.70);
+  --sk-zero-bg: #12151A;
+}
+/* Leve brilho nos números, como em um painel digital */
+:root[data-skin="cyber"] body.layout-v2 :is(.v2-ok, .v2-warn, .v2-crit, .v2-qual) .v2-cell-val,
+:root[data-skin="cyber"] body.layout-v2 .v2-kpi-btn.v2-kpi-qual > .animate-num { text-shadow: 0 0 6px currentColor; }
+:root[data-skin="cyber"] body.layout-v2 .v2-region-head { border-left-color: #00E5FF; }
+:root[data-skin="cyber"] body.layout-v2 :is(.v2-kpi, .v2-tile, .v2-chart),
+:root[data-skin="cyber"] body.layout-v2 .inbox-section { box-shadow: 0 0 10px rgba(0,229,255,0.10); }
+
+/* ── 6. Brisa de Lavanda e Areia (claro, suave aos olhos) ── */
+:root[data-skin="lavanda"] {
+  --bg-dark: #F6F1E9; --bg-panel: #FBF8F3; --bg-panel-2: #F1EBE2; --bg-panel-3: #ECE5DA;
+  --bg-elevated: #FFFDF9; --bg-float: #FFFDF9; --bg-hover: rgba(110,104,140,0.06);
+  --text-main: #4A4858; --text-soft: rgba(74,72,88,0.86); --text-muted: rgba(74,72,88,0.64); --text-dim: rgba(74,72,88,0.40);
+  --line: rgba(110,104,140,0.14); --line-strong: rgba(110,104,140,0.26);
+  --sk-header: rgba(246,241,233,0.92); --sk-overlay: rgba(74,72,88,0.34); --sk-strong: #3E3C4C;
+  --sk-qual-bg: #E9E4F2; --sk-qual-fg: #6E6293; --sk-qual-line: rgba(110,98,147,0.30);
+  --v2-ok: #4F7A5C;   --v2-ok-bg: rgba(143,175,148,0.26);
+  --v2-warn: #9A6A2E; --v2-warn-bg: rgba(214,170,110,0.26);
+  --v2-crit: #B4574A; --v2-crit-bg: rgba(226,150,135,0.28);
+  --sh-sm: 0 1px 2px rgba(74,72,88,0.06); --sh: 0 4px 14px rgba(74,72,88,0.08);
+  --sh-lg: 0 12px 36px rgba(74,72,88,0.12); --sh-xl: 0 24px 60px rgba(74,72,88,0.16);
+}
+:root[data-skin="lavanda"] body.layout-v2 .v2-region-head { border-left-color: #8FA8C8; }   /* azul-sereno */
 
 /* ── Temas escuros extras: tiram o visual "Neon" e usam as cores do tema ── */
 :root[data-skin]:not([data-mode="light"]) {
