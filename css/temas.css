@@ -1,0 +1,113 @@
+/* ══════════════════════════════════════════════════════════════
+   v49 — Temas extras (botão de tema no rodapé)
+   Além de Automático, Claro e Escuro, o botão passa por:
+     • Cinza Chumbo   <html data-skin="chumbo">     (base escura)
+     • Solarized Dark <html data-skin="solarized">  (base escura)
+     • Sépia Suave    <html data-skin="sepia">      (base clara)
+   Cada tema só troca as cores; nada de função muda.
+   As cores de destaque dos botões (Configurações → Tema de cor) continuam valendo.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Cinza Chumbo ── */
+:root[data-skin="chumbo"] {
+  --bg-dark: #121212; --bg-panel: #1E1E1E; --bg-panel-2: #262626; --bg-panel-3: #181818;
+  --bg-elevated: #2D2D2D; --bg-float: #333333; --bg-hover: rgba(255,255,255,0.05);
+  --text-main: #E0E0E0; --text-soft: rgba(224,224,224,0.76); --text-muted: rgba(224,224,224,0.52); --text-dim: rgba(224,224,224,0.28);
+  --line: rgba(255,255,255,0.08); --line-strong: rgba(255,255,255,0.16);
+  --sk-card: #1E1E1E; --sk-card-line: rgba(255,255,255,0.12); --sk-inner: #2D2D2D; --sk-inner-line: rgba(255,255,255,0.08);
+  --sk-header: rgba(18,18,18,0.9);
+  --sk-qual-bg: #311B54; --sk-qual-fg: #B388FF; --sk-qual-line: rgba(179,136,255,0.38);
+  --v2-ok: #69F0AE;   --v2-ok-bg: #1B4228;   --sk-ok-line: rgba(105,240,174,0.22);
+  --v2-warn: #FFD54F; --v2-warn-bg: #4A3A0B; --sk-warn-line: rgba(255,213,79,0.55);
+  --v2-crit: #FF8A80; --v2-crit-bg: #4E1F1F; --sk-crit-line: rgba(255,138,128,0.6);
+  --sk-zero-bg: #262626;
+}
+
+/* ── 2. Solarized Dark ── */
+:root[data-skin="solarized"] {
+  --bg-dark: #002B36; --bg-panel: #073642; --bg-panel-2: #0A3F4C; --bg-panel-3: #03303B;
+  --bg-elevated: #0C4654; --bg-float: #0F4D5C; --bg-hover: rgba(147,161,161,0.08);
+  --text-main: #839496; --text-soft: rgba(131,148,150,0.9); --text-muted: rgba(131,148,150,0.72); --text-dim: rgba(131,148,150,0.42);
+  --line: rgba(131,148,150,0.16); --line-strong: rgba(131,148,150,0.30);
+  --sk-card: #073642; --sk-card-line: rgba(131,148,150,0.26); --sk-inner: #002B36; --sk-inner-line: rgba(131,148,150,0.16);
+  --sk-header: rgba(0,43,54,0.92);
+  --sk-qual-bg: #2C223A; --sk-qual-fg: #D33682; --sk-qual-line: rgba(211,54,130,0.40);
+  --v2-ok: #2AA198;   --v2-ok-bg: rgba(42,161,152,0.14);  --sk-ok-line: rgba(42,161,152,0.32);
+  --v2-warn: #B58900; --v2-warn-bg: rgba(181,137,0,0.16);  --sk-warn-line: rgba(181,137,0,0.6);
+  --v2-crit: #DC322F; --v2-crit-bg: rgba(220,50,47,0.16);  --sk-crit-line: rgba(220,50,47,0.6);
+  --sk-zero-bg: #03303B;
+}
+
+/* ── 3. Sépia Suave ── */
+:root[data-skin="sepia"] {
+  --bg-dark: #FDF6E3; --bg-panel: #EEE8D5; --bg-panel-2: #F7F1DE; --bg-panel-3: #E6DFCA;
+  --bg-elevated: #FBF5E4; --bg-float: #FFFBEF; --bg-hover: rgba(88,110,117,0.07);
+  --text-main: #586E75; --text-soft: rgba(88,110,117,0.88); --text-muted: rgba(88,110,117,0.68); --text-dim: rgba(88,110,117,0.42);
+  --line: rgba(88,110,117,0.16); --line-strong: rgba(88,110,117,0.30);
+  --sk-header: rgba(253,246,227,0.92);
+  --sk-qual-bg: #E6E6FA; --sk-qual-fg: #5E4B8A; --sk-qual-line: rgba(94,75,138,0.30);
+  --v2-ok: #5F6B1E;   --v2-ok-bg: rgba(133,153,0,0.22);
+  --v2-warn: #8A6100; --v2-warn-bg: rgba(181,137,0,0.24);
+  --v2-crit: #B52B27; --v2-crit-bg: rgba(220,50,47,0.16);
+  --sh-sm: 0 1px 2px rgba(88,70,30,0.08); --sh: 0 4px 14px rgba(88,70,30,0.10);
+  --sh-lg: 0 12px 36px rgba(88,70,30,0.16); --sh-xl: 0 24px 60px rgba(88,70,30,0.20);
+}
+:root[data-skin="sepia"] body { background: var(--bg-dark); background-image: none; }
+:root[data-skin="sepia"] header { background-color: var(--sk-header); }
+:root[data-skin="sepia"] .header-brand { background: none; -webkit-text-fill-color: currentColor; color: var(--text-main); }
+:root[data-skin="sepia"] .modal-overlay { background: rgba(88,70,30,0.38); }
+:root[data-skin="sepia"] .v2-tile-cf, :root[data-skin="sepia"] .v2-region-name { color: #46585E; }
+:root[data-skin="sepia"] .sla-ok { color: #5F6B1E; background: rgba(133,153,0,0.18); }
+:root[data-skin="sepia"] .status-flash { color: #5F6B1E; }
+
+/* ── Temas escuros extras: tiram o visual "Neon" e usam as cores do tema ── */
+:root[data-skin]:not([data-mode="light"]) {
+  --neon: var(--text-soft); --neon-line: var(--sk-card-line); --neon-glow: transparent; --card-bg: var(--sk-card);
+}
+:root[data-skin]:not([data-mode="light"]) body { background: var(--bg-dark); background-image: none; }
+:root[data-skin]:not([data-mode="light"]) header { background: var(--sk-header); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 :is(.v2-kpi, .v2-tile, .v2-chart),
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .inbox-section {
+  background: var(--sk-card); border-color: var(--sk-card-line); box-shadow: none;
+}
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-tile.v2-mine {
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent); box-shadow: none;
+}
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-tile.v2-open { border-color: var(--accent); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi::after { display: none; }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-lbl,
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-toggle,
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-region-name,
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-tile-cf { color: var(--text-main); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn {
+  background: var(--sk-inner); border-color: var(--sk-inner-line); color: var(--text-main);
+}
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn:hover { border-color: var(--line-strong); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-type,
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-cell-lbl { color: var(--text-muted); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-region-count,
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-tile-name { color: var(--text-muted); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-region-head { border-left-color: var(--accent); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-seg { background: var(--bg-panel); border-color: var(--line-strong); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-ok   { background: var(--v2-ok-bg);   border-color: var(--sk-ok-line); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-ok .v2-cell-lbl { color: var(--v2-ok); opacity: .8; }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-zero { background: var(--sk-zero-bg); border-color: var(--sk-inner-line); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-warn { background: var(--v2-warn-bg); border-color: var(--sk-warn-line); box-shadow: none; }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-crit { background: var(--v2-crit-bg); border-color: var(--sk-crit-line); box-shadow: none; }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-delta { background: var(--v2-crit); color: #1a0a0a; }
+:root[data-skin]:not([data-mode="light"]) #app-version { color: var(--text-main); }
+
+/* ── Quadro de Qualidade (roxo) nos três temas ── */
+:root[data-skin] .v2-cell.v2-qual,
+:root[data-skin] body.layout-v2 .v2-cell.v2-qual {
+  color: var(--sk-qual-fg); background: var(--sk-qual-bg); border-color: var(--sk-qual-line);
+}
+:root[data-skin] .v2-cell.v2-qual .v2-cell-lbl,
+:root[data-skin] body.layout-v2 .v2-cell.v2-qual .v2-cell-lbl { color: var(--sk-qual-fg); opacity: .85; }
+:root[data-skin] body.layout-v2 .v2-kpi-btn.v2-kpi-qual {
+  color: var(--sk-qual-fg) !important; background: var(--sk-qual-bg) !important; border-color: var(--sk-qual-line) !important;
+}
+:root[data-skin] body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: var(--sk-qual-fg) !important; }
+:root[data-skin] .sla-days { color: var(--sk-qual-fg); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-warn { color: var(--v2-warn); }
+:root[data-skin]:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-crit { color: var(--v2-crit); }

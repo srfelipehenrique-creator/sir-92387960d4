@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v48';
+const CACHE_NAME   = 'sir-v49';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -13,6 +13,7 @@ const SHELL_ASSETS = [
   'css/theme-light.css',
   'css/theme-neon.css',
   'css/ajustes.css',
+  'css/temas.css',
   'css/tickets-compact.css',
   'js/theme-mode.js',
   'assets/icon.svg',

@@ -1,15 +1,20 @@
 /* ══════════════════════════════════════════════════════════════
-   Tema claro / escuro / automático
-   - Preferência salva em localStorage 'sir_mode': 'auto' | 'light' | 'dark'
+   Tema: automático / claro / escuro + Cinza Chumbo / Solarized Dark / Sépia Suave
+   - Preferência salva em localStorage 'sir_mode':
+     'auto' | 'light' | 'dark' | 'chumbo' | 'solarized' | 'sepia'
+   - Os três temas extras usam uma base (escura ou clara) e trocam as cores
+     por cima dela (<html data-skin="…">, cores em css/temas.css)
    - 'auto' segue o tema do celular ou do computador e muda junto com ele
    - Carregado no <head> (antes de desenhar a página) para não piscar
    - Independente das cores de destaque (data-theme), que continuam valendo
    ══════════════════════════════════════════════════════════════ */
 (function () {
   var KEY = 'sir_mode';
-  var ORDER = ['auto', 'light', 'dark'];
-  var LABEL = { auto: 'Automático', light: 'Claro', dark: 'Escuro' };
-  var ICON  = { auto: 'sun-moon', light: 'sun', dark: 'moon' };
+  var ORDER = ['auto', 'light', 'dark', 'chumbo', 'solarized', 'sepia'];
+  var LABEL = { auto: 'Automático', light: 'Claro', dark: 'Escuro', chumbo: 'Cinza Chumbo', solarized: 'Solarized Dark', sepia: 'Sépia Suave' };
+  var ICON  = { auto: 'sun-moon', light: 'sun', dark: 'moon', chumbo: 'moon-star', solarized: 'waves', sepia: 'book-open' };
+  /* Temas extras: base (claro/escuro) e cor da barra do navegador */
+  var SKIN  = { chumbo: ['dark', '#121212'], solarized: ['dark', '#002B36'], sepia: ['light', '#FDF6E3'] };
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
   function getPref() {
@@ -18,7 +23,7 @@
   }
   function resolve(pref) {
     if (pref === 'auto') return (mq && mq.matches) ? 'light' : 'dark';
-    return pref;
+    return SKIN[pref] ? SKIN[pref][0] : pref;
   }
 
   function updateButton() {
@@ -40,19 +45,21 @@
     var root = document.documentElement;
     root.setAttribute('data-mode', mode);
     root.setAttribute('data-mode-pref', pref);
+    if (SKIN[pref]) root.setAttribute('data-skin', pref); else root.removeAttribute('data-skin');
     root.style.colorScheme = mode;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', mode === 'light' ? '#f3f4f6' : '#06101d');
+    if (meta) meta.setAttribute('content', SKIN[pref] ? SKIN[pref][1] : (mode === 'light' ? '#f3f4f6' : '#06101d'));
     updateButton();
   }
 
   window.getThemeModePref = getPref;
   window.cycleThemeMode = function () {
-    var next = ORDER[(ORDER.indexOf(getPref()) + 1) % ORDER.length];
+    var i = ORDER.indexOf(getPref());
+    var next = ORDER[(i + 1) % ORDER.length];
     try { localStorage.setItem(KEY, next); } catch (e) {}
     apply();
     if (typeof window.showActionToast === 'function')
-      window.showActionToast('Tema: ' + LABEL[next] + (next === 'auto' ? ' — segue o aparelho' : ''), 'success');
+      window.showActionToast('Tema ' + (ORDER.indexOf(next) + 1) + ' de ' + ORDER.length + ': ' + LABEL[next] + (next === 'auto' ? ' — segue o aparelho' : ''), 'success');
   };
 
   if (mq) {
