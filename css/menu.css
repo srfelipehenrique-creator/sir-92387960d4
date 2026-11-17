@@ -173,3 +173,13 @@ body.app-menu-open .app-menu {
 .menu-layout-opt span { flex: 1; }
 .menu-layout-opt.on { color: var(--accent); font-weight: 700; }
 .menu-layout-opt.on svg { color: var(--accent); }
+
+/* ── Card "Novas Entradas": título recolhe/expande ── */
+#inbox-title-toggle { cursor: pointer; user-select: none; border-radius: 8px; outline-offset: 3px; }
+#inbox-title-toggle:hover .inbox-title { color: var(--text-main); }
+.inbox-chevron { color: var(--text-muted); flex: none; transition: transform .2s var(--ease); }
+.inbox-section.inbox-collapsed .inbox-chevron { transform: rotate(-90deg); }
+/* Recolhido: uma linha só, sem os botões da direita */
+.inbox-section.inbox-collapsed .inbox-header { border-bottom: 0; }
+.inbox-section.inbox-collapsed .inbox-header > div:last-child { display: none !important; }
+body.layout-v2 .inbox-section.inbox-collapsed { max-height: none; }

@@ -88,11 +88,14 @@
 </div>
 
 <div class="page-shell">
-  <section class="inbox-section" id="inbox-section">
+  <section class="inbox-section inbox-collapsed" id="inbox-section">
     <div class="inbox-header">
-      <div class="inbox-title-wrap">
+      <div class="inbox-title-wrap" id="inbox-title-toggle" role="button" tabindex="0"
+           aria-controls="inbox-body-wrap" aria-expanded="false" title="Expandir / recolher"
+           onclick="toggleInboxBody(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInboxBody(true);}">
         <div class="inbox-title">Novas Entradas</div>
         <div class="inbox-badge" id="inbox-count">0</div>
+        <svg class="inbox-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="inbox-view-seg" role="group" aria-label="Exibir novas entradas como">
@@ -100,10 +103,10 @@
           <button type="button" data-inbox-view="list" onclick="setInboxView('list')" title="Exibir em lista compacta">Lista</button>
         </div>
         <button class="btn-inbox-toggle" id="btn-inbox-ack-all" onclick="acknowledgeAllInboxItems()" style="display:none;">Marcar Tudo</button>
-        <button class="btn-inbox-toggle" id="btn-inbox-toggle" onclick="toggleInboxBody()">Ocultar</button>
+        
       </div>
     </div>
-    <div class="inbox-body-wrap" id="inbox-body-wrap">
+    <div class="inbox-body-wrap collapsed" id="inbox-body-wrap">
       <div class="inbox-cols">
 
         <!-- RAL -->

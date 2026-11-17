@@ -24,6 +24,7 @@ function renderInbox() {
   document.getElementById('inbox-count').textContent = total;
   const btnAll = document.getElementById('btn-inbox-ack-all');
   if (btnAll) btnAll.style.display = total > 0 ? '' : 'none';
+  _autoInboxCollapse(total);
   renderInboxType('ral', appState.inboxItems.filter(i => i.typeKey === 'ral'));
   renderInboxType('rec', appState.inboxItems.filter(i => i.typeKey === 'rec'));
   updatePageTitle();
@@ -153,10 +154,20 @@ function acknowledgeInboxItem(identity) {
   saveInboxState();
 }
 
-function toggleInboxBody() {
-  const wrap = document.getElementById('inbox-body-wrap');
-  const btn  = document.getElementById('btn-inbox-toggle');
-  appState.inboxBodyVisible = !appState.inboxBodyVisible;
-  wrap.classList.toggle('collapsed', !appState.inboxBodyVisible);
-  btn.textContent = appState.inboxBodyVisible ? 'Ocultar' : 'Mostrar';
+/* ── Recolher / expandir o card "Novas Entradas" ──
+   Sem avisos: fica recolhido numa linha só. Chegou aviso novo: abre sozinho.
+   Tocar no título sempre abre ou recolhe (com ou sem avisos). */
+let _inboxLastTotal = -1;
+function setInboxBodyVisible(v) {
+  appState.inboxBodyVisible = !!v;
+  document.getElementById('inbox-body-wrap')?.classList.toggle('collapsed', !v);
+  document.getElementById('inbox-section')?.classList.toggle('inbox-collapsed', !v);
+  document.getElementById('inbox-title-toggle')?.setAttribute('aria-expanded', String(!!v));
 }
+function toggleInboxBody() { setInboxBodyVisible(!appState.inboxBodyVisible); }
+function _autoInboxCollapse(total) {
+  if (total === 0) { if (_inboxLastTotal !== 0) setInboxBodyVisible(false); }   /* esvaziou: recolhe (uma vez) */
+  else if (total > _inboxLastTotal) setInboxBodyVisible(true);   /* chegou coisa nova */
+  _inboxLastTotal = total;
+}
+document.addEventListener('DOMContentLoaded', () => setInboxBodyVisible(false));
