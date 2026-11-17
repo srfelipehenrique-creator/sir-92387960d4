@@ -220,6 +220,10 @@ function renderDashboard(ralRes, ralR, recRes, recR, userSavedAreas) {
 }
 
 function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
+  /* Tickets do "Alimentar off-line" que ainda não estão na fonte */
+  if (typeof mergeOfflineFeed === 'function') mergeOfflineFeed(ralRes, recRes, ralText, recText);
+  appState._snapTexts = null;
+
   /* Alimenta o módulo de qualidade com as RALs capturadas separadamente */
   if (typeof buildQualidadeData === 'function' && ralRes.qualidadeDetails)
     buildQualidadeData(ralRes.qualidadeDetails);
@@ -281,7 +285,10 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
 
 /* ── Offline snapshot fallback ── */
 async function loadFromSnapshot(userSavedAreas) {
-  const snap = await dbGetSnapshot().catch(() => null);
+  let snap = await dbGetSnapshot().catch(() => null);
+  /* Sem cópia guardada, mas com tickets do "Alimentar off-line": mostra só eles */
+  if ((!snap || !snap.ralText || !snap.recText) && typeof offlineFeedCount === 'function' && offlineFeedCount() > 0)
+    snap = { ralText: 'CF Exec.\n', recText: 'CF Exec.\n', ts: Date.now(), vazio: true };
   if (!snap || !snap.ralText || !snap.recText) {
     document.getElementById('main-grid').innerHTML =
       `<div style="text-align:center;grid-column:1/-1;color:#c62828;font-size:16px;padding-top:40px;">
@@ -293,6 +300,7 @@ async function loadFromSnapshot(userSavedAreas) {
   try {
     const ralRes = parseRawInline(snap.ralText, true);
     const recRes = parseRawInline(snap.recText, false);
+    appState._snapTexts = snap.vazio ? null : [snap.ralText, snap.recText];
     onDataReady(ralRes, recRes, null, null, userSavedAreas);
     appState.isOffline = true;
     setOfflineBanner(true);

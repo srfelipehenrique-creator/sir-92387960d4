@@ -45,6 +45,7 @@ const SHELL_ASSETS = [
   'js/timeline.js',
   'js/events.js',
   'js/rec-assoc.js',
+  'js/offline-feed.js',
   'js/lista-abas.js',
   'js/tickets-ui.js',
   'js/lixeira.js',
