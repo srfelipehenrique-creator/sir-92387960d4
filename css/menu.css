@@ -132,7 +132,7 @@ body.app-menu-open .app-menu {
 
 /* ── Escopo na barra de cima (Todas as áreas | Só minhas) — sem interruptor ── */
 .app-bar { flex: 1; }
-.hdr-scope { display: flex; align-items: center; margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--line); min-width: 0; }
+.hdr-scope { display: flex; align-items: center; margin-left: auto; min-width: 0; }
 .hdr-scope[hidden] { display: none; }
 .hdr-scope-grp { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 .hdr-scope-opt {
@@ -147,7 +147,7 @@ body.app-menu-open .app-menu {
 .hdr-scope-grp.dis { opacity: .45; }
 .hdr-scope-grp.dis button { cursor: not-allowed; }
 @media (max-width: 380px) {
-  .hdr-scope { margin-left: 4px; padding-left: 6px; }
+  .hdr-scope-grp { gap: 0; }
   .hdr-scope-opt { font-size: 13px; padding: 7px 5px; }
 }
 
