@@ -953,3 +953,7 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: #b9a5ff; }
 .inbox-card .ticket-link, .inbox-card .desig-link { font: inherit; letter-spacing: inherit; text-align: left; }
 .inbox-card .nt-ticket .ticket-link { color: var(--text-main); }
 .inbox-card .nt-desig .desig-link { color: inherit; }
+
+/* v58 — nota de outra pessoa: sem editar/excluir, só o cadeado */
+.note-lock { font-size: 11px; opacity: .55; margin-left: 2px; cursor: help; }
+#modal-overlay.trash-ro .note-lock { display: none; }

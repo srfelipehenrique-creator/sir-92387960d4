@@ -2,7 +2,7 @@
    Tela de tickets — complementos do novo visual (v45)
    - Título em duas linhas (título + área)
    - Botão de opções ao lado da busca: abre Ordenar / Filtrar status / CSV
-   - Botão "Detalhes" no cartão: abre nota e status do ticket
+   - (v58) Botão "Detalhes" removido: nota e status ficam sempre à vista
    - Rodapé com a contagem de tickets (toque: volta ao topo)
    Nada aqui muda dados: só organiza o que já existe na tela.
    ══════════════════════════════════════════════════════════════ */

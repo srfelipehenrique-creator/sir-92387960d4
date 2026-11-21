@@ -186,9 +186,7 @@
 }
 #modal-overlay.v2-cards tr.ticket-row td:nth-child(4):empty { display: none; }
 
-/* Nota e status: aparecem em "Detalhes" (ou sozinhos, quando já existe nota/status) */
-#modal-overlay.v2-cards tr.ticket-row:not(.tk-det-open) td.obs-cell:not(:has(.note-item, .obs-content, .obs-input-wrap)) { display: none; }
-#modal-overlay.v2-cards tr.ticket-row:not(.tk-det-open)[data-obs-status="none"] td.obs-status-col { display: none; }
+/* Nota e status: sempre à vista (v58 — sem o botão "Detalhes") */
 
 /* Botões do cartão */
 #modal-overlay .btn-ticket-det { display: none; }
@@ -271,3 +269,19 @@
     font-size: 11.5px; white-space: nowrap;
   }
 }
+
+/* ── v58: sem "Detalhes" — nota (+), status (···) e Copiar na mesma linha ── */
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(8)  { order: 9;  flex: 1 1 0; min-width: 0; align-self: center; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(9)  { order: 10; flex: none; align-self: center; }
+#modal-overlay.v2-cards tr.ticket-row td:nth-child(10) { order: 11; flex: none; align-self: center; width: auto; margin-top: 0; gap: 0; }
+/* Com notas (ou digitando): as notas usam a largura toda; status e Copiar ficam à direita, embaixo */
+#modal-overlay.v2-cards tr.ticket-row:has(.note-item, .obs-input-wrap) td:nth-child(8) { flex: 1 1 100%; }
+#modal-overlay.v2-cards tr.ticket-row:has(.note-item, .obs-input-wrap) td:nth-child(9) { margin-left: auto; }
+#modal-overlay.v2-cards .btn-add-obs:not(.btn-add-more) { width: 32px; height: 32px; border-radius: 50%; font-size: 18px; }
+#modal-overlay.v2-cards .btn-add-obs.btn-add-more { height: 32px; border-radius: 999px; padding: 0 12px; font-size: 12px; }
+#modal-overlay.v2-cards .btn-obs-trigger { height: 32px; min-width: 40px; padding: 0 12px; border-radius: 999px; font-size: 13px; }
+#modal-overlay.v2-cards .btn-copy-ticket {
+  flex: none; min-height: 32px; height: 32px; padding: 0 14px; gap: 6px;
+  font-size: 12.5px; box-shadow: 0 2px 8px rgba(47,158,91,.22);
+}
+#modal-overlay.v2-cards .btn-copy-ticket::before { width: 15px; height: 15px; }

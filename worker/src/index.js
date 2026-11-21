@@ -373,11 +373,13 @@ export class NotesStore {
         const i = nid && !cur.list.some(x => x.i === nid) ? nid : 'n' + now.toString(36) + Math.random().toString(36).slice(2, 6);
         cur.list.push({ i, t: txt, by, at: now });
         if (cur.list.length > 30) cur.list = cur.list.slice(-30);
-      } else if (op === 'edit') {
+      } else if (op === 'edit' || op === 'del') {
+        /* v58 — só o autor edita/exclui a própria nota (notas sem autor continuam livres) */
+        const nn = v => String(v || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
         const n = cur.list.find(x => x.i === nid);
-        if (n && txt) { n.t = txt; n.et = now; if (by) n.eb = by; }
-      } else if (op === 'del') {
-        cur.list = cur.list.filter(x => x.i !== nid);
+        if (n && n.by && nn(n.by) !== nn(by)) return jsonPlain({ error: 'autor', note: notes[id] || null }, 409);
+        if (op === 'edit') { if (n && txt) { n.t = txt; n.et = now; if (by) n.eb = by; } }
+        else cur.list = cur.list.filter(x => x.i !== nid);
       } else if (op === 'meta' || !op) {
         if ('st' in body)  cur.st  = String(body.st || 'none').slice(0, 30);
         if ('tag' in body) cur.tag = String(body.tag || 'none').slice(0, 30);

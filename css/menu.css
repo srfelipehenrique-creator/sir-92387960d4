@@ -183,3 +183,29 @@ body.app-menu-open .app-menu {
 .inbox-section.inbox-collapsed .inbox-header { border-bottom: 0; }
 .inbox-section.inbox-collapsed .inbox-header > div:last-child { display: none !important; }
 body.layout-v2 .inbox-section.inbox-collapsed { max-height: none; }
+
+/* ── v58: Atualizar / Notificações / Tema no canto direito da barra de cima ── */
+.hdr-quick { display: flex; align-items: center; gap: 2px; flex: none; margin-left: auto; }
+.hdr-scope:not([hidden]):not(:empty) + .hdr-quick { margin-left: 6px; }
+.hdr-quick .btn-icon {
+  width: 34px; height: 34px; border-radius: 50%; color: var(--text-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.hdr-quick .btn-icon:hover { color: var(--text-main); background: var(--bg-hover) !important; }
+.hdr-quick .btn-icon svg { width: 18px; height: 18px; }
+/* Celular estreito: aperta um pouco para tudo caber numa linha só, sem sobrepor */
+@media (max-width: 430px) {
+  header { padding-right: max(6px, env(safe-area-inset-right)) !important; }
+  .app-bar { gap: 4px; }
+  .app-menu-btn { width: 36px; height: 36px; }
+  .hdr-quick { gap: 0; }
+  .hdr-quick .btn-icon { width: 30px; height: 30px; }
+  .hdr-quick .btn-icon svg { width: 17px; height: 17px; }
+  .hdr-scope-grp { gap: 0; }
+  .hdr-scope-opt { font-size: 13px; padding: 7px 5px; }
+}
+@media (max-width: 360px) {
+  .app-bar-title { letter-spacing: .5px; }
+  .hdr-scope-opt { font-size: 12px; padding: 6px 3px; }
+  .hdr-quick .btn-icon { width: 28px; height: 28px; }
+}

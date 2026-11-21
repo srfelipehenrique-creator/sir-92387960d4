@@ -70,6 +70,14 @@ function _snWhen(ts) {
   const d = new Date(ts);
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
 }
+/* v58 — cada nota só pode ser editada/excluída por quem escreveu.
+   Notas antigas sem autor continuam livres. */
+function _snNormName(v) { return String(v || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' '); }
+function canManageNote(n) {
+  if (!n || !n.by) return true;
+  const me = _snNormName(_snUser());
+  return !!me && me === _snNormName(n.by);
+}
 function noteMetaText(n) {
   return `${n.by ? n.by + ' · ' : ''}${_snWhen(n.at)}${n.et ? ' (editada)' : ''}`;
 }
@@ -87,8 +95,8 @@ function renderNotesCell(row) {
         <div class="note-text">${escapeHtml(n.t)}</div>
         <div class="note-foot">
           <span class="note-meta">${escapeHtml(noteMetaText(n))}</span>
-          <button type="button" class="note-btn" data-act="edit" title="Editar nota" aria-label="Editar nota">✎</button>
-          <button type="button" class="note-btn note-del" data-act="del" title="Excluir nota" aria-label="Excluir nota">✕</button>
+          ${canManageNote(n) ? `<button type="button" class="note-btn" data-act="edit" title="Editar nota" aria-label="Editar nota">✎</button>
+          <button type="button" class="note-btn note-del" data-act="del" title="Excluir nota" aria-label="Excluir nota">✕</button>` : `<span class="note-lock" title="Só ${escapeHtml(n.by)} pode editar ou excluir esta nota" aria-label="Nota de outra pessoa">🔒</span>`}
         </div>
       </div>`).join('')}</div>` : '') +
     `<button type="button" class="btn-add-obs${list.length ? ' btn-add-more' : ''}" onclick="startAddObs(this)" title="Adicionar nota">${list.length ? '+ Nota' : '+'}</button>`;
@@ -130,6 +138,13 @@ function _snOpenInput(container, value, onSave, onCancel, withName) {
 /* ── Operações ── */
 async function notesOp(identity, op, args = {}) {
   /* 1) aplica na hora, neste aparelho */
+  if (op === 'edit' || op === 'del') {
+    const alvo = getTicketNotes(identity).find(x => x.i === args.nid);
+    if (alvo && !canManageNote(alvo)) {
+      if (typeof showActionToast === 'function') showActionToast(`Só ${alvo.by} pode ${op === 'del' ? 'excluir' : 'editar'} esta nota`, 'error');
+      return;
+    }
+  }
   const list = getTicketNotes(identity).filter(n => n.i !== 'legacy' || op !== 'del' || args.nid !== 'legacy');
   const user = (op === 'add' && args.by !== undefined) ? args.by : _snUser();
   let nid = args.nid;
@@ -149,6 +164,11 @@ async function notesOp(identity, op, args = {}) {
       ? await _snPost('/note', { key, id: identity, op: op === 'del' ? 'meta' : 'add', text: args.text, by: user })
       : await _snPost('/note', { key, id: identity, op, nid, text: args.text, by: user });
     if (r.status === 403) { try { localStorage.removeItem('sir_push_key'); } catch (e) {} _snKeyAsked = false; _snAskKey(); return; }
+    if (r.status === 409 && r.body && r.body.error === 'autor') {     /* servidor recusou: nota de outra pessoa */
+      if (typeof showActionToast === 'function') showActionToast('Esta nota é de outra pessoa: só o autor pode mudar', 'error');
+      if (r.body.note) { _snApplyServer(identity, r.body.note); _snSaveLocal(); _snRefreshOpenModal(); }
+      return;
+    }
     if (r.status === 200) {
       if (r.body.note) _snApplyServer(identity, r.body.note);
       else { _snServerIds.delete(identity); _snSetLocal(identity, { notes: [], obsStatus: 'none', eventColor: 'none' }); }
@@ -286,6 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
     e.stopPropagation();
     const row = b.closest('tr'), item = b.closest('.note-item');
     const nid = item.dataset.nid, identity = row.dataset.identity;
+    const alvo = getTicketNotes(identity).find(x => x.i === nid);
+    if (alvo && !canManageNote(alvo)) { renderNotesCell(row); return; }
     if (b.dataset.act === 'edit') {
       const n = getTicketNotes(identity).find(x => x.i === nid);
       if (!n) return;

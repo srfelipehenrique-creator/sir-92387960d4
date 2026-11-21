@@ -33,18 +33,20 @@ function formatTicketWA(item, isRal) {
   const st = appState.ticketStates[makeIdentity(isRal ? 'ral' : 'rec', item)] || {};
   const status = st.obsStatus && st.obsStatus !== 'none'
     ? (OBS_STATUSES.find(s => s.key === st.obsStatus) || {}).label : '';
+  /* v58 — classificação primeiro; sem a linha "Tipo"; linha em branco antes das notas */
   const lines = [
-    `🏷️ *${_waTicketLabel(item.ticket, isRal)}* — 📍 CF ${item.cfOrigem || 'N/D'}`,
     ...(typeof getTicketTag === 'function' && getTicketTag(st.eventColor)
         ? [`${getTicketTag(st.eventColor).emoji} *${getTicketTag(st.eventColor).label}*`] : []),
+    `🏷️ *${_waTicketLabel(item.ticket, isRal)}* -📍 CF ${item.cfOrigem || 'N/D'}`,
     `📋 Designação: ${item.designacao || 'N/D'}`,
   ];
-  if (item.extra && item.extra !== 'N/D') lines.push(isRal ? `🛠️ Tipo: ${item.extra}` : `👤 Cliente: ${item.extra}`);
+  if (!isRal && item.extra && item.extra !== 'N/D') lines.push(`👤 Cliente: ${item.extra}`);
   if (item.abertura) lines.push(`📅 Abertura: ${item.abertura}`);
   const sla = _waSla(item.abertura, isRal);
   if (sla) lines.push(`⏳ SLA: ${sla}`);
   const notes = typeof getTicketNotes === 'function' ? getTicketNotes(makeIdentity(isRal ? 'ral' : 'rec', item))
               : (st.obs ? [{ t: st.obs }] : []);
+  if (notes.length) lines.push('');
   if (notes.length === 1) lines.push(`📝 Nota${notes[0].at ? ' (' + _waWhen(notes[0].at) + (notes[0].by ? ' · ' + notes[0].by : '') + ')' : ''}: ${notes[0].t}`);
   else if (notes.length > 1) {
     lines.push(`📝 Notas:`);

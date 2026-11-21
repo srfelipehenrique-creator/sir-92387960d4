@@ -47,6 +47,18 @@
     <span class="app-bar-title">SIR</span>
     <!-- Escopo do painel (Todas / Minhas) — preenchido por layout-v2.js -->
     <div class="hdr-scope" id="hdr-scope"></div>
+    <!-- Atualizar / Notificações / Tema (vieram do rodapé) -->
+    <div class="hdr-quick" id="hdr-quick">
+      <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
+        <i data-lucide="cloud-sync"></i>
+      </button>
+      <button class="btn-settings btn-icon" id="btn-notify" onclick="toggleNotifications()" title="Notificações" aria-label="Notificações" style="background:transparent;border-color:transparent;">
+        <i data-lucide="bell-ring"></i>
+      </button>
+      <button class="btn-settings btn-icon" id="btn-theme-mode" onclick="cycleThemeMode()" title="Tema" aria-label="Tema" style="background:transparent;border-color:transparent;">
+        <i data-lucide="sun-moon"></i>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -148,15 +160,6 @@
   <!-- Controles do painel (antes ficavam no topo) -->
   <div class="footer-ctrls" id="footer-ctrls">
     <span class="status-flash" id="status-flash">ATUALIZADO</span>
-    <button class="btn-settings btn-icon" id="btn-refresh-now" onclick="loadNow()" title="Atualizar dados" aria-label="Atualizar dados" style="background:transparent;border-color:transparent;">
-      <i data-lucide="cloud-sync"></i>
-    </button>
-    <button class="btn-settings btn-icon" id="btn-notify" onclick="toggleNotifications()" title="Notificações" aria-label="Notificações" style="background:transparent;border-color:transparent;">
-      <i data-lucide="bell-ring"></i>
-    </button>
-    <button class="btn-settings btn-icon" id="btn-theme-mode" onclick="cycleThemeMode()" title="Tema" aria-label="Tema" style="background:transparent;border-color:transparent;">
-      <i data-lucide="sun-moon"></i>
-    </button>
     <button class="btn-settings btn-icon" onclick="openPersonalizacao()" title="Configurações" aria-label="Configurações" style="background:transparent;border-color:transparent;">
       <i data-lucide="settings"></i>
     </button>
