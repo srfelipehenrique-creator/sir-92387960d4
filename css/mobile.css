@@ -957,3 +957,15 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: #b9a5ff; }
 /* v58 — nota de outra pessoa: sem editar/excluir, só o cadeado */
 .note-lock { font-size: 11px; opacity: .55; margin-left: 2px; cursor: help; }
 #modal-overlay.trash-ro .note-lock { display: none; }
+
+/* v59 — Endereços de Node + Siglas na mesma busca */
+.nd-title { margin-right: 0; }
+.nd-kind {
+  margin-right: auto; flex: none; align-self: center;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+}
+.nd-sigla { border-left-color: #f59e0b; }
+.nd-sigla .nd-kind { color: #d97706; border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.12); }
+@media (max-width: 420px) { .nd-head { flex-wrap: wrap; } .nd-title { flex: 1 1 auto; } }
