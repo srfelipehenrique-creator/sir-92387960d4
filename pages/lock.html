@@ -345,6 +345,9 @@
     '329acaf5', 'd0f68075', 'ccc1e62c', 'ea32157d',
     'b54a9ffe', '29e1c1d5', '90c81ac9', '158a1a13'
   ].join('');
+  /* Chave pessoal do dono (independente da chave da equipe) — também só o hash */
+  const _hOwner = '588b399bfeca1ffef59031ae1d8acb4e79f3f3d9148e411eab3d43d986eb377f';
+  const _hs = [_h, _hOwner];
 
   const _s  = 'sir_auth_v1';
   const _r  = '../index.html';
@@ -397,7 +400,7 @@
       new Promise(r => setTimeout(r, 480))
     ]);
 
-    if (inputHash !== _h) {
+    if (!_hs.includes(inputHash)) {
       btn.disabled = false;
       btn.classList.remove('loading');
       document.getElementById('lock-error').classList.add('show');

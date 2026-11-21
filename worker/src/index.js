@@ -399,8 +399,10 @@ export class NotesStore {
 
 /* ─────────────────────────── API ─────────────────────────── */
 async function authorized(env, key) {
-  if (!key || !env.KEY_HASH) return false;
-  return (await sha256Hex(String(key).trim())) === env.KEY_HASH;
+  /* Aceita a chave da equipe (KEY_HASH) e a chave pessoal do dono (OWNER_KEY_HASH) */
+  const ok = [env.KEY_HASH, ...String(env.OWNER_KEY_HASH || '').split(',')].map(x => String(x || '').trim()).filter(Boolean);
+  if (!key || !ok.length) return false;
+  return ok.includes(await sha256Hex(String(key).trim()));
 }
 
 export default {

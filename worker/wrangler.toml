@@ -11,6 +11,8 @@ crons = ["*/2 * * * *"]
 [vars]
 # Hash SHA-256 da chave de acesso (o mesmo usado em pages/lock.html)
 KEY_HASH = "329acaf5d0f68075ccc1e62cea32157db54a9ffe29e1c1d590c81ac9158a1a13"
+# Hash SHA-256 da chave pessoal do dono — continua valendo mesmo se a chave da equipe for trocada
+OWNER_KEY_HASH = "588b399bfeca1ffef59031ae1d8acb4e79f3f3d9148e411eab3d43d986eb377f"
 ALLOWED_ORIGINS = "https://srfelipehenrique-creator.github.io"
 VAPID_SUBJECT = "https://srfelipehenrique-creator.github.io/sir-92387960d4/"
 

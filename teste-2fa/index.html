@@ -235,6 +235,7 @@
   'use strict';
   /* Chave real do SIR (mesmo hash da tela de bloqueio atual) */
   const KEY_HASH = '329acaf5d0f68075ccc1e62cea32157db54a9ffe29e1c1d590c81ac9158a1a13';
+  const OWNER_KEY_HASH = '588b399bfeca1ffef59031ae1d8acb4e79f3f3d9148e411eab3d43d986eb377f';
   const LS = 'sir_2fa_teste';
   const ISSUER = 'SIR COP REDE';
 
@@ -302,7 +303,7 @@
     if (locked('m-key')) return;
     const k = $('in-key').value.trim();
     if (!k) return msg('m-key', 'Digite a chave.', 'err');
-    if (await sha256(k) !== KEY_HASH) return fail('m-key', 'Chave incorreta.');
+    if (![KEY_HASH, OWNER_KEY_HASH].includes(await sha256(k))) return fail('m-key', 'Chave incorreta.');
     S.fails = 0; save(S); $('in-key').value = ''; msg('m-key', '');
     if (!S.secret) return startSetup();
     if (S.trustUntil && S.trustUntil > Date.now()) return done('Este aparelho é confiável: entrou só com a chave, sem pedir o código.');
