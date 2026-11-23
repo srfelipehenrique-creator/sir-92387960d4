@@ -1,5 +1,7 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w4)
+#  Coletor SIR para Windows  (versão w5)
+#  - w5: usa o endereço do SIR 10.53.224.155 (index.cfm?nofoc=yes); se não
+#    responder, tenta o endereço antigo 172.30.130.133.
 #  - w4: na página do link da coluna Ass. lê também as RAL (não só as REC),
 #    sem repetir, e envia a área (CF) de cada uma quando a página mostra.
 #  - w3: abre o link do número de RECs associadas (coluna Ass.) de cada RAL
@@ -15,11 +17,13 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w4'
+$VERSAO   = 'w5'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
-$BASE     = 'http://172.30.130.133'
-if ($env:SIR_BASE) { $BASE = $env:SIR_BASE }          # só para testes
+$BASES    = @('http://10.53.224.155', 'http://172.30.130.133')   # o 1º que responder é usado
+if ($env:SIR_BASE) { $BASES = @($env:SIR_BASE) }       # só para testes
+$BASE     = $BASES[0]
+$ENTRADA  = '/index.cfm?nofoc=yes'
 $INTERVALO = 300
 $REC_PATH = '/generico/NOVAlistaDeTarefasItensRecebidos.cfm'
 $RAL_PATH = '/navegacao/NOVAframesetNivel2ListaDeTarefas.cfm'
@@ -194,9 +198,27 @@ function Achar-FormLogin([string]$url, [int]$prof) {
   if ($prof -lt 3) { foreach ($q in (Quadros $p.Html)) { $r = Achar-FormLogin (Juntar $p.Url $q.Src) ($prof + 1); if ($r) { return $r } } }
   return $null
 }
+# Testa os endereços do SIR e fica com o primeiro que responder
+function Escolher-Base {
+  $ultimo = $null
+  foreach ($b in $BASES) {
+    try {
+      $null = Invoke-WebRequest -Uri ($b + $ENTRADA) -UseBasicParsing -TimeoutSec 15 -MaximumRedirection 10
+      if ($script:BASE -ne $b) { Info "Usando o SIR em $b" }
+      $script:BASE = $b; return
+    } catch {
+      $st = $null; try { $st = [int]$_.Exception.Response.StatusCode } catch {}
+      if ($st) { $script:BASE = $b; return }      # respondeu (mesmo com erro HTTP): o servidor existe
+      $ultimo = $_.Exception.Message
+    }
+  }
+  throw ('rede ' + $ultimo)
+}
 function Entrar($cred) {
   Info 'Entrando no SIR...'
-  $fl = Achar-FormLogin ($BASE + '/') 0
+  Escolher-Base
+  $fl = Achar-FormLogin ($BASE + $ENTRADA) 0
+  if (-not $fl) { $fl = Achar-FormLogin ($BASE + '/') 0 }
   if (-not $fl) { throw 'estrutura:não achei a tela de login do SIR' }
   $f = $fl.Form; $c = [ordered]@{}; foreach ($k in $f.Campos.Keys) { $c[$k] = $f.Campos[$k] }
   $nu = @($c.Keys | Where-Object { $_ -match '^(usuario|login|user)' })[0]
