@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v61';
+const CACHE_NAME   = 'sir-v62';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -17,6 +17,7 @@ const SHELL_ASSETS = [
   'css/tickets-compact.css',
   'css/visual-3d.css',
   'css/menu.css',
+  'css/pressable.css',
   'js/theme-mode.js',
   'assets/icon.svg',
   'css/styles.css',
@@ -60,6 +61,7 @@ const SHELL_ASSETS = [
   'js/pinned.js',
   'js/qualidade.js',
   'js/backup.js',
+  'js/pressable.js',
   'js/app.js',
   'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js',
   'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js',
