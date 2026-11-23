@@ -969,3 +969,20 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-qual .v2-kpi-type { color: #b9a5ff; }
 .nd-sigla { border-left-color: #f59e0b; }
 .nd-sigla .nd-kind { color: #d97706; border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.12); }
 @media (max-width: 420px) { .nd-head { flex-wrap: wrap; } .nd-title { flex: 1 1 auto; } }
+
+/* v60 — Celular: "Novas Entradas" desce para baixo dos cartões das áreas
+   e fica logo acima da Linha do Tempo. Só até 640px (smartphone);
+   PC e tablet continuam iguais. A ordem é feita só com CSS (o painel
+   é redesenhado a cada atualização, então o inbox não é movido no HTML). */
+@media (max-width: 640px) {
+  body.layout-v2 .page-shell { display: flex; flex-direction: column; align-items: stretch; }
+  body.layout-v2 .v2-dash-col,
+  body.layout-v2 main#main-grid { display: contents; }
+  body.layout-v2 #v2-bar                    { order: 0; }
+  body.layout-v2 #main-grid > *             { order: 4; min-width: 0; }
+  body.layout-v2 #main-grid > .v2-kpis      { order: 1; margin-bottom: 0; }
+  body.layout-v2 #main-grid > .v2-regions   { order: 2; }
+  body.layout-v2 .inbox-section             { order: 3; }
+  body.layout-v2 #main-grid > .v2-timeline  { order: 4; margin-top: 4px; }
+  body.layout-v2 .pinned-modules-area       { order: 5; }
+}
