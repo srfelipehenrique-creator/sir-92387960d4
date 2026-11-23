@@ -1,5 +1,7 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w3)
+#  Coletor SIR para Windows  (versão w4)
+#  - w4: na página do link da coluna Ass. lê também as RAL (não só as REC),
+#    sem repetir, e envia a área (CF) de cada uma quando a página mostra.
 #  - w3: abre o link do número de RECs associadas (coluna Ass.) de cada RAL
 #    das suas áreas e envia a lista dessas RECs junto (coluna "RECs Assoc.").
 #  - Dois cliques no arquivo "Coletor SIR.cmd" e pronto.
@@ -13,7 +15,7 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w3'
+$VERSAO   = 'w4'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $BASE     = 'http://172.30.130.133'
@@ -239,7 +241,7 @@ $CFS_PAINEL = @('RT/VTA /MTN/FFA/FO','RT/VTA /MTS/FFA/FO','RT/VTA /NOR/FFA/FO','
   'RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO','RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO','RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO')
 $script:CacheAss = @{}
 $script:Ciclo = 0
-$RX_REC = '(?i)^(?:REC\s*-?\s*)?(\d{4,8})\s*/\s*(20\d\d)$'
+$RX_REC = '(?i)^(?:(REC|RAL)\s*-?\s*)?(\d{4,8})\s*/\s*(20\d\d)$'   # sem prefixo = REC
 
 function Link-Da-Celula([string]$raw) {
   foreach ($m in [regex]::Matches($raw, '(?is)\bhref\s*=\s*["'']([^"'']+)["'']')) {
@@ -268,15 +270,17 @@ function Recs-Da-Pagina([string]$html, [string]$url, [string]$ralNum, [int]$prof
       continue
     }
     $m = [regex]::Match($row[$k], $RX_REC)
-    $num = 'REC-' + $m.Groups[1].Value + '/' + $m.Groups[2].Value
-    if ($num -eq ($ralNum -replace '^RAL', 'REC') -or $achadas.Contains($num)) { continue }
-    $it = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = '' }
+    $pre = if ($m.Groups[1].Success) { $m.Groups[1].Value.ToUpper() } else { 'REC' }
+    $num = $pre + '-' + $m.Groups[2].Value + '/' + $m.Groups[3].Value
+    if ($num -eq ($ralNum -replace '^RAL', 'REC') -or $num -eq $ralNum -or $achadas.Contains($num)) { continue }
+    $it = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = ''; Cf = '' }
     if ($cab -and $cab.Count -eq $row.Count) {
       for ($j = 0; $j -lt $cab.Count; $j++) {
         $h = $cab[$j].ToUpper()
         if ($h -match 'CLIENTE') { $it.Cliente = $row[$j] }
         elseif ($h -match 'DESIGNA') { $it.Desig = $row[$j] }
         elseif ($h -match 'ABERTURA') { $it.Abertura = $row[$j] }
+        elseif ($h -match '^CF' -and -not $it.Cf) { $it.Cf = $row[$j] }
         elseif ($h -match 'TIPO|SERVI|PRODUTO|ANORM') { if (-not $it.Tipo) { $it.Tipo = $row[$j] } }
       }
     } else {
@@ -286,9 +290,10 @@ function Recs-Da-Pagina([string]$html, [string]$url, [string]$ralNum, [int]$prof
   }
   if ($achadas.Count -eq 0) {
     # sem tabela: procura os números de REC soltos no texto
-    foreach ($m in [regex]::Matches((Texto-Celula $html), '(?i)\bREC\s*-?\s*(\d{4,8})\s*/\s*(20\d\d)')) {
-      $num = 'REC-' + $m.Groups[1].Value + '/' + $m.Groups[2].Value
-      if (-not $achadas.Contains($num)) { $achadas[$num] = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = '' } }
+    foreach ($m in [regex]::Matches((Texto-Celula $html), '(?i)\b(REC|RAL)\s*-?\s*(\d{4,8})\s*/\s*(20\d\d)')) {
+      $num = $m.Groups[1].Value.ToUpper() + '-' + $m.Groups[2].Value + '/' + $m.Groups[3].Value
+      if ($num -eq $ralNum) { continue }
+      if (-not $achadas.Contains($num)) { $achadas[$num] = @{ Rec = $num; Cliente = ''; Desig = ''; Abertura = ''; Tipo = ''; Cf = '' } }
     }
   }
   if ($prof -lt 3) {
@@ -321,7 +326,7 @@ function Anexar-Associadas($lista) {
             if (Eh-Login $p.Html) { throw 'sessao' }
             $ach = [ordered]@{}
             Recs-Da-Pagina $p.Html $p.Url $ralNum 0 $ach
-            $val = (@($ach.Values | ForEach-Object { (@($_.Rec, $_.Cliente, $_.Desig, $_.Abertura, $_.Tipo) | ForEach-Object { Limpo $_ }) -join ' ^ ' }) -join ' | ')
+            $val = (@($ach.Values | ForEach-Object { (@($_.Rec, $_.Cliente, $_.Desig, $_.Abertura, $_.Tipo, $_.Cf) | ForEach-Object { Limpo $_ }) -join ' ^ ' }) -join ' | ')
             $script:CacheAss[$ralNum] = @{ N = $ass; Val = $val; Ciclo = $script:Ciclo }
             if ($ach.Count -ne $ass) { Aviso "RAL $ralNum mostra $ass REC(s) associada(s), li $($ach.Count)." }
           } catch {

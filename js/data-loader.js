@@ -21,17 +21,19 @@ function loadNow(userSavedAreas) {
 }
 
 /* ── Inline CSV parser (used on file:// where Workers are blocked) ── */
-/* "REC-1/2026 ^ Cliente ^ Designação ^ Abertura ^ Tipo | REC-2/2026 ^ ..." → lista */
+/* "REC-1/2026 ^ Cliente ^ Designação ^ Abertura ^ Tipo ^ CF | RAL-2/2026 ^ ..." → lista
+   (link da coluna Ass.). Pode trazer REC e RAL; sem prefixo = REC. Repetidas entram 1 vez. */
 function parseRecsAssoc(v) {
   const out = [], seen = new Set();
   String(v || '').split('|').forEach(part => {
     const f = part.split('^').map(x => x.trim());
-    const m = (f[0] || '').match(/(\d{4,8})\s*\/\s*(20\d\d)/);
+    const m = (f[0] || '').match(/(?:\b(RAL|REC)\s*-?\s*)?(\d{4,8})\s*\/\s*(20\d\d)/i);
     if (!m) return;
-    const ticket = `REC-${m[1]}/${m[2]}`;
+    const kind = (m[1] || 'REC').toUpperCase() === 'RAL' ? 'ral' : 'rec';
+    const ticket = `${kind.toUpperCase()}-${m[2]}/${m[3]}`;
     if (seen.has(ticket)) return;
     seen.add(ticket);
-    out.push({ ticket, cliente: f[1] || '', designacao: f[2] || '', abertura: f[3] || '', tipo: f[4] || '' });
+    out.push({ ticket, kind, cliente: f[1] || '', designacao: f[2] || '', abertura: f[3] || '', tipo: f[4] || '', cf: f[5] || '' });
   });
   return out;
 }
