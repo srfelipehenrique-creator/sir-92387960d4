@@ -228,6 +228,22 @@ const FIELDS=[
  ['justificativa','Justificativa','area']];
 const LBL=Object.fromEntries(FIELDS.map(f=>[f[0],f[1]]));
 let token=LS.get('ots_token');
+/* Link de carga inicial: #k=<chave> abre o arquivo criptografado dados.enc e importa */
+let SEEDK='';try{const m=location.hash.match(/k=([A-Za-z0-9_-]{40,})/);if(m){SEEDK=m[1];sessionStorage.setItem('ots_seedk',SEEDK);history.replaceState(null,'',location.pathname+location.search)}else SEEDK=sessionStorage.getItem('ots_seedk')||''}catch{}
+let seeding=false;
+async function autoSeed(){
+  if(!SEEDK||seeding||OTS.length||!ME?.aprovado)return;seeding=true;
+  $('#banner').innerHTML='<div class="banner">Carregando os dados da planilha no servidor…</div>';
+  try{const f=await(await fetch('dados.enc',{cache:'no-store'})).json();
+    const u=x=>Uint8Array.from(atob(x.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((x.length+3)%4)),c=>c.charCodeAt(0));
+    const k=await crypto.subtle.importKey('raw',u(SEEDK),'AES-GCM',false,['decrypt']);
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u(f.iv)},k,u(f.ct));
+    const d=JSON.parse(new TextDecoder().decode(pt));
+    const r=await api('import',{data:d});
+    try{sessionStorage.removeItem('ots_seedk')}catch{}SEEDK='';
+    $('#banner').innerHTML=`<div class="banner">${r.total} designações carregadas da planilha.</div>`;busy=false;await load(true)}
+  catch(err){$('#banner').innerHTML=`<div class="banner">Não foi possível carregar os dados: ${esc(err?.name==='OperationError'?'link de carga inválido':errMsg(err))}</div>`}
+  seeding=false}
 let PEND=[],ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
 const prKey=o=>o.prioridade||'—';
 const ocup=o=>(o.capacidade>0&&o.ocupacao!=null)?o.ocupacao/o.capacidade:null;
@@ -261,7 +277,8 @@ async function load(force){
     if(!s.same){PEND=s.pendentes||[];REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
       OTS=Object.entries(s.ots||{}).map(([id,o])=>({id,...o})).sort((a,b)=>(a.linha||0)-(b.linha||0));
       render();if(cur&&$('#dlg').open&&!$('#ff').contains(document.activeElement))openOts(cur,true)}
-    $('#banner').innerHTML='';hdr()}
+    if(!seeding)$('#banner').innerHTML='';hdr();
+    if(!OTS.length&&SEEDK){busy=false;autoSeed();return}}
   catch(err){if(err instanceof TypeError)$('#banner').innerHTML='<div class="banner">Sem conexão com o servidor. Os dados mostrados podem estar desatualizados.</div>'}
   busy=false}
 function hdr(){

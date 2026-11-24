@@ -543,7 +543,9 @@ export class OtsStore {
     }
 
     if (op === 'import') {
-      if (!me.admin) return jsonPlain({ error: 'admin' }, 403);
+      /* Admin sempre; qualquer conta aprovada só quando o servidor ainda está vazio (carga inicial) */
+      const vazio = !Object.keys((await this.get('ots', {})) || {}).length;
+      if (!me.admin && !vazio) return jsonPlain({ error: 'admin' }, 403);
       const list = Array.isArray(b.data && b.data.ots) ? b.data.ots.slice(0, 2000) : [];
       if (!list.length) return jsonPlain({ error: 'vazio' }, 400);
       const cur = await this.get('ots', {}), out = {};
