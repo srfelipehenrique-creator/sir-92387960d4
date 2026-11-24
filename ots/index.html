@@ -17,7 +17,7 @@
 :root{color-scheme:light dark;
 --bg:light-dark(#e9eaec,#141517);--card:light-dark(#f7f7f8,#1c1d20);--ink:light-dark(#0b0b0b,#f0efec);--ink2:light-dark(#52514e,#b4b3ad);--mut:light-dark(#8a8986,#7d7c78);
 --line:light-dark(#d3d4d7,#2c2d31);--acc:#ff4f00;
---p0:light-dark(#104281,#b7d3f6);--p1:light-dark(#2a78d6,#5598e7);--p2:light-dark(#9ec5f4,#256abf);--pn:light-dark(#c9c9c6,#46464a);
+--p0:light-dark(#d4322c,#ff6b63);--p1:light-dark(#d98a00,#f5b13d);--p2:light-dark(#2a78d6,#5598e7);--pn:light-dark(#c9c9c6,#5a5a5f);
 --sim:light-dark(#2a78d6,#3987e5);--nao:light-dark(#eb6834,#d95926)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
@@ -75,7 +75,7 @@ table.list{width:100%;border-collapse:collapse;font-size:14px}
 .list tbody tr{cursor:pointer}.list tbody tr:hover{background:light-dark(#efeff1,#222327)}
 .des{font-weight:500;white-space:nowrap}
 .pr{display:inline-block;min-width:30px;text-align:center;border-radius:4px;padding:1px 6px;font-size:12px;font-weight:600;color:#fff}
-.pr.P0{background:var(--p0);color:light-dark(#fff,#0b0b0b)}.pr.P1{background:var(--p1);color:#fff}.pr.P2{background:var(--p2);color:light-dark(#0b0b0b,#fff)}.pr.x{background:var(--pn);color:var(--ink)}
+.pr.P0{background:var(--p0);color:#fff}.pr.P1{background:var(--p1);color:#1a1200}.pr.P2{background:var(--p2);color:#fff}.pr.x{background:var(--pn);color:var(--ink)}
 .last{color:var(--ink2);max-width:360px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 dialog{border:0;padding:0;margin:0 0 0 auto;height:100%;max-height:100%;width:min(720px,100%);background:var(--bg);color:var(--ink)}
@@ -106,7 +106,25 @@ dialog::backdrop{background:rgb(0 0 0/.45)}
 button:not(.link):active{transform:translateY(1px)}
 #login{margin:auto;height:fit-content;max-height:calc(100% - 24px);overflow:auto;width:min(440px,calc(100% - 24px));border-radius:10px;padding:24px;background:var(--card)}
 #login form{display:grid;gap:10px}#login form[hidden]{display:none}#login label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
-@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 10px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tbody tr{border-bottom:1px solid var(--line)}}
+/* área (CF_EXEC) com cor própria; responsável tinge a linha */
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;flex:none}
+.list tbody tr{background:color-mix(in srgb,var(--rc,transparent) 9%,transparent)}
+.list tbody tr:hover{background:color-mix(in srgb,var(--rc,#888) 17%,transparent)}
+.list tbody tr td:first-child{box-shadow:inset 4px 0 0 color-mix(in srgb,var(--rc,transparent) 70%,transparent)}
+.fr th{padding:6px 6px 10px;font-weight:400}
+.fr input,.fr select{width:100%;min-height:36px;font-size:13px;padding:5px 6px;min-width:80px}
+.list th.sort{cursor:pointer;user-select:none}.list th.sort:hover{color:var(--ink)}
+.ralc{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.ralc select,.ralc input{min-height:34px;font-size:14px;padding:4px 6px}
+.ralc input{width:120px;font-variant-numeric:tabular-nums}
+.ralc.sim select{border-color:var(--sim)}.ralc.nao select{border-color:var(--nao)}
+.occ{min-width:76px}.occ b{font-weight:500}
+.meter{height:6px;border-radius:3px;background:color-mix(in srgb,var(--ink) 12%,transparent);margin-top:5px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:3px}
+.idbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink2)}
+.idbar input{min-height:40px;font-size:14px;flex:0 1 170px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100% - 24px)}
+@media(max-width:600px){table{font-size:13px}.stack thead tr:first-child{display:none}.stack .fr{display:grid;grid-template-columns:1fr 1fr;gap:6px}.stack .fr th{padding:2px}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 10px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tbody tr{border-bottom:1px solid var(--line)}}
 @media(prefers-reduced-motion:no-preference){.bar s{transition:width .35s ease}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
@@ -141,7 +159,8 @@ button:not(.link):active{transform:translateY(1px)}
     </div>
     <div class="card">
       <h2>Por CF_EXEC (área executora)</h2>
-      <div class="legend"><span><i style="background:var(--p0)"></i>P0</span><span><i style="background:var(--p1)"></i>P1</span><span><i style="background:var(--p2)"></i>P2</span></div>
+      <p class="small">Cada área tem sua cor (a mesma usada na tabela). Dentro da barra: liso = P0, listrado = P1, claro = P2.</p>
+      <div class="legend" style="margin-top:4px"><span><i style="background:var(--ink2)"></i>P0</span><span><i style="background:repeating-linear-gradient(135deg,var(--ink2) 0 3px,color-mix(in srgb,var(--ink2) 55%,var(--card)) 3px 5px)"></i>P1</span><span><i style="background:color-mix(in srgb,var(--ink2) 55%,var(--card))"></i>P2</span></div>
       <div class="rows" id="c2"></div>
     </div>
     <div class="card">
@@ -155,15 +174,24 @@ button:not(.link):active{transform:translateY(1px)}
 
   <div class="filters">
     <input id="q" type="search" placeholder="Buscar designação, RAL, SGIR, nota…" aria-label="Buscar">
-    <select id="fP" aria-label="Prioridade"><option value="">Prioridade</option><option>P0</option><option>P1</option><option>P2</option><option value="—">Sem prioridade</option></select>
-    <select id="fR" aria-label="RAL"><option value="">RAL</option><option>Sim</option><option>Não</option></select>
     <select id="fU" aria-label="UF"><option value="">UF</option><option>RJ</option><option>ES</option></select>
     <button class="ghost" id="copy">Copiar CSV</button>
   </div>
+  <div class="idbar"><span>Quem está editando:</span><input id="gN" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"><input id="gA" list="dl-area" placeholder="Sua área" aria-label="Sua área"></div>
   <div class="chips" id="chips"></div>
   <p class="small" id="count" style="margin:8px 0"></p>
   <div class="tw"><table class="list stack" id="list">
-    <thead><tr><th>Designação</th><th>Prior.</th><th>RAL</th><th>CF_EXEC</th><th>Status</th><th>Responsável</th><th class="num">Ocup.</th><th>Última nota</th></tr></thead>
+    <thead><tr><th class="sort" data-s="designacao">Designação</th><th class="sort" data-s="prioridade">Prior.</th><th class="sort" data-s="ral">RAL</th><th class="sort" data-s="cfExec">CF_EXEC</th><th class="sort" data-s="status">Status</th><th class="sort" data-s="responsavel">Responsável</th><th class="sort num" data-s="ocup">Ocup.</th><th class="sort" data-s="nota">Última nota</th></tr>
+    <tr class="fr">
+      <th><input id="hDes" type="search" placeholder="Filtrar…" aria-label="Filtrar designação"></th>
+      <th><select id="hPr" aria-label="Filtrar prioridade"><option value="">Todas</option><option>P0</option><option>P1</option><option>P2</option><option value="—">Sem</option></select></th>
+      <th><select id="hRal" aria-label="Filtrar RAL"><option value="">Todos</option><option value="Sim">Sim</option><option value="Sim#">Sim com nº</option><option value="Sim-">Sim sem nº</option><option value="Não">Não</option></select></th>
+      <th><select id="hCf" aria-label="Filtrar CF_EXEC"></select></th>
+      <th><select id="hSt" aria-label="Filtrar status"></select></th>
+      <th><select id="hRe" aria-label="Filtrar responsável"></select></th>
+      <th><select id="hOc" aria-label="Filtrar ocupação"><option value="">Todas</option><option value="0-25">até 25%</option><option value="25-50">25–50%</option><option value="50-75">50–75%</option><option value="75-101">75% ou mais</option><option value="x">sem dado</option></select></th>
+      <th><select id="hNt" aria-label="Filtrar última nota"><option value="">Todas</option><option value="com">Com nota</option><option value="sem">Sem nota</option></select></th>
+    </tr></thead>
     <tbody></tbody></table></div>
   <p class="small" style="margin-top:14px">Fonte: planilha OTS_analise_fidere.xlsx, aba JULHO (59 designações). CF_EXEC e Status vieram da tabela dinâmica da mesma aba. Edições e notas ficam salvas no servidor e aparecem para todos que abrirem esta página.</p>
 
@@ -259,20 +287,39 @@ function notesFor(id){
 }
 const lastNote=id=>notesFor(id)[0]?.texto||'';
 
+/* Cores: cada área (CF_EXEC) e cada responsável recebe uma cor fixa pela ordem alfabética */
+const PAL=['#2a78d6','#e5484d','#2f9e44','#d98a00','#8e4ec6','#0f9b9b','#d6409f','#7a5c3e','#5b6bd6','#9c9c1f','#e8590c','#1c7ed6','#c2255c','#37b24d','#ae3ec9','#0ca678'];
+const colorMap=key=>{const v=[...new Set(OTS.map(o=>o[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));const m={};v.forEach((x,i)=>m[x]=PAL[i%PAL.length]);return m};
+let CFC={},REC={},sortBy=null,sortDir=1;
+const ralRank=o=>o.ral==='Sim'?(o.numRal?0:1):2;
+const prRank=o=>({P0:0,P1:1,P2:2})[o.prioridade]??3;
+function sortList(l){
+  const val={designacao:o=>o.designacao,prioridade:prRank,ral:ralRank,cfExec:o=>o.cfExec||'~',status:o=>o.status||'~',responsavel:o=>o.responsavel||'~',ocup:o=>ocup(o)??-1,nota:o=>lastNote(o.id)?0:1};
+  return l.slice().sort((a,b)=>{
+    if(sortBy){const x=val[sortBy](a),y=val[sortBy](b);const c=typeof x==='number'?x-y:String(x).localeCompare(String(y));if(c)return c*sortDir}
+    /* padrão: RAL Sim com nº, depois Sim sem nº, depois Não; dentro, P0→P2 */
+    return ralRank(a)-ralRank(b)||prRank(a)-prRank(b)||(a.linha||0)-(b.linha||0)});
+}
+function toast(t){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3500)}
 function matches(o){
   const q=$('#q').value.trim().toLowerCase();
   if(filt.prioridade&&prKey(o)!==filt.prioridade)return false;
-  if(filt.ral&&o.ral!==filt.ral)return false;
+  if(filt.ral){if(filt.ral==='Sim#'){if(o.ral!=='Sim'||!o.numRal)return false}else if(filt.ral==='Sim-'){if(o.ral!=='Sim'||o.numRal)return false}else if(o.ral!==filt.ral)return false}
+  if(filt.des&&!o.designacao.toLowerCase().includes(filt.des.toLowerCase()))return false;
+  if(filt.ocup){const oc=ocup(o);if(filt.ocup==='x'){if(oc!=null)return false}else{const [a,b]=filt.ocup.split('-').map(Number);if(oc==null||oc*100<a||oc*100>=b)return false}}
+  if(filt.nota){const has=!!lastNote(o.id);if(filt.nota==='com'?!has:has)return false}
   if(filt.uf&&o.uf!==filt.uf)return false;
   for(const k of ['cfExec','status','responsavel','propriedade'])if(filt[k]!=null&&(o[k]||'(vazio)')!==filt[k])return false;
   if(q){const hay=[o.designacao,o.numRal,o.ralRef,o.sgir,o.cfExec,o.status,o.responsavel,o.justificativa,o.area,...notesFor(o.id).map(n=>n.texto)].join(' ').toLowerCase();if(!hay.includes(q))return false}
   return true;
 }
-function setF(k,v){filt[k]=filt[k]===v?undefined:v;if(k==='prioridade')$('#fP').value=filt[k]||'';if(k==='ral')$('#fR').value=filt[k]||'';render()}
+const HF={des:'#hDes',prioridade:'#hPr',ral:'#hRal',cfExec:'#hCf',status:'#hSt',responsavel:'#hRe',ocup:'#hOc',nota:'#hNt',uf:'#fU'};
+function syncHF(){for(const [k,id] of Object.entries(HF)){const el=$(id);if(el&&document.activeElement!==el)el.value=filt[k]||''}}
+function setF(k,v){filt[k]=filt[k]===v?undefined:v;syncHF();render()}
 function stackRows(el,groups,key,big){
   const max=Math.max(1,...groups.map(g=>g.tot));
   el.innerHTML=groups.map(g=>`<div class="row${filt[key]===g.k?' on':''}" tabindex="0" data-k="${esc(key)}" data-v="${esc(g.k)}" title="${esc(g.k)}: ${esc(g.segs.filter(s=>s.n).map(s=>s.n+' '+s.l).join(', '))}">
-   <span class="lb">${esc(g.k)}</span><span class="bar">${g.segs.filter(s=>s.n).map(s=>`<s style="width:${s.n/max*100}%;background:${s.c}" title="${esc(s.l)}: ${s.n}">${big?s.n:''}</s>`).join('')}</span><span class="n">${g.tot}</span></div>`).join('');
+   <span class="lb">${g.dot?`<i class="dot" style="background:${g.dot}"></i>`:''}${esc(g.k)}</span><span class="bar">${g.segs.filter(s=>s.n).map(s=>`<s style="width:${s.n/max*100}%;background:${s.c}" title="${esc(s.l)}: ${s.n}">${big?s.n:''}</s>`).join('')}</span><span class="n">${g.tot}</span></div>`).join('');
 }
 function groupBy(list,key){
   const m={};list.forEach(o=>{const k=o[key]||'(vazio)';(m[k]=m[k]||{k,P0:0,P1:0,P2:0,'—':0,tot:0});m[k][prKey(o)]++;m[k].tot++});
@@ -291,15 +338,26 @@ function render(){
   stackRows($('#c1'),g1,'prioridade',true);
   const t=g1.reduce((a,g)=>[a[0]+g.segs[1].n,a[1]+g.segs[0].n,a[2]+g.tot],[0,0,0]);
   $('#m1').innerHTML=`<tr><th>Prioridade</th><th>Não</th><th>Sim</th><th>Total</th></tr>`+g1.map(g=>`<tr><td>${g.k}</td><td>${g.segs[1].n}</td><td>${g.segs[0].n}</td><td>${g.tot}</td></tr>`).join('')+`<tr><td>Total</td><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td></tr>`;
-  stackRows($('#c2'),groupBy(all,'cfExec'),'cfExec');
+  CFC=colorMap('cfExec');REC=colorMap('responsavel');
+  stackRows($('#c2'),groupBy(all,'cfExec').map(g=>{const c=CFC[g.k]||'#8a8986';return{...g,dot:c,segs:g.segs.map((s,i)=>({...s,c:i===3?'var(--pn)':[c,`repeating-linear-gradient(135deg,${c} 0 5px,color-mix(in srgb,${c} 55%,var(--card)) 5px 9px)`,`color-mix(in srgb,${c} 55%,var(--card))`][i]}))}}),'cfExec');
   const st={};all.forEach(o=>{const k=o.status||'(vazio)';st[k]=(st[k]||0)+1});
-  stackRows($('#c3'),Object.entries(st).sort((a,b)=>b[1]-a[1]).map(([k,n])=>({k,tot:n,segs:[{l:'designações',n,c:'var(--p1)'}]})),'status');
+  stackRows($('#c3'),Object.entries(st).sort((a,b)=>b[1]-a[1]).map(([k,n])=>({k,tot:n,segs:[{l:'designações',n,c:'var(--ink2)'}]})),'status');
   stackRows($('#c4'),groupBy(all,'responsavel'),'responsavel');
   stackRows($('#c5'),groupBy(all,'propriedade'),'propriedade');
   const ch=Object.entries(filt).filter(([k,v])=>v!=null&&v!=='');
-  $('#chips').innerHTML=ch.map(([k,v])=>`<button class="chip" data-k="${esc(k)}">${esc((LBL[k]||k).split(' (')[0])}: ${esc(v)} ✕</button>`).join('')+(ch.length?'<button class="link" id="clr">Limpar filtros</button>':'');
+  const CL={des:'Designação',ocup:'Ocupação',nota:'Última nota',uf:'UF'},CV={'Sim#':'Sim com nº','Sim-':'Sim sem nº','0-25':'até 25%','25-50':'25–50%','50-75':'50–75%','75-101':'75% ou mais',x:'sem dado',com:'com nota',sem:'sem nota'};
+  $('#chips').innerHTML=ch.map(([k,v])=>`<button class="chip" data-k="${esc(k)}">${esc(CL[k]||(LBL[k]||k).split(' (')[0])}: ${esc(CV[v]||v)} ✕</button>`).join('')+(ch.length?'<button class="link" id="clr">Limpar filtros</button>':'');
   $('#count').textContent=`${list.length} de ${all.length} designações`;
-  $('#list tbody').innerHTML=list.map(o=>{const oc=ocup(o);return `<tr data-id="${esc(o.id)}" tabindex="0"><td class="des">${esc(o.designacao)}</td><td><span class="pr ${o.prioridade?esc(o.prioridade):'x'}">${esc(o.prioridade||'—')}</span></td><td>${esc(o.ral)}${o.numRal?' · '+esc(o.numRal):''}</td><td>${esc(o.cfExec)}</td><td>${esc(o.status)}</td><td>${esc(o.responsavel)}</td><td class="num">${oc==null?'':Math.round(oc*100)+'%'}</td><td><span class="last">${esc(lastNote(o.id))}</span></td></tr>`}).join('')||`<tr><td colspan="8">${all.length?'Nenhuma designação com esses filtros.':'Sem dados.'}</td></tr>`;
+  for(const [id,k] of [['#hCf','cfExec'],['#hSt','status'],['#hRe','responsavel']]){const el=$(id);const vals=[...new Set(all.map(o=>o[k]||'(vazio)'))].sort((a,b)=>a.localeCompare(b));
+    const html='<option value="">Todos</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(el.dataset.h!==html){el.innerHTML=html;el.dataset.h=html}if(document.activeElement!==el)el.value=filt[k]||''}
+  for(const th of document.querySelectorAll('.list th.sort'))th.textContent=th.textContent.replace(/ [▲▼]$/,'')+(sortBy===th.dataset.s?(sortDir>0?' ▲':' ▼'):'');
+  if($('#list tbody').contains(document.activeElement)&&document.activeElement.matches('input,select'))return;
+  $('#list tbody').innerHTML=sortList(list).map(o=>{const oc=ocup(o),pc=oc==null?null:Math.round(oc*100),sim=o.ral==='Sim',rc=REC[o.responsavel]||'';
+    const mc=pc==null?'':pc>=80?'var(--p0)':pc>=50?'var(--p1)':'#2f9e44';
+    return `<tr data-id="${esc(o.id)}" tabindex="0" style="${rc?`--rc:${rc}`:''}"><td class="des">${esc(o.designacao)}</td><td><span class="pr ${o.prioridade?esc(o.prioridade):'x'}">${esc(o.prioridade||'—')}</span></td>
+    <td><div class="ralc ${sim?'sim':'nao'}"><select class="ralSel" data-id="${esc(o.id)}" aria-label="RAL de ${esc(o.designacao)}"><option${sim?' selected':''}>Sim</option><option${sim?'':' selected'}>Não</option></select>${sim?`<input class="ralNum" data-id="${esc(o.id)}" value="${esc(o.numRal)}" placeholder="Nº da RAL" inputmode="numeric" aria-label="Número da RAL de ${esc(o.designacao)}">`:''}</div></td>
+    <td>${o.cfExec?`<i class="dot" style="background:${CFC[o.cfExec]}"></i>`:''}${esc(o.cfExec)}</td><td>${esc(o.status)}</td><td>${esc(o.responsavel)}</td>
+    <td class="num occ">${pc==null?'<span class="small">—</span>':`<b>${pc}%</b><div class="meter" role="meter" aria-valuenow="${pc}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.min(100,pc)}%;background:${mc}"></i></div>`}</td><td><span class="last">${esc(lastNote(o.id))}</span></td></tr>`}).join('')||`<tr><td colspan="8">${all.length?'Nenhuma designação com esses filtros.':'Sem dados.'}</td></tr>`;
   const dl={};for(const f of FIELDS)if(f[2]==='dl')dl[f[0]]=[...new Set(all.map(o=>o[f[0]]).filter(Boolean))].sort();
   const areas=new Set(Object.values(NOTES).map(n=>n.area).filter(Boolean));
   $('#dls').innerHTML=Object.entries(dl).map(([k,v])=>`<datalist id="dl-${k}">${v.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('')+`<datalist id="dl-area">${[...areas].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
@@ -346,18 +404,37 @@ $('#ff').addEventListener('submit',async e=>{e.preventDefault();const o=OTS.find
   try{const r=await api('pupdate',{id:cur,changes:ch,autor:who().autor});$('#svm').textContent=`Salvo (${r.mudou} campo${r.mudou>1?'s':''}).`;$('#sv').blur();await load();openOts(cur,true)}
   catch(err){$('#svm').textContent=errMsg(err)}
   $('#sv').disabled=false});
-for(const [id,k] of [['#iN','ots_nome'],['#iA','ots_area']])$(id).addEventListener('change',e=>{LS.set(k,e.target.value.trim());hdr()});
+for(const [id,k] of [['#iN','ots_nome'],['#iA','ots_area']])$(id).addEventListener('change',e=>{LS.set(k,e.target.value.trim());hdr();for(const g of ['#gN','#gA'])$(g).value=LS.get(g==='#gN'?'ots_nome':'ots_area')});
 $('#dX').onclick=()=>$('#dlg').close();
 $('#dlg').addEventListener('close',()=>{cur=null});
-$('#list').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');tr&&openOts(tr.dataset.id)});
-$('#list').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr[data-id]');tr&&openOts(tr.dataset.id)}});
+$('#list').addEventListener('click',e=>{if(e.target.closest('input,select,.ralc'))return;
+  const th=e.target.closest('th.sort');if(th){const k=th.dataset.s;if(sortBy===k){if(sortDir>0)sortDir=-1;else{sortBy=null;sortDir=1}}else{sortBy=k;sortDir=1}render();return}
+  const tr=e.target.closest('tbody tr[data-id]');tr&&openOts(tr.dataset.id)});
+$('#list').addEventListener('keydown',e=>{if(e.key==='Enter'){if(e.target.classList.contains('ralNum')){e.target.blur();return}if(e.target.closest('input,select'))return;const tr=e.target.closest('tbody tr[data-id]');tr&&openOts(tr.dataset.id)}});
+/* RAL direto na tabela: Sim/Não; com Sim abre o campo do número */
+async function saveRal(id,changes,el){
+  const autor=who().autor;
+  if(autor.length<2){toast('Informe seu nome em “Quem está editando” antes de alterar.');$('#gN').focus();render();return}
+  try{await api('pupdate',{id,changes,autor});const o=OTS.find(x=>x.id===id);Object.assign(o,changes);toast('RAL salva.');el&&el.blur();render();load()}
+  catch(err){toast(errMsg(err));render()}
+}
+$('#list').addEventListener('change',e=>{
+  if(who().autor.length<2){toast('Informe seu nome em “Quem está editando” antes de alterar.');$('#gN').focus();render();return}
+  if(e.target.classList.contains('ralSel')){const id=e.target.dataset.id,v=e.target.value;
+    if(v==='Sim'){const o=OTS.find(x=>x.id===id);o.ral='Sim';e.target.blur();render();const inp=document.querySelector(`.ralNum[data-id="${CSS.escape(id)}"]`);inp&&inp.focus();saveRal(id,{ral:'Sim'})}
+    else saveRal(id,{ral:'Não',numRal:''},e.target);return}
+  if(e.target.classList.contains('ralNum')){const id=e.target.dataset.id,o=OTS.find(x=>x.id===id),v=e.target.value.trim();if(v!==(o.numRal||''))saveRal(id,{numRal:v},e.target)}});
+const HE=[['#hDes','des','input'],['#hPr','prioridade','change'],['#hRal','ral','change'],['#hCf','cfExec','change'],['#hSt','status','change'],['#hRe','responsavel','change'],['#hOc','ocup','change'],['#hNt','nota','change']];
+for(const [id,k,ev] of HE)$(id).addEventListener(ev,e=>{filt[k]=e.target.value||undefined;render()});
+/* nome/área: mesmos campos na barra e na ficha */
+const syncId=()=>{for(const id of ['#gN','#iN'])if(document.activeElement!==$(id))$(id).value=LS.get('ots_nome');for(const id of ['#gA','#iA'])if(document.activeElement!==$(id))$(id).value=LS.get('ots_area')};
+for(const [id,k] of [['#gN','ots_nome'],['#gA','ots_area']])$(id).addEventListener('change',e=>{LS.set(k,e.target.value.trim());syncId();hdr()});
+syncId();
 document.addEventListener('click',e=>{const r=e.target.closest('.row[data-k]');if(r)setF(r.dataset.k,r.dataset.v);
-  const c=e.target.closest('.chip');if(c){filt[c.dataset.k]=undefined;({prioridade:'#fP',ral:'#fR',uf:'#fU'})[c.dataset.k]&&($(({prioridade:'#fP',ral:'#fR',uf:'#fU'})[c.dataset.k]).value='');render()}
-  if(e.target.id==='clr'){filt={};$('#fP').value=$('#fR').value=$('#fU').value='';render()}});
+  const c=e.target.closest('.chip');if(c){filt[c.dataset.k]=undefined;syncHF();render()}
+  if(e.target.id==='clr'){filt={};syncHF();render()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest?.('.row[data-k]');r&&setF(r.dataset.k,r.dataset.v)}});
 $('#q').addEventListener('input',render);
-$('#fP').onchange=e=>{filt.prioridade=e.target.value||undefined;render()};
-$('#fR').onchange=e=>{filt.ral=e.target.value||undefined;render()};
 $('#fU').onchange=e=>{filt.uf=e.target.value||undefined;render()};
 $('#copy').onclick=async()=>{const cols=['designacao',...FIELDS.map(f=>f[0])];const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const rows=[['Designação',...FIELDS.map(f=>f[1]),'Última nota'].map(q).join(';'),...OTS.filter(matches).map(o=>[...cols.map(c=>o[c]),lastNote(o.id)].map(q).join(';'))];
