@@ -41,7 +41,8 @@ const normalize = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').
 function cors(env, req) {
   const origin = req.headers.get('Origin') || '';
   const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-  const ok = allowed.includes(origin);
+  /* Página OTS também publicada no Cloudflare Pages (endereço sem nome pessoal) */
+  const ok = allowed.includes(origin) || /^https:\/\/([a-z0-9-]+\.)?ots-fidere(-[a-z0-9]+)?\.pages\.dev$/.test(origin);
   return {
     'Access-Control-Allow-Origin': ok ? origin : (allowed[0] || '*'),
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',

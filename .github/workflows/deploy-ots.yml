@@ -1,0 +1,31 @@
+# Publica a página ots/ no Cloudflare Pages, num endereço curto e sem nome pessoal:
+#   https://ots-fidere.pages.dev
+# Usa os mesmos segredos do servidor de notificações (CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID).
+# O token precisa da permissão "Cloudflare Pages: Edit".
+name: Publicar OTS (Cloudflare Pages)
+
+on:
+  push:
+    branches: [main]
+    paths: ['ots/**', '.github/workflows/deploy-ots.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Criar projeto (se ainda não existir)
+        run: npx --yes wrangler@3 pages project create ots-fidere --production-branch main || true
+      - name: Publicar
+        run: npx --yes wrangler@3 pages deploy ots --project-name ots-fidere --branch main --commit-dirty=true 2>&1 | tee deploy.log
+      - name: Endereço
+        run: |
+          grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | head -n3
+          echo "### Página OTS: https://ots-fidere.pages.dev" >> $GITHUB_STEP_SUMMARY
