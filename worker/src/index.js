@@ -397,6 +397,155 @@ export class NotesStore {
   }
 }
 
+
+/* ─────────────── Durable Object do Acompanhamento OTS (ots/) ───────────────
+   Designações editáveis por todos da equipe; notas com autor e área.
+   Cada pessoa entra com nome + senha pessoal (além da chave da equipe);
+   só o autor edita ou apaga a própria nota — conferido aqui no servidor. */
+const OTS_FIELDS = { propriedade: 60, classif: 30, capacidade: 'n', ocupacao: 'n', prioridade: 4, criticidade: 20, mes: 7, regional: 20, uf: 4,
+  numRal: 40, ralRef: 40, ral: 3, sgir: 120, origem: 60, responsavel: 60, justificativa: 600, area: 40, cfExec: 60, status: 200 };
+const otsClean = (k, v) => {
+  const t = OTS_FIELDS[k];
+  if (t === 'n') { if (v === null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+  return String(v == null ? '' : v).trim().slice(0, t);
+};
+const otsName = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+const randHex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
+export class OtsStore {
+  constructor(state, env) { this.state = state; this.env = env; }
+  async get(k, d) { const v = await this.state.storage.get(k); return v === undefined ? d : v; }
+  async me(token) {
+    if (!token) return null;
+    const ses = await this.get('sessions', {});
+    const s = ses[await sha256Hex(String(token))];
+    if (!s) return null;
+    const users = await this.get('users', {});
+    return users[s.uid] ? { uid: s.uid, ...users[s.uid] } : null;
+  }
+  async bump() { const r = (await this.get('rev', 0)) + 1; await this.state.storage.put('rev', r); return r; }
+  async fetch(request) {
+    let b; try { b = await request.json(); } catch (e) { return jsonPlain({ error: 'json' }, 400); }
+    const op = String(b.op || ''), now = Date.now();
+
+    if (op === 'login') {
+      const nome = String(b.nome || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+      const pin = String(b.pin || '');
+      const area = String(b.area || '').trim().slice(0, 40);
+      if (nome.length < 3) return jsonPlain({ error: 'nome' }, 400);
+      if (pin.length < 6) return jsonPlain({ error: 'senha' }, 400);
+      const users = await this.get('users', {});
+      let uid = Object.keys(users).find(u => otsName(users[u].nome) === otsName(nome));
+      if (uid) {
+        const u = users[uid];
+        if (u.lockUntil && u.lockUntil > now) return jsonPlain({ error: 'bloqueado', ate: u.lockUntil }, 429);
+        if ((await sha256Hex(u.salt + ':' + pin)) !== u.pinHash) {
+          u.fails = (u.fails || 0) + 1;
+          if (u.fails >= 8) { u.lockUntil = now + 15 * 60000; u.fails = 0; }
+          await this.state.storage.put('users', users);
+          return jsonPlain({ error: 'senha_errada' }, 403);
+        }
+        u.fails = 0; delete u.lockUntil;
+        if (area) u.area = area;
+      } else {
+        if (!area) return jsonPlain({ error: 'area' }, 400);
+        uid = 'u' + randHex(6);
+        const salt = randHex(12);
+        users[uid] = { nome, area, salt, pinHash: await sha256Hex(salt + ':' + pin), at: now };
+        if (!Object.keys(users).some(x => x !== uid && users[x].admin) && !(await this.get('ots', null))) users[uid].admin = true;
+      }
+      await this.state.storage.put('users', users);
+      const token = randHex(24);
+      const ses = await this.get('sessions', {});
+      for (const [k, v] of Object.entries(ses)) if (now - v.at > 180 * 86400000) delete ses[k];
+      ses[await sha256Hex(token)] = { uid, at: now };
+      await this.state.storage.put('sessions', ses);
+      await this.bump();
+      return jsonPlain({ ok: true, token, me: { uid, nome: users[uid].nome, area: users[uid].area, admin: !!users[uid].admin } }, 200);
+    }
+
+    const me = await this.me(b.token);
+    if (!me) return jsonPlain({ error: 'sessao' }, 401);
+    const meOut = { uid: me.uid, nome: me.nome, area: me.area, admin: !!me.admin };
+
+    if (op === 'state') {
+      const rev = await this.get('rev', 0);
+      if (b.since && Number(b.since) === rev) return jsonPlain({ rev, same: true, me: meOut }, 200);
+      const users = await this.get('users', {});
+      const pub = {}; for (const [k, u] of Object.entries(users)) pub[k] = { nome: u.nome, area: u.area };
+      return jsonPlain({ rev, me: meOut, users: pub, ots: await this.get('ots', {}), notes: await this.get('notes', {}), config: await this.get('config', {}) }, 200);
+    }
+
+    if (op === 'logout') {
+      const ses = await this.get('sessions', {}); delete ses[await sha256Hex(String(b.token))];
+      await this.state.storage.put('sessions', ses); return jsonPlain({ ok: true }, 200);
+    }
+
+    if (op === 'update') {
+      const ots = await this.get('ots', {}); const o = ots[String(b.id || '')];
+      if (!o) return jsonPlain({ error: 'id' }, 404);
+      const ch = b.changes && typeof b.changes === 'object' ? b.changes : {};
+      o.hist = Array.isArray(o.hist) ? o.hist : [];
+      let n = 0;
+      for (const [k, v] of Object.entries(ch)) {
+        if (!(k in OTS_FIELDS)) continue;
+        const nv = otsClean(k, v), ov = o[k] ?? (OTS_FIELDS[k] === 'n' ? null : '');
+        if (nv === ov) continue;
+        o.hist.push({ by: me.uid, at: now, campo: k, de: String(ov ?? ''), para: String(nv ?? '') });
+        o[k] = nv; n++;
+      }
+      if (!n) return jsonPlain({ ok: true, mudou: 0 }, 200);
+      o.hist = o.hist.slice(-60); o.upd = { by: me.uid, at: now };
+      await this.state.storage.put('ots', ots);
+      return jsonPlain({ ok: true, mudou: n, rev: await this.bump() }, 200);
+    }
+
+    if (op === 'note_add' || op === 'note_edit' || op === 'note_del') {
+      const notes = await this.get('notes', {});
+      const texto = String(b.texto || '').trim().slice(0, 4000);
+      if (op === 'note_add') {
+        const ots = await this.get('ots', {});
+        if (!ots[String(b.ots || '')]) return jsonPlain({ error: 'id' }, 404);
+        const area = String(b.area || me.area || '').trim().slice(0, 40);
+        if (!texto) return jsonPlain({ error: 'texto' }, 400);
+        if (!area) return jsonPlain({ error: 'area' }, 400);
+        const nid = 'n' + now.toString(36) + randHex(3);
+        notes[nid] = { ots: String(b.ots), uid: me.uid, area, texto, at: now };
+        if (area !== me.area) { const users = await this.get('users', {}); users[me.uid].area = area; await this.state.storage.put('users', users); }
+      } else {
+        const n = notes[String(b.nid || '')];
+        if (!n) return jsonPlain({ error: 'nota' }, 404);
+        if (n.uid !== me.uid) return jsonPlain({ error: 'autor' }, 403);   /* só o autor */
+        if (op === 'note_edit') { if (!texto) return jsonPlain({ error: 'texto' }, 400); n.texto = texto; n.editedAt = now; }
+        else delete notes[String(b.nid)];
+      }
+      await this.state.storage.put('notes', notes);
+      return jsonPlain({ ok: true, rev: await this.bump() }, 200);
+    }
+
+    if (op === 'import') {
+      if (!me.admin) return jsonPlain({ error: 'admin' }, 403);
+      const list = Array.isArray(b.data && b.data.ots) ? b.data.ots.slice(0, 2000) : [];
+      if (!list.length) return jsonPlain({ error: 'vazio' }, 400);
+      const cur = await this.get('ots', {}), out = {};
+      for (const r of list) {
+        const id = String(r.id || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 80);
+        if (!id) continue;
+        const o = { designacao: String(r.designacao || id).slice(0, 80), linha: Number(r.linha) || 0 };
+        for (const k of Object.keys(OTS_FIELDS)) o[k] = otsClean(k, r[k]);
+        o.legado = (Array.isArray(r.legado) ? r.legado : []).slice(0, 20).map(x => ({ autor: String(x.autor || '').slice(0, 60), area: String(x.area || '').slice(0, 40), texto: String(x.texto || '').slice(0, 4000) }));
+        if (cur[id]) { o.hist = cur[id].hist; o.upd = cur[id].upd; }
+        out[id] = o;
+      }
+      await this.state.storage.put('ots', out);
+      const cfg = b.data.config || {};
+      const url = String(cfg.filesUrl || '');
+      await this.state.storage.put('config', { filesUrl: /^https:\/\//.test(url) ? url.slice(0, 600) : '' });
+      return jsonPlain({ ok: true, total: Object.keys(out).length, rev: await this.bump() }, 200);
+    }
+    return jsonPlain({ error: 'op' }, 400);
+  }
+}
+
 /* ─────────────────────────── API ─────────────────────────── */
 async function authorized(env, key) {
   if (!key || !env.KEY_HASH) return false;
@@ -520,6 +669,15 @@ export default {
       await env.SIR_KV.put('nodes', JSON.stringify(clean));
       await env.SIR_KV.put('nodes_meta', JSON.stringify({ at, by: String(body.by || '').slice(0, 40), count: clean.length }));
       return json({ ok: true, at, count: clean.length }, 200, h);
+    }
+
+    /* ── Acompanhamento OTS → Durable Object próprio ── */
+    if (req.method === 'POST' && url.pathname === '/ots') {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const stub = env.OTS.get(env.OTS.idFromName('ots'));
+      const r = await stub.fetch('https://ots/', { method: 'POST', body: JSON.stringify(body) });
+      return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 
     /* ── Notas compartilhadas → Durable Object (consistência imediata, uma operação por vez) ── */

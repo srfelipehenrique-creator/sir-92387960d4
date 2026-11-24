@@ -23,6 +23,15 @@ id = "__KV_ID__"
 name = "NOTES"
 class_name = "NotesStore"
 
+[[durable_objects.bindings]]
+name = "OTS"
+class_name = "OtsStore"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["NotesStore"]
+
+# Acompanhamento OTS (página ots/)
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["OtsStore"]

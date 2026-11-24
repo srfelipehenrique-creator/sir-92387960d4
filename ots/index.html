@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#141517">
+<title>OTS Fidere · Acompanhamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sala de operação — clínico, direto, número primeiro.
+   IDEA: painel de instrumentos do COP: leitura grande, escala, ponteiro laranja no que está filtrado.
+   PICTURE: matriz Prioridade × RAL como barras empilhadas grandes; demais quebras abaixo; a lista é a ferramenta.
+   COLOUR and TYPE: alumínio #e9eaec, preto, ponteiro #ff4f00; noite #141517. Geist 500/400.
+   LAYOUT: título + leituras; gráficos 2×2; filtros numa linha; tabela; ficha da designação em gaveta. */
+:root{color-scheme:light dark;
+--bg:light-dark(#e9eaec,#141517);--card:light-dark(#f7f7f8,#1c1d20);--ink:light-dark(#0b0b0b,#f0efec);--ink2:light-dark(#52514e,#b4b3ad);--mut:light-dark(#8a8986,#7d7c78);
+--line:light-dark(#d3d4d7,#2c2d31);--acc:#ff4f00;
+--p0:light-dark(#104281,#b7d3f6);--p1:light-dark(#2a78d6,#5598e7);--p2:light-dark(#9ec5f4,#256abf);--pn:light-dark(#c9c9c6,#46464a);
+--sim:light-dark(#2a78d6,#3987e5);--nao:light-dark(#eb6834,#d95926)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Geist,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3.5vw,48px) max(4vw,14px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-size:clamp(28px,4.4vw,44px);line-height:1.05;font-weight:500;margin:0 0 6px;text-wrap:balance}
+h2{font-size:17px;font-weight:600;margin:0 0 2px}
+.sub{color:var(--ink2);margin:0}
+.small{font-size:13px;color:var(--mut)}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.me{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+.kpi{background:var(--card);padding:14px 16px}
+.kpi b{display:block;font-size:clamp(28px,3.6vw,40px);font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--ink2)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin:6px 0 10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(90px,38%) minmax(0,1fr) 36px;gap:10px;align-items:center;font-size:14px;cursor:pointer;padding:3px 4px;border-radius:4px}
+.row:hover,.row:focus-visible{background:light-dark(#ebecef,#25262a);outline:none}
+.row.on{box-shadow:inset 3px 0 0 var(--acc)}
+.row .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.row .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.bar{display:flex;gap:2px;height:18px}
+.bar s{display:block;height:100%;border-radius:0 4px 4px 0;text-decoration:none;min-width:2px}
+.bar s:not(:last-child){border-radius:0}
+.bar s:first-child:not(:last-child){border-radius:0}
+.big .row{grid-template-columns:60px minmax(0,1fr) 44px;font-size:16px}
+.big .bar{height:34px}
+.big .bar s{display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600}
+.mtx{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px;font-variant-numeric:tabular-nums}
+.mtx th,.mtx td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right}.mtx th:first-child,.mtx td:first-child{text-align:left}
+.mtx tr:last-child td{font-weight:600;border-bottom:0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:22px 0 10px}
+input,select,textarea,button{font:inherit;font-size:16px;color:var(--ink)}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-height:44px}
+textarea{min-height:84px;width:100%;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+#q{flex:1 1 220px}
+.filters select{flex:0 1 150px}
+button{min-height:44px;padding:0 16px;border-radius:6px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer;font-weight:500}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button.link{background:none;border:0;color:var(--ink2);padding:0 6px;min-height:32px;text-decoration:underline;font-size:14px}
+button:disabled{opacity:.45;cursor:default}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:13px;border:1px solid var(--acc);color:var(--ink);border-radius:20px;padding:3px 10px;cursor:pointer;background:transparent;min-height:30px}
+.tw{background:var(--card);border:1px solid var(--line);overflow-x:auto}
+table.list{width:100%;border-collapse:collapse;font-size:14px}
+.list th{position:sticky;top:0;background:var(--card);text-align:left;font-weight:600;font-size:13px;color:var(--ink2);padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.list td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.list tbody tr{cursor:pointer}.list tbody tr:hover{background:light-dark(#efeff1,#222327)}
+.des{font-weight:500;white-space:nowrap}
+.pr{display:inline-block;min-width:30px;text-align:center;border-radius:4px;padding:1px 6px;font-size:12px;font-weight:600;color:#fff}
+.pr.P0{background:var(--p0);color:light-dark(#fff,#0b0b0b)}.pr.P1{background:var(--p1);color:#fff}.pr.P2{background:var(--p2);color:light-dark(#0b0b0b,#fff)}.pr.x{background:var(--pn);color:var(--ink)}
+.last{color:var(--ink2);max-width:360px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+dialog{border:0;padding:0;margin:0 0 0 auto;height:100%;max-height:100%;width:min(720px,100%);background:var(--bg);color:var(--ink)}
+dialog::backdrop{background:rgb(0 0 0/.45)}
+.dh{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--line);z-index:2}
+.db{padding:16px 20px 40px}
+.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.fg label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
+.fg .w{grid-column:1/-1}
+@media(max-width:600px){.fg{grid-template-columns:minmax(0,1fr)}}
+.sec{margin-top:26px}
+.note{border-left:2px solid var(--line);padding:8px 0 8px 12px;margin:10px 0}
+.note.mine{border-left-color:var(--acc)}
+.note .h{font-size:13px;color:var(--ink2);display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
+.note .h b{color:var(--ink);font-weight:600}
+.note p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.msg{font-size:14px;color:var(--ink2);min-height:20px}
+.banner{background:var(--card);border:1px solid var(--line);padding:12px 16px;margin-top:16px;font-size:14px}
+.files{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:6px;background:var(--acc);color:#fff;font-weight:600;font-size:15px;text-decoration:none;box-shadow:0 3px 0 light-dark(#b33800,#8a2f00);transition:transform .08s,box-shadow .08s,filter .15s;-webkit-tap-highlight-color:transparent;user-select:none}
+.files[hidden]{display:none}
+.files:hover{filter:brightness(1.06)}
+.files:active{transform:translateY(3px);box-shadow:0 0 0 transparent;filter:brightness(.95)}
+.files:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.files svg{width:18px;height:18px;flex:none}
+.topr{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+@media(max-width:600px){.topr{align-items:stretch;width:100%}.files{justify-content:center}}
+button:not(.link):active{transform:translateY(1px)}
+#login{margin:auto;height:fit-content;max-height:calc(100% - 24px);overflow:auto;width:min(440px,calc(100% - 24px));border-radius:10px;padding:24px;background:var(--card)}
+#login form{display:grid;gap:10px}#login label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 10px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tbody tr{border-bottom:1px solid var(--line)}}
+@media(prefers-reduced-motion:no-preference){.bar s{transition:width .35s ease}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<section class="band"><div class="wrap">
+  <div class="top">
+    <div>
+      <h1 id="headline">Acompanhamento OTS — Fidere</h1>
+      <p class="sub" id="lede">Carregando designações…</p>
+    </div>
+    <div class="topr">
+      <a class="files" id="files" role="button" hidden target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h5l2 2.5h8A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg>Arquivos do projeto</a>
+      <div class="me" id="me"></div>
+    </div>
+  </div>
+  <div class="banner" id="empty" hidden>Nenhuma designação no servidor ainda. Se você é o administrador, use “Importar dados” no fim da página com o arquivo <b>ots-importacao.json</b>.</div>
+  <div class="kpis" id="kpis"></div>
+  <div id="banner"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Prioridade × RAL</h2>
+      <p class="small">Quantas designações de cada prioridade já têm RAL aberta</p>
+      <div class="legend"><span><i style="background:var(--sim)"></i>Com RAL</span><span><i style="background:var(--nao)"></i>Sem RAL</span></div>
+      <div class="rows big" id="c1"></div>
+      <table class="mtx" id="m1"></table>
+    </div>
+    <div class="card">
+      <h2>Status</h2>
+      <p class="small">Situação atual de cada designação · toque para filtrar</p>
+      <div class="rows" id="c3" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2>Por CF_EXEC (área executora)</h2>
+      <div class="legend"><span><i style="background:var(--p0)"></i>P0</span><span><i style="background:var(--p1)"></i>P1</span><span><i style="background:var(--p2)"></i>P2</span></div>
+      <div class="rows" id="c2"></div>
+    </div>
+    <div class="card">
+      <h2>Por responsável</h2>
+      <div class="legend"><span><i style="background:var(--p0)"></i>P0</span><span><i style="background:var(--p1)"></i>P1</span><span><i style="background:var(--p2)"></i>P2</span></div>
+      <div class="rows" id="c4"></div>
+      <h2 style="margin-top:18px">Por propriedade do cabo</h2>
+      <div class="rows" id="c5" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input id="q" type="search" placeholder="Buscar designação, RAL, SGIR, nota…" aria-label="Buscar">
+    <select id="fP" aria-label="Prioridade"><option value="">Prioridade</option><option>P0</option><option>P1</option><option>P2</option><option value="—">Sem prioridade</option></select>
+    <select id="fR" aria-label="RAL"><option value="">RAL</option><option>Sim</option><option>Não</option></select>
+    <select id="fU" aria-label="UF"><option value="">UF</option><option>RJ</option><option>ES</option></select>
+    <button class="ghost" id="copy">Copiar CSV</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <p class="small" id="count" style="margin:8px 0"></p>
+  <div class="tw"><table class="list stack" id="list">
+    <thead><tr><th>Designação</th><th>Prior.</th><th>RAL</th><th>CF_EXEC</th><th>Status</th><th>Responsável</th><th class="num">Ocup.</th><th>Última nota</th></tr></thead>
+    <tbody></tbody></table></div>
+  <p class="small" style="margin-top:14px">Fonte: planilha OTS_analise_fidere.xlsx, aba JULHO (59 designações). CF_EXEC e Status vieram da tabela dinâmica da mesma aba. Edições e notas ficam salvas no servidor da equipe e aparecem para todos que entrarem nesta página.</p>
+  <div id="imp" hidden class="card" style="margin-top:14px"><h2>Importar dados</h2><p class="small">Somente administrador. Substitui as designações pelas do arquivo; notas e histórico de alterações são mantidos.</p>
+    <label style="position:relative;display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 16px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-weight:500">Escolher arquivo .json <input id="impf" type="file" accept=".json,application/json" style="position:absolute;opacity:0;width:1px;height:1px"></label> <span class="msg" id="impm"></span></div>
+</div></section>
+
+<dialog id="dlg" aria-labelledby="dT">
+  <div class="dh">
+    <div><h2 id="dT" style="font-size:22px;font-weight:500"></h2><div class="small" id="dS"></div></div>
+    <button class="ghost" id="dX" aria-label="Fechar">Fechar</button>
+  </div>
+  <div class="db">
+    <form id="ff"><div class="fg" id="fg"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap"><button id="sv" type="submit">Salvar alterações</button><span class="msg" id="svm"></span></div>
+    </form>
+    <div class="sec">
+      <h2>Histórico de notas</h2>
+      <p class="small">Cada nota registra quem escreveu e a área. Só o autor pode editar ou apagar a própria nota.</p>
+      <form id="nf" style="display:grid;gap:8px;margin-top:10px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="na" list="dl-area" placeholder="Sua área (ex.: COP REDE, NOC, Manutenção NO2)" style="flex:1 1 220px" aria-label="Sua área"></div>
+        <textarea id="nt" placeholder="Nova atualização…" aria-label="Texto da nota"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="nb" type="submit">Registrar nota</button><span class="msg" id="nm"></span></div>
+      </form>
+      <div id="notes"></div>
+    </div>
+    <div class="sec"><h2>Últimas alterações de campos</h2><div id="hist" class="small"></div></div>
+  </div>
+</dialog>
+<div id="dls"></div>
+<dialog id="login" aria-labelledby="lT">
+  <h2 id="lT" style="font-size:22px;font-weight:500;margin-bottom:4px">Entrar no Acompanhamento OTS</h2>
+  <p class="small" style="margin:0 0 14px">Na primeira vez, escolha uma senha pessoal: ela garante que só você altera as suas notas.</p>
+  <form id="lf">
+    <label id="lkRow">Chave da equipe (a mesma do SIR)<input id="lk" type="password" autocomplete="off"></label>
+    <label>Seu nome<input id="ln" autocomplete="name" required minlength="3"></label>
+    <label>Senha pessoal (mín. 6 caracteres)<input id="lp" type="password" autocomplete="current-password" required minlength="6"></label>
+    <label>Sua área<input id="la" list="dl-area" placeholder="ex.: COP REDE, NOC, Manutenção NO2"></label>
+    <button id="lb" type="submit">Entrar</button>
+    <span class="msg" id="lmsg"></span>
+  </form>
+</dialog>
+
+<script>
+{
+const API='https://sir-push.srfelipehenrique.workers.dev/ots';
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get:k=>{try{return localStorage.getItem(k)||''}catch{return ''}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch{}}};
+const FIELDS=[
+ ['prioridade','Prioridade (P0, P1, P2)','sel',['','P0','P1','P2']],
+ ['criticidade','Criticidade','sel',['','urgente','crítico']],
+ ['ral','RAL?','sel',['Sim','Não']],
+ ['numRal','Nº RAL','txt'],['ralRef','RAL (referência)','txt'],
+ ['sgir','SGIR','txt'],
+ ['cfExec','CF_EXEC','dl'],['status','Status','dl'],
+ ['responsavel','Responsável','dl'],['area','Área (coluna AREA)','dl'],
+ ['origem','Origem','dl'],['propriedade','Propriedade do cabo','dl'],
+ ['classif','Classif. rede','dl'],['uf','UF','sel',['','RJ','ES']],
+ ['regional','Regional','txt'],['mes','Mês','month'],
+ ['capacidade','Capacidade máx. (canais)','num'],['ocupacao','Ocupação (canais)','num'],
+ ['justificativa','Justificativa','area']];
+const LBL=Object.fromEntries(FIELDS.map(f=>[f[0],f[1]]));
+let key=LS.get('sir_push_key')||LS.get('ots_key'),token=LS.get('ots_token');
+let ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
+const prKey=o=>o.prioridade||'—';
+const ocup=o=>(o.capacidade>0&&o.ocupacao!=null)?o.ocupacao/o.capacidade:null;
+const fmtD=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+const nm=id=>USERS[id]?.nome||'Usuário';
+
+async function api(op,extra={}){
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,token,op,...extra})});
+  let j={};try{j=await r.json()}catch{}
+  if(r.status===403&&j.error==='chave'){LS.set('ots_key','');key='';showLogin('A chave da equipe não confere.');throw j}
+  if(r.status===401){token='';LS.set('ots_token','');showLogin('Sua sessão terminou. Entre de novo.');throw j}
+  if(!r.ok)throw Object.assign(j,{status:r.status});
+  return j;
+}
+const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode importar dados.'};
+const errMsg=e=>ERR[e?.error]||(e instanceof TypeError?'Sem conexão com o servidor.':'Não foi possível concluir. Tente de novo.');
+
+function showLogin(msg){$('#lkRow').hidden=!!key;$('#lmsg').textContent=msg||'';if(!$('#login').open)$('#login').showModal()}
+$('#lf').addEventListener('submit',async e=>{e.preventDefault();
+  if(!key){const k=$('#lk').value.trim();if(!k){$('#lmsg').textContent='Informe a chave da equipe.';return}key=k}
+  $('#lb').disabled=true;$('#lmsg').textContent='Entrando…';
+  try{const r=await api('login',{nome:$('#ln').value,pin:$('#lp').value,area:$('#la').value});
+    token=r.token;LS.set('ots_token',token);if(!LS.get('sir_push_key'))LS.set('ots_key',key);ME=r.me;$('#lp').value='';$('#login').close();REV=0;await load()}
+  catch(err){if(err?.error!=='chave')$('#lmsg').textContent=errMsg(err)}
+  $('#lb').disabled=false});
+$('#login').addEventListener('cancel',e=>e.preventDefault());
+
+async function load(force){
+  if(!token||!key){showLogin();return}
+  if(busy)return;busy=true;
+  try{const s=await api('state',{since:force?0:REV});ME=s.me;
+    if(!s.same){REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
+      OTS=Object.entries(s.ots||{}).map(([id,o])=>({id,...o})).sort((a,b)=>(a.linha||0)-(b.linha||0));
+      render();if(cur&&$('#dlg').open&&!$('#ff').contains(document.activeElement))openOts(cur,true)}
+    $('#banner').innerHTML='';hdr()}
+  catch(err){if(err instanceof TypeError)$('#banner').innerHTML='<div class="banner">Sem conexão com o servidor. Os dados mostrados podem estar desatualizados.</div>'}
+  busy=false}
+function hdr(){
+  $('#me').innerHTML=ME?`${esc(ME.nome)} · ${esc(ME.area||'sem área')} <button class="link" id="out">Sair</button>`:'';
+  const f=$('#files');if(CFG.filesUrl&&/^https:\/\//.test(CFG.filesUrl)){f.href=CFG.filesUrl;f.hidden=false}else f.hidden=true;
+  $('#imp').hidden=!(ME&&ME.admin);
+  $('#empty').hidden=!ME||!!OTS.length;
+}
+document.addEventListener('click',async e=>{if(e.target.id==='out'){try{await api('logout')}catch{}token='';LS.set('ots_token','');ME=null;OTS=[];NOTES={};render();hdr();showLogin('Você saiu.')}});
+
+function notesFor(id){
+  const o=OTS.find(x=>x.id===id),out=[];
+  (o?.legado||[]).forEach((n,i)=>out.push({k:'L'+i,legacy:true,autor:n.autor,area:n.area,texto:n.texto,at:0}));
+  for(const [nid,n] of Object.entries(NOTES))if(n.ots===id)out.push({k:nid,uid:n.uid,area:n.area,texto:n.texto,at:n.at,ed:n.editedAt});
+  return out.sort((a,b)=>b.at-a.at);
+}
+const lastNote=id=>notesFor(id)[0]?.texto||'';
+
+function matches(o){
+  const q=$('#q').value.trim().toLowerCase();
+  if(filt.prioridade&&prKey(o)!==filt.prioridade)return false;
+  if(filt.ral&&o.ral!==filt.ral)return false;
+  if(filt.uf&&o.uf!==filt.uf)return false;
+  for(const k of ['cfExec','status','responsavel','propriedade'])if(filt[k]!=null&&(o[k]||'(vazio)')!==filt[k])return false;
+  if(q){const hay=[o.designacao,o.numRal,o.ralRef,o.sgir,o.cfExec,o.status,o.responsavel,o.justificativa,o.area,...notesFor(o.id).map(n=>n.texto)].join(' ').toLowerCase();if(!hay.includes(q))return false}
+  return true;
+}
+function setF(k,v){filt[k]=filt[k]===v?undefined:v;if(k==='prioridade')$('#fP').value=filt[k]||'';if(k==='ral')$('#fR').value=filt[k]||'';render()}
+function stackRows(el,groups,key,big){
+  const max=Math.max(1,...groups.map(g=>g.tot));
+  el.innerHTML=groups.map(g=>`<div class="row${filt[key]===g.k?' on':''}" tabindex="0" data-k="${esc(key)}" data-v="${esc(g.k)}" title="${esc(g.k)}: ${esc(g.segs.filter(s=>s.n).map(s=>s.n+' '+s.l).join(', '))}">
+   <span class="lb">${esc(g.k)}</span><span class="bar">${g.segs.filter(s=>s.n).map(s=>`<s style="width:${s.n/max*100}%;background:${s.c}" title="${esc(s.l)}: ${s.n}">${big?s.n:''}</s>`).join('')}</span><span class="n">${g.tot}</span></div>`).join('');
+}
+function groupBy(list,key){
+  const m={};list.forEach(o=>{const k=o[key]||'(vazio)';(m[k]=m[k]||{k,P0:0,P1:0,P2:0,'—':0,tot:0});m[k][prKey(o)]++;m[k].tot++});
+  return Object.values(m).sort((a,b)=>b.tot-a.tot||a.k.localeCompare(b.k)).map(r=>({k:r.k,tot:r.tot,segs:[{l:'P0',n:r.P0,c:'var(--p0)'},{l:'P1',n:r.P1,c:'var(--p1)'},{l:'P2',n:r.P2,c:'var(--p2)'},{l:'sem prioridade',n:r['—'],c:'var(--pn)'}]}));
+}
+function render(){
+  const all=OTS,list=all.filter(matches);
+  const pri=all.filter(o=>o.prioridade),com=pri.filter(o=>o.ral==='Sim').length,p0=all.filter(o=>o.prioridade==='P0');
+  const p0s=p0.filter(o=>o.ral!=='Sim').length;
+  $('#headline').textContent=pri.length?`${com} de ${pri.length} OTS priorizadas já têm RAL; ${p0s} P0 seguem sem RAL`:'Acompanhamento OTS — Fidere';
+  $('#lede').textContent=all.length?`Regional RJ/ES · ${all.length} designações em acompanhamento · toque numa barra para filtrar a lista`:(ME?'Nenhuma designação carregada ainda.':'Entre para ver as designações.');
+  const occ=all.map(ocup).filter(v=>v!=null),avg=occ.length?occ.reduce((a,b)=>a+b,0)/occ.length:0;
+  const wk=Date.now()-7*864e5,nn=Object.values(NOTES).filter(n=>n.at>wk).length;
+  $('#kpis').innerHTML=[[all.length,'Designações'],[p0.length,'P0 (urgente)'],[pri.length?Math.round(com/pri.length*100)+'%':'–','Com RAL'],[pri.length-com,'Sem RAL'],[Math.round(avg*100)+'%','Ocupação média da banda'],[nn,'Notas nos últimos 7 dias']].map(([v,l])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  const g1=['P0','P1','P2'].map(p=>{const s=pri.filter(o=>o.prioridade===p);const y=s.filter(o=>o.ral==='Sim').length;return{k:p,tot:s.length,segs:[{l:'com RAL',n:y,c:'var(--sim)'},{l:'sem RAL',n:s.length-y,c:'var(--nao)'}]}});
+  stackRows($('#c1'),g1,'prioridade',true);
+  const t=g1.reduce((a,g)=>[a[0]+g.segs[1].n,a[1]+g.segs[0].n,a[2]+g.tot],[0,0,0]);
+  $('#m1').innerHTML=`<tr><th>Prioridade</th><th>Não</th><th>Sim</th><th>Total</th></tr>`+g1.map(g=>`<tr><td>${g.k}</td><td>${g.segs[1].n}</td><td>${g.segs[0].n}</td><td>${g.tot}</td></tr>`).join('')+`<tr><td>Total</td><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td></tr>`;
+  stackRows($('#c2'),groupBy(all,'cfExec'),'cfExec');
+  const st={};all.forEach(o=>{const k=o.status||'(vazio)';st[k]=(st[k]||0)+1});
+  stackRows($('#c3'),Object.entries(st).sort((a,b)=>b[1]-a[1]).map(([k,n])=>({k,tot:n,segs:[{l:'designações',n,c:'var(--p1)'}]})),'status');
+  stackRows($('#c4'),groupBy(all,'responsavel'),'responsavel');
+  stackRows($('#c5'),groupBy(all,'propriedade'),'propriedade');
+  const ch=Object.entries(filt).filter(([k,v])=>v!=null&&v!=='');
+  $('#chips').innerHTML=ch.map(([k,v])=>`<button class="chip" data-k="${esc(k)}">${esc((LBL[k]||k).split(' (')[0])}: ${esc(v)} ✕</button>`).join('')+(ch.length?'<button class="link" id="clr">Limpar filtros</button>':'');
+  $('#count').textContent=`${list.length} de ${all.length} designações`;
+  $('#list tbody').innerHTML=list.map(o=>{const oc=ocup(o);return `<tr data-id="${esc(o.id)}" tabindex="0"><td class="des">${esc(o.designacao)}</td><td><span class="pr ${o.prioridade?esc(o.prioridade):'x'}">${esc(o.prioridade||'—')}</span></td><td>${esc(o.ral)}${o.numRal?' · '+esc(o.numRal):''}</td><td>${esc(o.cfExec)}</td><td>${esc(o.status)}</td><td>${esc(o.responsavel)}</td><td class="num">${oc==null?'':Math.round(oc*100)+'%'}</td><td><span class="last">${esc(lastNote(o.id))}</span></td></tr>`}).join('')||`<tr><td colspan="8">${all.length?'Nenhuma designação com esses filtros.':'Sem dados.'}</td></tr>`;
+  const dl={};for(const f of FIELDS)if(f[2]==='dl')dl[f[0]]=[...new Set(all.map(o=>o[f[0]]).filter(Boolean))].sort();
+  const areas=new Set([...Object.values(USERS).map(u=>u.area),...Object.values(NOTES).map(n=>n.area)].filter(Boolean));
+  $('#dls').innerHTML=Object.entries(dl).map(([k,v])=>`<datalist id="dl-${k}">${v.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('')+`<datalist id="dl-area">${[...areas].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
+  if(cur&&$('#dlg').open)renderNotes();
+}
+function openOts(id,refresh){
+  const o=OTS.find(x=>x.id===id);if(!o)return;cur=id;
+  $('#dT').textContent=o.designacao;
+  $('#dS').textContent=`Linha ${o.linha} da planilha`+(o.upd?` · última edição por ${nm(o.upd.by)} em ${fmtD(o.upd.at)}`:'');
+  $('#fg').innerHTML=FIELDS.map(([k,l,t,opt])=>{const v=o[k]??'';let inp;
+    if(t==='sel')inp=`<select name="${k}">${opt.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(x||'—')}</option>`).join('')}${opt.includes(v)?'':`<option selected>${esc(v)}</option>`}</select>`;
+    else if(t==='area')inp=`<textarea name="${k}">${esc(v)}</textarea>`;
+    else inp=`<input name="${k}" value="${esc(v)}" ${t==='num'?'type="number" step="any" inputmode="decimal"':t==='month'?'type="month"':''} ${t==='dl'?`list="dl-${k}"`:''}>`;
+    return `<label class="${t==='area'?'w':''}">${esc(l)}${inp}</label>`}).join('')+`<label>Ocupação da banda<input disabled value="${ocup(o)==null?'':(ocup(o)*100).toFixed(1)+'%'}"></label>`;
+  if(!refresh){$('#na').value=ME?.area||'';$('#nt').value='';$('#nm').textContent='';$('#svm').textContent=''}
+  $('#hist').innerHTML=(o.hist||[]).slice().reverse().map(h=>`<div>${esc(fmtD(h.at))} · <b>${esc(nm(h.by))}</b> alterou ${esc(LBL[h.campo]||h.campo)}: “${esc(h.de)}” → “${esc(h.para)}”</div>`).join('')||'Nenhuma alteração ainda.';
+  renderNotes(!refresh);
+  if(!$('#dlg').open)$('#dlg').showModal();
+}
+function renderNotes(force){
+  if(!force&&$('#notes [data-act2]'))return;
+  $('#notes').innerHTML=notesFor(cur).map(n=>{const me=n.uid&&n.uid===ME?.uid;
+    return `<div class="note${me?' mine':''}" data-k="${esc(n.k)}"><div class="h"><b>${esc(n.legacy?n.autor:nm(n.uid))}</b>${n.area?`<span class="tag">${esc(n.area)}</span>`:''}<span>${n.legacy?'importada da planilha':esc(fmtD(n.at))}${n.ed?' · editada':''}</span>${me?'<button class="link" data-act="ed">Editar</button><button class="link" data-act="del">Apagar</button>':''}</div><p>${esc(n.texto)}</p></div>`}).join('')||'<p class="small">Nenhuma nota ainda.</p>';
+}
+$('#nf').addEventListener('submit',async e=>{e.preventDefault();
+  const texto=$('#nt').value.trim(),area=$('#na').value.trim();
+  if(!texto){$('#nm').textContent='Escreva a nota.';return}
+  if(!area){$('#nm').textContent='Informe sua área.';$('#na').focus();return}
+  $('#nb').disabled=true;$('#nm').textContent='Salvando…';
+  try{await api('note_add',{ots:cur,texto,area});$('#nt').value='';$('#nm').textContent='Nota registrada.';await load()}
+  catch(err){$('#nm').textContent=errMsg(err)}
+  $('#nb').disabled=false});
+$('#notes').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;const k=b.closest('.note').dataset.k;const n=NOTES[k];if(!n||n.uid!==ME?.uid)return;
+  if(b.dataset.act==='del'){if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar apagar';return}try{await api('note_del',{nid:k});await load()}catch(err){$('#nm').textContent=errMsg(err)}return}
+  const box=b.closest('.note');box.querySelector('p').outerHTML=`<div style="display:grid;gap:6px;margin-top:6px"><textarea>${esc(n.texto)}</textarea><div><button data-act2="ok">Salvar nota</button> <button class="ghost" data-act2="no">Cancelar</button></div></div>`;
+  box.querySelector('[data-act2=no]').onclick=()=>renderNotes(true);
+  box.querySelector('[data-act2=ok]').onclick=async()=>{const v=box.querySelector('textarea').value.trim();if(!v)return;try{await api('note_edit',{nid:k,texto:v});await load();renderNotes(true)}catch(err){$('#nm').textContent=errMsg(err)}}});
+$('#ff').addEventListener('submit',async e=>{e.preventDefault();const o=OTS.find(x=>x.id===cur);if(!o)return;
+  const ch={};for(const el of $('#fg').querySelectorAll('[name]')){const k=el.name,t=FIELDS.find(f=>f[0]===k)[2];let v=el.value.trim();if(t==='num')v=v===''?null:Number(v);if((o[k]??(t==='num'?null:''))!==v)ch[k]=v}
+  if(!Object.keys(ch).length){$('#svm').textContent='Nada mudou.';return}
+  $('#sv').disabled=true;$('#svm').textContent='Salvando…';
+  try{const r=await api('update',{id:cur,changes:ch});$('#svm').textContent=`Salvo (${r.mudou} campo${r.mudou>1?'s':''}).`;$('#sv').blur();await load();openOts(cur,true)}
+  catch(err){$('#svm').textContent=errMsg(err)}
+  $('#sv').disabled=false});
+$('#impf').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;$('#impm').textContent='Importando…';
+  try{const d=JSON.parse(await f.text());const r=await api('import',{data:Array.isArray(d)?{ots:d}:d});$('#impm').textContent=`${r.total} designações importadas.`;await load(true)}
+  catch(err){$('#impm').textContent=err instanceof SyntaxError?'Arquivo inválido (precisa ser o .json de importação).':errMsg(err)}
+  e.target.value=''});
+
+$('#dX').onclick=()=>$('#dlg').close();
+$('#dlg').addEventListener('close',()=>{cur=null});
+$('#list').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');tr&&openOts(tr.dataset.id)});
+$('#list').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr[data-id]');tr&&openOts(tr.dataset.id)}});
+document.addEventListener('click',e=>{const r=e.target.closest('.row[data-k]');if(r)setF(r.dataset.k,r.dataset.v);
+  const c=e.target.closest('.chip');if(c){filt[c.dataset.k]=undefined;({prioridade:'#fP',ral:'#fR',uf:'#fU'})[c.dataset.k]&&($(({prioridade:'#fP',ral:'#fR',uf:'#fU'})[c.dataset.k]).value='');render()}
+  if(e.target.id==='clr'){filt={};$('#fP').value=$('#fR').value=$('#fU').value='';render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest?.('.row[data-k]');r&&setF(r.dataset.k,r.dataset.v)}});
+$('#q').addEventListener('input',render);
+$('#fP').onchange=e=>{filt.prioridade=e.target.value||undefined;render()};
+$('#fR').onchange=e=>{filt.ral=e.target.value||undefined;render()};
+$('#fU').onchange=e=>{filt.uf=e.target.value||undefined;render()};
+$('#copy').onclick=async()=>{const cols=['designacao',...FIELDS.map(f=>f[0])];const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=[['Designação',...FIELDS.map(f=>f[1]),'Última nota'].map(q).join(';'),...OTS.filter(matches).map(o=>[...cols.map(c=>o[c]),lastNote(o.id)].map(q).join(';'))];
+  try{await navigator.clipboard.writeText(rows.join('\n'));$('#copy').textContent='CSV copiado'}catch{$('#copy').textContent='Não foi possível copiar'}setTimeout(()=>$('#copy').textContent='Copiar CSV',2500)};
+$('#files').addEventListener('pointerdown',()=>{try{navigator.vibrate?.(10)}catch{}});
+
+render();hdr();
+if(token&&key)load(true);else showLogin();
+setInterval(()=>{if(document.visibilityState==='visible'&&token)load()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&token)load()});
+}
+</script>
+</body>
+</html>
