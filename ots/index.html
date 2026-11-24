@@ -123,6 +123,7 @@ button:not(.link):active{transform:translateY(1px)}
       <div class="me" id="me"></div>
     </div>
   </div>
+  <div class="card" id="pend" hidden style="margin-top:16px"><h2>Pedidos de acesso</h2><p class="small">Só pessoas aprovadas veem e alteram os dados.</p><div id="pendL"></div></div>
   <div class="banner" id="empty" hidden>Nenhuma designação no servidor ainda. Se você é o administrador, use “Importar dados” no fim da página com o arquivo <b>ots-importacao.json</b>.</div>
   <div class="kpis" id="kpis"></div>
   <div id="banner"></div>
@@ -196,9 +197,8 @@ button:not(.link):active{transform:translateY(1px)}
 <div id="dls"></div>
 <dialog id="login" aria-labelledby="lT">
   <h2 id="lT" style="font-size:22px;font-weight:500;margin-bottom:4px">Entrar no Acompanhamento OTS</h2>
-  <p class="small" style="margin:0 0 14px">Na primeira vez, escolha uma senha pessoal: ela garante que só você altera as suas notas.</p>
+  <p class="small" style="margin:0 0 14px">Na primeira vez, escolha uma senha pessoal: ela garante que só você altera as suas notas. Contas novas são liberadas pelo administrador.</p>
   <form id="lf">
-    <label id="lkRow">Chave da equipe (a mesma do SIR)<input id="lk" type="password" autocomplete="off"></label>
     <label>Seu nome<input id="ln" autocomplete="name" required minlength="3"></label>
     <label>Senha pessoal (mín. 6 caracteres)<input id="lp" type="password" autocomplete="current-password" required minlength="6"></label>
     <label>Sua área<input id="la" list="dl-area" placeholder="ex.: COP REDE, NOC, Manutenção NO2"></label>
@@ -227,39 +227,38 @@ const FIELDS=[
  ['capacidade','Capacidade máx. (canais)','num'],['ocupacao','Ocupação (canais)','num'],
  ['justificativa','Justificativa','area']];
 const LBL=Object.fromEntries(FIELDS.map(f=>[f[0],f[1]]));
-let key=LS.get('sir_push_key')||LS.get('ots_key'),token=LS.get('ots_token');
-let ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
+let token=LS.get('ots_token');
+let PEND=[],ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
 const prKey=o=>o.prioridade||'—';
 const ocup=o=>(o.capacidade>0&&o.ocupacao!=null)?o.ocupacao/o.capacidade:null;
 const fmtD=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
 const nm=id=>USERS[id]?.nome||'Usuário';
 
 async function api(op,extra={}){
-  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,token,op,...extra})});
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,op,...extra})});
   let j={};try{j=await r.json()}catch{}
-  if(r.status===403&&j.error==='chave'){LS.set('ots_key','');key='';showLogin('A chave da equipe não confere.');throw j}
   if(r.status===401){token='';LS.set('ots_token','');showLogin('Sua sessão terminou. Entre de novo.');throw j}
   if(!r.ok)throw Object.assign(j,{status:r.status});
   return j;
 }
-const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode importar dados.'};
+const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode fazer isso.',fila:'Muitos pedidos de acesso pendentes. Fale com o administrador.'};
 const errMsg=e=>ERR[e?.error]||(e instanceof TypeError?'Sem conexão com o servidor.':'Não foi possível concluir. Tente de novo.');
 
-function showLogin(msg){$('#lkRow').hidden=!!key;$('#lmsg').textContent=msg||'';if(!$('#login').open)$('#login').showModal()}
+function showLogin(msg){$('#lmsg').textContent=msg||'';if(!$('#login').open)$('#login').showModal()}
 $('#lf').addEventListener('submit',async e=>{e.preventDefault();
-  if(!key){const k=$('#lk').value.trim();if(!k){$('#lmsg').textContent='Informe a chave da equipe.';return}key=k}
   $('#lb').disabled=true;$('#lmsg').textContent='Entrando…';
   try{const r=await api('login',{nome:$('#ln').value,pin:$('#lp').value,area:$('#la').value});
-    token=r.token;LS.set('ots_token',token);if(!LS.get('sir_push_key'))LS.set('ots_key',key);ME=r.me;$('#lp').value='';$('#login').close();REV=0;await load()}
-  catch(err){if(err?.error!=='chave')$('#lmsg').textContent=errMsg(err)}
+    token=r.token;LS.set('ots_token',token);ME=r.me;$('#lp').value='';$('#login').close();REV=0;await load()}
+  catch(err){$('#lmsg').textContent=errMsg(err)}
   $('#lb').disabled=false});
 $('#login').addEventListener('cancel',e=>e.preventDefault());
 
 async function load(force){
-  if(!token||!key){showLogin();return}
+  if(!token){showLogin();return}
   if(busy)return;busy=true;
   try{const s=await api('state',{since:force?0:REV});ME=s.me;
-    if(!s.same){REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
+    if(s.pendente){OTS=[];NOTES={};render();hdr();$('#banner').innerHTML='<div class="banner"><b>Seu acesso está aguardando aprovação.</b> O administrador precisa liberar sua conta; esta página atualiza sozinha quando isso acontecer.</div>';busy=false;return}
+    if(!s.same){PEND=s.pendentes||[];REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
       OTS=Object.entries(s.ots||{}).map(([id,o])=>({id,...o})).sort((a,b)=>(a.linha||0)-(b.linha||0));
       render();if(cur&&$('#dlg').open&&!$('#ff').contains(document.activeElement))openOts(cur,true)}
     $('#banner').innerHTML='';hdr()}
@@ -269,8 +268,13 @@ function hdr(){
   $('#me').innerHTML=ME?`${esc(ME.nome)} · ${esc(ME.area||'sem área')} <button class="link" id="out">Sair</button>`:'';
   const f=$('#files');if(CFG.filesUrl&&/^https:\/\//.test(CFG.filesUrl)){f.href=CFG.filesUrl;f.hidden=false}else f.hidden=true;
   $('#imp').hidden=!(ME&&ME.admin);
+  $('#pend').hidden=!(ME&&ME.admin&&PEND.length);
+  $('#pendL').innerHTML=PEND.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-ap="1">Aprovar</button><button class="ghost" data-ap="0">Recusar</button></div></div>`).join('');
   $('#empty').hidden=!ME||!!OTS.length;
 }
+$('#pendL').addEventListener('click',async e=>{const b=e.target.closest('button[data-ap]');if(!b)return;const uid=b.closest('[data-uid]').dataset.uid;
+  if(b.dataset.ap==='0'&&b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar recusa';return}
+  b.disabled=true;try{await api('approve',{uid,ok:b.dataset.ap==='1'});await load(true)}catch(err){b.disabled=false;b.textContent=errMsg(err)}});
 document.addEventListener('click',async e=>{if(e.target.id==='out'){try{await api('logout')}catch{}token='';LS.set('ots_token','');ME=null;OTS=[];NOTES={};render();hdr();showLogin('Você saiu.')}});
 
 function notesFor(id){
@@ -389,7 +393,7 @@ $('#copy').onclick=async()=>{const cols=['designacao',...FIELDS.map(f=>f[0])];co
 $('#files').addEventListener('pointerdown',()=>{try{navigator.vibrate?.(10)}catch{}});
 
 render();hdr();
-if(token&&key)load(true);else showLogin();
+if(token)load(true);else showLogin();
 setInterval(()=>{if(document.visibilityState==='visible'&&token)load()},30000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&token)load()});
 }

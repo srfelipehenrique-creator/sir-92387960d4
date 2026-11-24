@@ -401,8 +401,9 @@ export class NotesStore {
 
 /* ─────────────── Durable Object do Acompanhamento OTS (ots/) ───────────────
    Designações editáveis por todos da equipe; notas com autor e área.
-   Cada pessoa entra com nome + senha pessoal (além da chave da equipe);
-   só o autor edita ou apaga a própria nota — conferido aqui no servidor. */
+   Cada pessoa entra com nome + senha pessoal. Conta nova fica pendente
+   até o administrador aprovar (a 1ª conta criada vira administradora).
+   Só o autor edita ou apaga a própria nota — conferido aqui no servidor. */
 const OTS_FIELDS = { propriedade: 60, classif: 30, capacidade: 'n', ocupacao: 'n', prioridade: 4, criticidade: 20, mes: 7, regional: 20, uf: 4,
   numRal: 40, ralRef: 40, ral: 3, sgir: 120, origem: 60, responsavel: 60, justificativa: 600, area: 40, cfExec: 60, status: 200 };
 const otsClean = (k, v) => {
@@ -449,10 +450,11 @@ export class OtsStore {
         if (area) u.area = area;
       } else {
         if (!area) return jsonPlain({ error: 'area' }, 400);
+        if (Object.values(users).filter(u => u.aprovado === false).length >= 50) return jsonPlain({ error: 'fila' }, 429);
         uid = 'u' + randHex(6);
         const salt = randHex(12);
-        users[uid] = { nome, area, salt, pinHash: await sha256Hex(salt + ':' + pin), at: now };
-        if (!Object.keys(users).some(x => x !== uid && users[x].admin) && !(await this.get('ots', null))) users[uid].admin = true;
+        users[uid] = { nome, area, salt, pinHash: await sha256Hex(salt + ':' + pin), at: now, aprovado: false };
+        if (!Object.keys(users).some(x => x !== uid && users[x].admin)) { users[uid].admin = true; users[uid].aprovado = true; }
       }
       await this.state.storage.put('users', users);
       const token = randHex(24);
@@ -461,24 +463,41 @@ export class OtsStore {
       ses[await sha256Hex(token)] = { uid, at: now };
       await this.state.storage.put('sessions', ses);
       await this.bump();
-      return jsonPlain({ ok: true, token, me: { uid, nome: users[uid].nome, area: users[uid].area, admin: !!users[uid].admin } }, 200);
+      return jsonPlain({ ok: true, token, me: { uid, nome: users[uid].nome, area: users[uid].area, admin: !!users[uid].admin, aprovado: users[uid].aprovado !== false } }, 200);
     }
 
     const me = await this.me(b.token);
     if (!me) return jsonPlain({ error: 'sessao' }, 401);
-    const meOut = { uid: me.uid, nome: me.nome, area: me.area, admin: !!me.admin };
+    const meOut = { uid: me.uid, nome: me.nome, area: me.area, admin: !!me.admin, aprovado: me.aprovado !== false };
+    if (op === 'logout') {
+      const ses = await this.get('sessions', {}); delete ses[await sha256Hex(String(b.token))];
+      await this.state.storage.put('sessions', ses); return jsonPlain({ ok: true }, 200);
+    }
+    /* Conta ainda não aprovada: não vê nem altera nada */
+    if (!meOut.aprovado) return jsonPlain({ pendente: true, me: meOut }, 200);
+
+    if (op === 'approve') {
+      if (!me.admin) return jsonPlain({ error: 'admin' }, 403);
+      const users = await this.get('users', {}); const u = users[String(b.uid || '')];
+      if (!u || u.admin) return jsonPlain({ error: 'id' }, 404);
+      if (b.ok) { u.aprovado = true; }
+      else {
+        delete users[String(b.uid)];
+        const ses = await this.get('sessions', {});
+        for (const [k, v] of Object.entries(ses)) if (v.uid === String(b.uid)) delete ses[k];
+        await this.state.storage.put('sessions', ses);
+      }
+      await this.state.storage.put('users', users);
+      return jsonPlain({ ok: true, rev: await this.bump() }, 200);
+    }
 
     if (op === 'state') {
       const rev = await this.get('rev', 0);
       if (b.since && Number(b.since) === rev) return jsonPlain({ rev, same: true, me: meOut }, 200);
       const users = await this.get('users', {});
-      const pub = {}; for (const [k, u] of Object.entries(users)) pub[k] = { nome: u.nome, area: u.area };
-      return jsonPlain({ rev, me: meOut, users: pub, ots: await this.get('ots', {}), notes: await this.get('notes', {}), config: await this.get('config', {}) }, 200);
-    }
-
-    if (op === 'logout') {
-      const ses = await this.get('sessions', {}); delete ses[await sha256Hex(String(b.token))];
-      await this.state.storage.put('sessions', ses); return jsonPlain({ ok: true }, 200);
+      const pub = {}, pend = [];
+      for (const [k, u] of Object.entries(users)) { if (u.aprovado === false) pend.push({ uid: k, nome: u.nome, area: u.area, at: u.at }); else pub[k] = { nome: u.nome, area: u.area }; }
+      return jsonPlain({ rev, me: meOut, users: pub, pendentes: me.admin ? pend : [], ots: await this.get('ots', {}), notes: await this.get('notes', {}), config: await this.get('config', {}) }, 200);
     }
 
     if (op === 'update') {
@@ -675,7 +694,7 @@ export default {
     /* ── Acompanhamento OTS → Durable Object próprio ── */
     if (req.method === 'POST' && url.pathname === '/ots') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
-      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      /* Sem chave da equipe: o acesso é por conta pessoal aprovada pelo administrador */
       const stub = env.OTS.get(env.OTS.idFromName('ots'));
       const r = await stub.fetch('https://ots/', { method: 'POST', body: JSON.stringify(body) });
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
