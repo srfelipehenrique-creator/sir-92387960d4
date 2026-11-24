@@ -24,8 +24,9 @@ jobs:
       - name: Criar projeto (se ainda não existir)
         run: npx --yes wrangler@3 pages project create ots-fidere --production-branch main || true
       - name: Publicar
-        run: npx --yes wrangler@3 pages deploy ots --project-name ots-fidere --branch main --commit-dirty=true 2>&1 | tee deploy.log
+        shell: bash
+        run: set -o pipefail; npx --yes wrangler@3 pages deploy ots --project-name ots-fidere --branch main --commit-dirty=true 2>&1 | tee deploy.log
       - name: Endereço
         run: |
-          grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | head -n3
+          for u in $(grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | sort -u); do echo "::notice title=OTS publicada::$u"; done
           echo "### Página OTS: https://ots-fidere.pages.dev" >> $GITHUB_STEP_SUMMARY
