@@ -1,16 +1,21 @@
-# Mostra a chave PÚBLICA do servidor (a mesma usada para trancar a base de nodes),
-# para criptografar a carga inicial do OTS. A chave pública pode ser vista por qualquer um.
-name: OTS - chave pública do servidor
+# Diagnóstico do Acompanhamento OTS: mostra a chave PÚBLICA do servidor e
+# quantas designações/contas ele tem (sem nenhum dado das designações).
+name: OTS - diagnóstico do servidor
 on:
   push:
     branches: [main]
     paths: ['.github/workflows/ots-pubkey.yml']
   workflow_dispatch:
 jobs:
-  pubkey:
+  diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Ler chave pública
+      - name: Chave pública
         run: |
           K=$(curl -fsS https://sir-push.srfelipehenrique.workers.dev/nodes/pubkey | jq -r .publicKey)
           echo "::notice title=pubkey::$K"
+      - name: Situação do servidor OTS
+        run: |
+          R=$(curl -sS -X POST https://sir-push.srfelipehenrique.workers.dev/ots -H 'Content-Type: application/json' -H 'Origin: https://ots-fidere.pages.dev' -d '{"op":"diag"}' -D headers.txt)
+          echo "::notice title=diag::$R"
+          echo "::notice title=cors::$(grep -i access-control-allow-origin headers.txt | tr -d '\r')"
