@@ -413,8 +413,48 @@ const otsClean = (k, v) => {
 };
 const otsName = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
 const randHex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
+const OTS_ENC_URL = 'https://raw.githubusercontent.com/srfelipehenrique-creator/sir-92387960d4/main/data/ots.enc.json';
 export class OtsStore {
-  constructor(state, env) { this.state = state; this.env = env; }
+  constructor(state, env) { this.state = state; this.env = env; this.seedTry = 0; }
+  /* Carga inicial automática: se o servidor está sem designações, abre data/ots.enc.json
+     (trancado com a chave pública do servidor; só ele abre) e importa. */
+  async autoSeed() {
+    const cur = await this.get('ots', {});
+    if (Object.keys(cur).length || Date.now() - this.seedTry < 60000) return;
+    this.seedTry = Date.now();
+    try {
+      const res = await fetch(OTS_ENC_URL + '?_=' + Date.now(), { cf: { cacheTtl: 0 } });
+      if (!res.ok) throw new Error('github ' + res.status);
+      const pkg = await res.json();
+      const kp = await getNodesKeypair(this.env);
+      const priv = await crypto.subtle.importKey('jwk', kp.privateJwk, { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+      const epk = await crypto.subtle.importKey('raw', unb64u(pkg.epk), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+      const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: epk }, priv, 256));
+      const aes = await crypto.subtle.importKey('raw', await hkdf(unb64u(pkg.salt), shared, enc.encode('SIR ots v1'), 32), 'AES-GCM', false, ['decrypt']);
+      const d = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64u(pkg.iv) }, aes, unb64u(pkg.ct))));
+      await this.importData(d);
+      await this.state.storage.put('seedInfo', { at: Date.now(), total: (d.ots || []).length });
+    } catch (e) { await this.state.storage.put('seedErr', { at: Date.now(), msg: String(e && e.message || e) }); }
+  }
+  async importData(data) {
+    const list = Array.isArray(data && data.ots) ? data.ots.slice(0, 2000) : [];
+    if (!list.length) throw new Error('vazio');
+    const cur = await this.get('ots', {}), out = {};
+    for (const r of list) {
+      const id = String(r.id || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 80);
+      if (!id) continue;
+      const o = { designacao: String(r.designacao || id).slice(0, 80), linha: Number(r.linha) || 0 };
+      for (const k of Object.keys(OTS_FIELDS)) o[k] = otsClean(k, r[k]);
+      o.legado = (Array.isArray(r.legado) ? r.legado : []).slice(0, 20).map(x => ({ autor: String(x.autor || '').slice(0, 60), area: String(x.area || '').slice(0, 40), texto: String(x.texto || '').slice(0, 4000) }));
+      if (cur[id]) { o.hist = cur[id].hist; o.upd = cur[id].upd; }
+      out[id] = o;
+    }
+    await this.state.storage.put('ots', out);
+    const url = String((data.config || {}).filesUrl || '');
+    await this.state.storage.put('config', { filesUrl: /^https:\/\//.test(url) ? url.slice(0, 600) : '' });
+    await this.bump();
+    return Object.keys(out).length;
+  }
   async get(k, d) { const v = await this.state.storage.get(k); return v === undefined ? d : v; }
   async me(token) {
     if (!token) return null;
@@ -428,6 +468,8 @@ export class OtsStore {
   async fetch(request) {
     let b; try { b = await request.json(); } catch (e) { return jsonPlain({ error: 'json' }, 400); }
     const op = String(b.op || ''), now = Date.now();
+    await this.autoSeed();
+    if (op === 'diag') return jsonPlain({ ots: Object.keys(await this.get('ots', {})).length, usuarios: Object.keys(await this.get('users', {})).length, seed: await this.get('seedInfo', null), erro: await this.get('seedErr', null) }, 200);
 
     if (op === 'login') {
       const nome = String(b.nome || '').trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -606,23 +648,8 @@ export class OtsStore {
       /* Admin sempre; qualquer conta aprovada só quando o servidor ainda está vazio (carga inicial) */
       const vazio = !Object.keys((await this.get('ots', {})) || {}).length;
       if (!me.admin && !vazio) return jsonPlain({ error: 'admin' }, 403);
-      const list = Array.isArray(b.data && b.data.ots) ? b.data.ots.slice(0, 2000) : [];
-      if (!list.length) return jsonPlain({ error: 'vazio' }, 400);
-      const cur = await this.get('ots', {}), out = {};
-      for (const r of list) {
-        const id = String(r.id || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 80);
-        if (!id) continue;
-        const o = { designacao: String(r.designacao || id).slice(0, 80), linha: Number(r.linha) || 0 };
-        for (const k of Object.keys(OTS_FIELDS)) o[k] = otsClean(k, r[k]);
-        o.legado = (Array.isArray(r.legado) ? r.legado : []).slice(0, 20).map(x => ({ autor: String(x.autor || '').slice(0, 60), area: String(x.area || '').slice(0, 40), texto: String(x.texto || '').slice(0, 4000) }));
-        if (cur[id]) { o.hist = cur[id].hist; o.upd = cur[id].upd; }
-        out[id] = o;
-      }
-      await this.state.storage.put('ots', out);
-      const cfg = b.data.config || {};
-      const url = String(cfg.filesUrl || '');
-      await this.state.storage.put('config', { filesUrl: /^https:\/\//.test(url) ? url.slice(0, 600) : '' });
-      return jsonPlain({ ok: true, total: Object.keys(out).length, rev: await this.bump() }, 200);
+      let total; try { total = await this.importData(b.data); } catch (e) { return jsonPlain({ error: 'vazio' }, 400); }
+      return jsonPlain({ ok: true, total, rev: await this.get('rev', 0) }, 200);
     }
     return jsonPlain({ error: 'op' }, 400);
   }
