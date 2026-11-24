@@ -18,4 +18,6 @@ jobs:
         run: |
           R=$(curl -sS -X POST https://sir-push.srfelipehenrique.workers.dev/ots -H 'Content-Type: application/json' -H 'Origin: https://ots-fidere.pages.dev' -d '{"op":"diag"}' -D headers.txt)
           echo "::notice title=diag::$R"
+          N=$(curl -sS -X POST https://sir-push.srfelipehenrique.workers.dev/ots -H 'Content-Type: application/json' -d '{"op":"pstate"}' | jq '.ots | length')
+          echo "::notice title=sem-login::designacoes=$N"
           echo "::notice title=cors::$(grep -i access-control-allow-origin headers.txt | tr -d '\r')"
