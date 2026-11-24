@@ -540,6 +540,60 @@ export class OtsStore {
       return jsonPlain({ ok: true, pedido: true }, 200);
     }
 
+    /* ── Acesso aberto (sem login), a pedido do dono: qualquer pessoa com o link lê e edita.
+       Autoria das notas por aparelho: cada aparelho tem um segredo aleatório (dev);
+       só o aparelho que escreveu a nota consegue editar ou apagar. ── */
+    const autor = String(b.autor || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+    const devId = /^[a-f0-9]{32,64}$/.test(String(b.dev || '')) ? (await sha256Hex('dev:' + b.dev)).slice(0, 24) : '';
+    if (op === 'pstate') {
+      const rev = await this.get('rev', 0);
+      if (b.since && Number(b.since) === rev) return jsonPlain({ rev, same: true }, 200);
+      const users = await this.get('users', {}), names = {};
+      for (const [k, u] of Object.entries(users)) names[k] = u.nome;
+      return jsonPlain({ rev, ots: await this.get('ots', {}), notes: await this.get('notes', {}), names, config: await this.get('config', {}) }, 200);
+    }
+    if (op === 'pupdate' || op === 'pnote_add' || op === 'pnote_edit' || op === 'pnote_del') {
+      if (!devId) return jsonPlain({ error: 'aparelho' }, 400);
+      if (autor.length < 2 && op !== 'pnote_del') return jsonPlain({ error: 'nome' }, 400);
+      if (op === 'pupdate') {
+        const ots = await this.get('ots', {}); const o = ots[String(b.id || '')];
+        if (!o) return jsonPlain({ error: 'id' }, 404);
+        const ch = b.changes && typeof b.changes === 'object' ? b.changes : {};
+        o.hist = Array.isArray(o.hist) ? o.hist : [];
+        let n = 0;
+        for (const [k, v] of Object.entries(ch)) {
+          if (!(k in OTS_FIELDS)) continue;
+          const nv = otsClean(k, v), ov = o[k] ?? (OTS_FIELDS[k] === 'n' ? null : '');
+          if (nv === ov) continue;
+          o.hist.push({ byName: autor, at: now, campo: k, de: String(ov ?? ''), para: String(nv ?? '') });
+          o[k] = nv; n++;
+        }
+        if (!n) return jsonPlain({ ok: true, mudou: 0 }, 200);
+        o.hist = o.hist.slice(-60); o.upd = { byName: autor, at: now };
+        await this.state.storage.put('ots', ots);
+        return jsonPlain({ ok: true, mudou: n, rev: await this.bump() }, 200);
+      }
+      const notes = await this.get('notes', {});
+      const texto = String(b.texto || '').trim().slice(0, 4000);
+      if (op === 'pnote_add') {
+        const ots = await this.get('ots', {});
+        if (!ots[String(b.ots || '')]) return jsonPlain({ error: 'id' }, 404);
+        const area = String(b.area || '').trim().slice(0, 40);
+        if (!texto) return jsonPlain({ error: 'texto' }, 400);
+        if (!area) return jsonPlain({ error: 'area' }, 400);
+        notes['n' + now.toString(36) + randHex(3)] = { ots: String(b.ots), dev: devId, autor, area, texto, at: now };
+      } else {
+        const n = notes[String(b.nid || '')];
+        if (!n) return jsonPlain({ error: 'nota' }, 404);
+        if (!n.dev || n.dev !== devId) return jsonPlain({ error: 'autor' }, 403);   /* só o aparelho que escreveu */
+        if (op === 'pnote_edit') { if (!texto) return jsonPlain({ error: 'texto' }, 400); n.texto = texto; n.editedAt = now; n.autor = autor; }
+        else delete notes[String(b.nid)];
+      }
+      await this.state.storage.put('notes', notes);
+      return jsonPlain({ ok: true, rev: await this.bump() }, 200);
+    }
+    if (op === 'mydev') return jsonPlain({ dev: devId }, 200);
+
     const me = await this.me(b.token);
     if (!me) return jsonPlain({ error: 'sessao' }, 401);
     const meOut = { uid: me.uid, nome: me.nome, area: me.area, admin: !!me.admin, aprovado: me.aprovado !== false };

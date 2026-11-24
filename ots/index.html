@@ -123,8 +123,6 @@ button:not(.link):active{transform:translateY(1px)}
       <div class="me" id="me"></div>
     </div>
   </div>
-  <div class="card" id="pend" hidden style="margin-top:16px"><h2>Pedidos de acesso e de troca de senha</h2><p class="small">Só pessoas aprovadas veem e alteram os dados. Ao liberar uma troca de senha, a pessoa entra com a senha nova que ela mesma escolheu.</p><div id="pendL"></div></div>
-  <div class="banner" id="empty" hidden>Nenhuma designação no servidor ainda. Se você é o administrador, use “Importar dados” no fim da página com o arquivo <b>ots-importacao.json</b>.</div>
   <div class="kpis" id="kpis"></div>
   <div id="banner"></div>
 
@@ -167,9 +165,8 @@ button:not(.link):active{transform:translateY(1px)}
   <div class="tw"><table class="list stack" id="list">
     <thead><tr><th>Designação</th><th>Prior.</th><th>RAL</th><th>CF_EXEC</th><th>Status</th><th>Responsável</th><th class="num">Ocup.</th><th>Última nota</th></tr></thead>
     <tbody></tbody></table></div>
-  <p class="small" style="margin-top:14px">Fonte: planilha OTS_analise_fidere.xlsx, aba JULHO (59 designações). CF_EXEC e Status vieram da tabela dinâmica da mesma aba. Edições e notas ficam salvas no servidor da equipe e aparecem para todos que entrarem nesta página.</p>
-  <div id="imp" hidden class="card" style="margin-top:14px"><h2>Importar dados</h2><p class="small">Somente administrador. Substitui as designações pelas do arquivo; notas e histórico de alterações são mantidos.</p>
-    <label style="position:relative;display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 16px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-weight:500">Escolher arquivo .json <input id="impf" type="file" accept=".json,application/json" style="position:absolute;opacity:0;width:1px;height:1px"></label> <span class="msg" id="impm"></span></div>
+  <p class="small" style="margin-top:14px">Fonte: planilha OTS_analise_fidere.xlsx, aba JULHO (59 designações). CF_EXEC e Status vieram da tabela dinâmica da mesma aba. Edições e notas ficam salvas no servidor e aparecem para todos que abrirem esta página.</p>
+
 </div></section>
 
 <dialog id="dlg" aria-labelledby="dT">
@@ -178,14 +175,18 @@ button:not(.link):active{transform:translateY(1px)}
     <button class="ghost" id="dX" aria-label="Fechar">Fechar</button>
   </div>
   <div class="db">
+    <div class="fg" style="margin-bottom:16px;padding:12px;border:1px solid var(--line);border-radius:8px">
+      <label>Seu nome<input id="iN" autocomplete="name" placeholder="Quem está editando"></label>
+      <label>Sua área<input id="iA" list="dl-area" placeholder="ex.: COP REDE, NOC, NO2"></label>
+      <p class="small w" style="margin:0">Fica salvo neste aparelho e aparece nas notas e no histórico de alterações.</p>
+    </div>
     <form id="ff"><div class="fg" id="fg"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap"><button id="sv" type="submit">Salvar alterações</button><span class="msg" id="svm"></span></div>
     </form>
     <div class="sec">
       <h2>Histórico de notas</h2>
-      <p class="small">Cada nota registra quem escreveu e a área. Só o autor pode editar ou apagar a própria nota.</p>
+      <p class="small">Cada nota registra quem escreveu e a área. Uma nota só pode ser editada ou apagada no aparelho em que foi escrita.</p>
       <form id="nf" style="display:grid;gap:8px;margin-top:10px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="na" list="dl-area" placeholder="Sua área (ex.: COP REDE, NOC, Manutenção NO2)" style="flex:1 1 220px" aria-label="Sua área"></div>
         <textarea id="nt" placeholder="Nova atualização…" aria-label="Texto da nota"></textarea>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="nb" type="submit">Registrar nota</button><span class="msg" id="nm"></span></div>
       </form>
@@ -195,34 +196,7 @@ button:not(.link):active{transform:translateY(1px)}
   </div>
 </dialog>
 <div id="dls"></div>
-<dialog id="rcd" aria-labelledby="rcT" style="margin:auto;height:fit-content;width:min(440px,calc(100% - 24px));border-radius:10px;padding:24px;background:var(--card)">
-  <h2 id="rcT" style="font-size:20px;font-weight:500">Código de recuperação</h2>
-  <p class="small">Guarde este código num lugar seguro (anote ou salve no celular). Se esquecer a senha, use “Esqueci minha senha” com ele. Ele aparece só agora, vale uma vez e gerar outro anula este.</p>
-  <p id="rcv" style="font-size:26px;font-weight:600;letter-spacing:.06em;margin:14px 0;font-variant-numeric:tabular-nums"></p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rcCopy">Copiar código</button><button class="ghost" id="rcX">Fechar</button></div>
-</dialog>
-<dialog id="login" aria-labelledby="lT">
-  <h2 id="lT" style="font-size:22px;font-weight:500;margin-bottom:4px">Entrar no Acompanhamento OTS</h2>
-  <p class="small" style="margin:0 0 14px">Na primeira vez, escolha uma senha pessoal: ela garante que só você altera as suas notas. Contas novas são liberadas pelo administrador.</p>
-  <form id="lf">
-    <label>Seu nome<input id="ln" autocomplete="name" required minlength="3"></label>
-    <label>Senha pessoal (mín. 6 caracteres)<input id="lp" type="password" autocomplete="current-password" required minlength="6"></label>
-    <label>Sua área<input id="la" list="dl-area" placeholder="ex.: COP REDE, NOC, Manutenção NO2"></label>
-    <button id="lb" type="submit">Entrar</button>
-    <span class="msg" id="lmsg"></span>
-    <button type="button" class="link" id="toForgot" style="justify-self:start">Esqueci minha senha</button>
-  </form>
-  <form id="rf" hidden>
-    <p class="small" style="margin:0">Com o <b>código de recuperação</b> que você gerou, a senha troca na hora. Sem o código, o pedido vai para o administrador aprovar.</p>
-    <label>Seu nome<input id="rn" autocomplete="name" required minlength="3"></label>
-    <label>Código de recuperação (se tiver)<input id="rc" autocomplete="off" placeholder="XXXX-XXXX-XXXX" style="text-transform:uppercase"></label>
-    <label>Nova senha (mín. 6 caracteres)<input id="rp" type="password" autocomplete="new-password" required minlength="6"></label>
-    <label>Repita a nova senha<input id="rp2" type="password" autocomplete="new-password" required minlength="6"></label>
-    <button id="rb" type="submit">Trocar senha</button>
-    <span class="msg" id="rmsg"></span>
-    <button type="button" class="link" id="toLogin" style="justify-self:start">Voltar para entrar</button>
-  </form>
-</dialog>
+
 
 <script>
 {
@@ -244,93 +218,43 @@ const FIELDS=[
  ['capacidade','Capacidade máx. (canais)','num'],['ocupacao','Ocupação (canais)','num'],
  ['justificativa','Justificativa','area']];
 const LBL=Object.fromEntries(FIELDS.map(f=>[f[0],f[1]]));
-let token=LS.get('ots_token');
-/* Link de carga inicial: #k=<chave> abre o arquivo criptografado dados.enc e importa */
-let SEEDK='';try{const m=location.hash.match(/k=([A-Za-z0-9_-]{40,})/);if(m){SEEDK=m[1];sessionStorage.setItem('ots_seedk',SEEDK);history.replaceState(null,'',location.pathname+location.search)}else SEEDK=sessionStorage.getItem('ots_seedk')||''}catch{}
-let seeding=false;
-async function autoSeed(){
-  if(!SEEDK||seeding||OTS.length||!ME?.aprovado)return;seeding=true;
-  $('#banner').innerHTML='<div class="banner">Carregando os dados da planilha no servidor…</div>';
-  try{const f=await(await fetch('dados.enc',{cache:'no-store'})).json();
-    const u=x=>Uint8Array.from(atob(x.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((x.length+3)%4)),c=>c.charCodeAt(0));
-    const k=await crypto.subtle.importKey('raw',u(SEEDK),'AES-GCM',false,['decrypt']);
-    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u(f.iv)},k,u(f.ct));
-    const d=JSON.parse(new TextDecoder().decode(pt));
-    const r=await api('import',{data:d});
-    try{sessionStorage.removeItem('ots_seedk')}catch{}SEEDK='';
-    $('#banner').innerHTML=`<div class="banner">${r.total} designações carregadas da planilha.</div>`;busy=false;await load(true)}
-  catch(err){$('#banner').innerHTML=`<div class="banner">Não foi possível carregar os dados: ${esc(err?.name==='OperationError'?'link de carga inválido':errMsg(err))}</div>`}
-  seeding=false}
-let PEND=[],RESETS=[],ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
+/* Sem login: cada aparelho tem um segredo aleatório que identifica as notas que ele escreveu */
+let DEV=LS.get('ots_dev');if(!/^[a-f0-9]{48}$/.test(DEV)){DEV=[...crypto.getRandomValues(new Uint8Array(24))].map(b=>b.toString(16).padStart(2,'0')).join('');LS.set('ots_dev',DEV)}
+let MYDEV='';
+(async()=>{try{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dev:'+DEV));MYDEV=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24);if(cur)renderNotes(true)}catch{}})();
+const who=()=>({autor:$('#iN').value.trim(),area:$('#iA').value.trim()});
+let OTS=[],NOTES={},NAMES={},CFG={},REV=0,filt={},cur=null,busy=false;
 const prKey=o=>o.prioridade||'—';
 const ocup=o=>(o.capacidade>0&&o.ocupacao!=null)?o.ocupacao/o.capacidade:null;
 const fmtD=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-const nm=id=>USERS[id]?.nome||'Usuário';
+const nm=x=>x?.byName||NAMES[x?.by]||'—';
 
 async function api(op,extra={}){
-  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,op,...extra})});
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,dev:DEV,...extra})});
   let j={};try{j=await r.json()}catch{}
-  if(r.status===401){token='';LS.set('ots_token','');showLogin('Sua sessão terminou. Entre de novo.');throw j}
   if(!r.ok)throw Object.assign(j,{status:r.status});
   return j;
 }
-const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode fazer isso.',codigo:'Código de recuperação incorreto.',fila:'Muitos pedidos de acesso pendentes. Fale com o administrador.'};
+const ERR={nome:'Informe seu nome no topo da ficha.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só dá para alterar notas escritas neste aparelho.'};
 const errMsg=e=>ERR[e?.error]||(e instanceof TypeError?'Sem conexão com o servidor.':'Não foi possível concluir. Tente de novo.');
 
-function showLogin(msg){$('#lmsg').textContent=msg||'';if(!$('#login').open)$('#login').showModal()}
-$('#lf').addEventListener('submit',async e=>{e.preventDefault();
-  $('#lb').disabled=true;$('#lmsg').textContent='Entrando…';
-  try{const r=await api('login',{nome:$('#ln').value,pin:$('#lp').value,area:$('#la').value});
-    token=r.token;LS.set('ots_token',token);ME=r.me;$('#lp').value='';$('#login').close();REV=0;await load()}
-  catch(err){$('#lmsg').textContent=errMsg(err)}
-  $('#lb').disabled=false});
-$('#login').addEventListener('cancel',e=>e.preventDefault());
-
 async function load(force){
-  if(!token){showLogin();return}
   if(busy)return;busy=true;
-  try{const s=await api('state',{since:force?0:REV});ME=s.me;
-    if(s.pendente){OTS=[];NOTES={};render();hdr();$('#banner').innerHTML='<div class="banner"><b>Seu acesso está aguardando aprovação.</b> O administrador precisa liberar sua conta; esta página atualiza sozinha quando isso acontecer.</div>';busy=false;return}
-    if(!s.same){PEND=s.pendentes||[];RESETS=s.resets||[];REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
+  try{const s=await api('pstate',{since:force?0:REV});
+    if(!s.same){REV=s.rev;NAMES=s.names||{};CFG=s.config||{};NOTES=s.notes||{};
       OTS=Object.entries(s.ots||{}).map(([id,o])=>({id,...o})).sort((a,b)=>(a.linha||0)-(b.linha||0));
       render();if(cur&&$('#dlg').open&&!$('#ff').contains(document.activeElement))openOts(cur,true)}
-    if(!seeding)$('#banner').innerHTML='';hdr();
-    if(!OTS.length&&SEEDK){busy=false;autoSeed();return}}
-  catch(err){if(err instanceof TypeError)$('#banner').innerHTML='<div class="banner">Sem conexão com o servidor. Os dados mostrados podem estar desatualizados.</div>'}
+    $('#banner').innerHTML='';hdr()}
+  catch(err){$('#banner').innerHTML='<div class="banner">Sem conexão com o servidor. Os dados mostrados podem estar desatualizados.</div>'}
   busy=false}
 function hdr(){
-  $('#me').innerHTML=ME?`${esc(ME.nome)} · ${esc(ME.area||'sem área')} ${ME.aprovado?`<button class="link" id="genRc">${ME.temCodigo?'Novo código de recuperação':'Gerar código de recuperação'}</button>`:''}<button class="link" id="out">Sair</button>`:'';
   const f=$('#files');if(CFG.filesUrl&&/^https:\/\//.test(CFG.filesUrl)){f.href=CFG.filesUrl;f.hidden=false}else f.hidden=true;
-  $('#imp').hidden=!(ME&&ME.admin);
-  $('#pend').hidden=!(ME&&ME.admin&&(PEND.length||RESETS.length));
-  $('#pendL').innerHTML=RESETS.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu troca de senha em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-rs="1">Liberar nova senha</button><button class="ghost" data-rs="0">Recusar</button></div></div>`).join('')+PEND.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-ap="1">Aprovar</button><button class="ghost" data-ap="0">Recusar</button></div></div>`).join('');
-  $('#empty').hidden=!ME||!!OTS.length;
+  $('#me').textContent=LS.get('ots_nome')?`Você: ${LS.get('ots_nome')}${LS.get('ots_area')?' · '+LS.get('ots_area'):''}`:'';
 }
-$('#pendL').addEventListener('click',async e=>{const r=e.target.closest('button[data-rs]');if(r){r.disabled=true;try{await api('reset_approve',{uid:r.closest('[data-uid]').dataset.uid,ok:r.dataset.rs==='1'});await load(true)}catch(err){r.disabled=false;r.textContent=errMsg(err)}return}
-  const b=e.target.closest('button[data-ap]');if(!b)return;const uid=b.closest('[data-uid]').dataset.uid;
-  if(b.dataset.ap==='0'&&b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar recusa';return}
-  b.disabled=true;try{await api('approve',{uid,ok:b.dataset.ap==='1'});await load(true)}catch(err){b.disabled=false;b.textContent=errMsg(err)}});
-$('#toForgot').onclick=()=>{$('#lf').hidden=true;$('#rf').hidden=false;$('#rn').value=$('#ln').value;$('#rmsg').textContent='';$('#rn').focus()};
-$('#toLogin').onclick=()=>{$('#rf').hidden=true;$('#lf').hidden=false};
-$('#rf').addEventListener('submit',async e=>{e.preventDefault();
-  if($('#rp').value!==$('#rp2').value){$('#rmsg').textContent='As duas senhas não são iguais.';return}
-  $('#rb').disabled=true;$('#rmsg').textContent='Enviando…';
-  try{const r=await api('reset_request',{nome:$('#rn').value,codigo:$('#rc').value,pin:$('#rp').value});
-    $('#rp').value=$('#rp2').value=$('#rc').value='';
-    if(r.redefinida){$('#rf').hidden=true;$('#lf').hidden=false;$('#ln').value=$('#rn').value;$('#lmsg').textContent='Senha trocada. Entre com a nova senha. Gere um novo código de recuperação depois de entrar.'}
-    else $('#rmsg').textContent='Pedido enviado. Quando o administrador liberar, entre com a nova senha que você escolheu.'}
-  catch(err){$('#rmsg').textContent=errMsg(err)}
-  $('#rb').disabled=false});
-$('#rcX').onclick=()=>{$('#rcd').close();$('#rcv').textContent=''};
-$('#rcCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#rcv').textContent);$('#rcCopy').textContent='Copiado'}catch{$('#rcCopy').textContent='Copie manualmente'}setTimeout(()=>$('#rcCopy').textContent='Copiar código',2000)};
-document.addEventListener('click',async e=>{if(e.target.id==='genRc'){if(ME.temCodigo&&e.target.dataset.c!=='1'){e.target.dataset.c='1';e.target.textContent='Confirmar: anula o código anterior';return}
-  try{const r=await api('recovery_code');$('#rcv').textContent=r.codigo;ME.temCodigo=true;$('#rcd').showModal();hdr()}catch(err){e.target.textContent=errMsg(err)}}});
-document.addEventListener('click',async e=>{if(e.target.id==='out'){try{await api('logout')}catch{}token='';LS.set('ots_token','');ME=null;OTS=[];NOTES={};render();hdr();showLogin('Você saiu.')}});
-
 function notesFor(id){
   const o=OTS.find(x=>x.id===id),out=[];
   (o?.legado||[]).forEach((n,i)=>out.push({k:'L'+i,legacy:true,autor:n.autor,area:n.area,texto:n.texto,at:0}));
-  for(const [nid,n] of Object.entries(NOTES))if(n.ots===id)out.push({k:nid,uid:n.uid,area:n.area,texto:n.texto,at:n.at,ed:n.editedAt});
+  for(const [nid,n] of Object.entries(NOTES))if(n.ots===id)out.push({k:nid,dev:n.dev,autor:n.autor||NAMES[n.uid]||'—',area:n.area,texto:n.texto,at:n.at,ed:n.editedAt});
   return out.sort((a,b)=>b.at-a.at);
 }
 const lastNote=id=>notesFor(id)[0]?.texto||'';
@@ -359,7 +283,7 @@ function render(){
   const pri=all.filter(o=>o.prioridade),com=pri.filter(o=>o.ral==='Sim').length,p0=all.filter(o=>o.prioridade==='P0');
   const p0s=p0.filter(o=>o.ral!=='Sim').length;
   $('#headline').textContent=pri.length?`${com} de ${pri.length} OTS priorizadas já têm RAL; ${p0s} P0 seguem sem RAL`:'Acompanhamento OTS — Fidere';
-  $('#lede').textContent=all.length?`Regional RJ/ES · ${all.length} designações em acompanhamento · toque numa barra para filtrar a lista`:(ME?'Nenhuma designação carregada ainda.':'Entre para ver as designações.');
+  $('#lede').textContent=all.length?`Regional RJ/ES · ${all.length} designações em acompanhamento · toque numa barra para filtrar a lista`:'Carregando designações…';
   const occ=all.map(ocup).filter(v=>v!=null),avg=occ.length?occ.reduce((a,b)=>a+b,0)/occ.length:0;
   const wk=Date.now()-7*864e5,nn=Object.values(NOTES).filter(n=>n.at>wk).length;
   $('#kpis').innerHTML=[[all.length,'Designações'],[p0.length,'P0 (urgente)'],[pri.length?Math.round(com/pri.length*100)+'%':'–','Com RAL'],[pri.length-com,'Sem RAL'],[Math.round(avg*100)+'%','Ocupação média da banda'],[nn,'Notas nos últimos 7 dias']].map(([v,l])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
@@ -377,54 +301,52 @@ function render(){
   $('#count').textContent=`${list.length} de ${all.length} designações`;
   $('#list tbody').innerHTML=list.map(o=>{const oc=ocup(o);return `<tr data-id="${esc(o.id)}" tabindex="0"><td class="des">${esc(o.designacao)}</td><td><span class="pr ${o.prioridade?esc(o.prioridade):'x'}">${esc(o.prioridade||'—')}</span></td><td>${esc(o.ral)}${o.numRal?' · '+esc(o.numRal):''}</td><td>${esc(o.cfExec)}</td><td>${esc(o.status)}</td><td>${esc(o.responsavel)}</td><td class="num">${oc==null?'':Math.round(oc*100)+'%'}</td><td><span class="last">${esc(lastNote(o.id))}</span></td></tr>`}).join('')||`<tr><td colspan="8">${all.length?'Nenhuma designação com esses filtros.':'Sem dados.'}</td></tr>`;
   const dl={};for(const f of FIELDS)if(f[2]==='dl')dl[f[0]]=[...new Set(all.map(o=>o[f[0]]).filter(Boolean))].sort();
-  const areas=new Set([...Object.values(USERS).map(u=>u.area),...Object.values(NOTES).map(n=>n.area)].filter(Boolean));
+  const areas=new Set(Object.values(NOTES).map(n=>n.area).filter(Boolean));
   $('#dls').innerHTML=Object.entries(dl).map(([k,v])=>`<datalist id="dl-${k}">${v.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('')+`<datalist id="dl-area">${[...areas].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
   if(cur&&$('#dlg').open)renderNotes();
 }
 function openOts(id,refresh){
   const o=OTS.find(x=>x.id===id);if(!o)return;cur=id;
   $('#dT').textContent=o.designacao;
-  $('#dS').textContent=`Linha ${o.linha} da planilha`+(o.upd?` · última edição por ${nm(o.upd.by)} em ${fmtD(o.upd.at)}`:'');
+  $('#dS').textContent=o.upd?`Última edição por ${nm(o.upd)} em ${fmtD(o.upd.at)}`:'';
   $('#fg').innerHTML=FIELDS.map(([k,l,t,opt])=>{const v=o[k]??'';let inp;
     if(t==='sel')inp=`<select name="${k}">${opt.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(x||'—')}</option>`).join('')}${opt.includes(v)?'':`<option selected>${esc(v)}</option>`}</select>`;
     else if(t==='area')inp=`<textarea name="${k}">${esc(v)}</textarea>`;
     else inp=`<input name="${k}" value="${esc(v)}" ${t==='num'?'type="number" step="any" inputmode="decimal"':t==='month'?'type="month"':''} ${t==='dl'?`list="dl-${k}"`:''}>`;
     return `<label class="${t==='area'?'w':''}">${esc(l)}${inp}</label>`}).join('')+`<label>Ocupação da banda<input disabled value="${ocup(o)==null?'':(ocup(o)*100).toFixed(1)+'%'}"></label>`;
-  if(!refresh){$('#na').value=ME?.area||'';$('#nt').value='';$('#nm').textContent='';$('#svm').textContent=''}
-  $('#hist').innerHTML=(o.hist||[]).slice().reverse().map(h=>`<div>${esc(fmtD(h.at))} · <b>${esc(nm(h.by))}</b> alterou ${esc(LBL[h.campo]||h.campo)}: “${esc(h.de)}” → “${esc(h.para)}”</div>`).join('')||'Nenhuma alteração ainda.';
+  if(!refresh){$('#iN').value=LS.get('ots_nome');$('#iA').value=LS.get('ots_area');$('#nt').value='';$('#nm').textContent='';$('#svm').textContent=''}
+  $('#hist').innerHTML=(o.hist||[]).slice().reverse().map(h=>`<div>${esc(fmtD(h.at))} · <b>${esc(nm(h))}</b> alterou ${esc(LBL[h.campo]||h.campo)}: “${esc(h.de)}” → “${esc(h.para)}”</div>`).join('')||'Nenhuma alteração ainda.';
   renderNotes(!refresh);
   if(!$('#dlg').open)$('#dlg').showModal();
 }
 function renderNotes(force){
   if(!force&&$('#notes [data-act2]'))return;
-  $('#notes').innerHTML=notesFor(cur).map(n=>{const me=n.uid&&n.uid===ME?.uid;
-    return `<div class="note${me?' mine':''}" data-k="${esc(n.k)}"><div class="h"><b>${esc(n.legacy?n.autor:nm(n.uid))}</b>${n.area?`<span class="tag">${esc(n.area)}</span>`:''}<span>${n.legacy?'importada da planilha':esc(fmtD(n.at))}${n.ed?' · editada':''}</span>${me?'<button class="link" data-act="ed">Editar</button><button class="link" data-act="del">Apagar</button>':''}</div><p>${esc(n.texto)}</p></div>`}).join('')||'<p class="small">Nenhuma nota ainda.</p>';
+  $('#notes').innerHTML=notesFor(cur).map(n=>{const me=!!(n.dev&&MYDEV&&n.dev===MYDEV);
+    return `<div class="note${me?' mine':''}" data-k="${esc(n.k)}"><div class="h"><b>${esc(n.autor)}</b>${n.area?`<span class="tag">${esc(n.area)}</span>`:''}<span>${n.legacy?'importada da planilha':esc(fmtD(n.at))}${n.ed?' · editada':''}</span>${me?'<button class="link" data-act="ed">Editar</button><button class="link" data-act="del">Apagar</button>':''}</div><p>${esc(n.texto)}</p></div>`}).join('')||'<p class="small">Nenhuma nota ainda.</p>';
 }
 $('#nf').addEventListener('submit',async e=>{e.preventDefault();
-  const texto=$('#nt').value.trim(),area=$('#na').value.trim();
+  const texto=$('#nt').value.trim(),{autor,area}=who();
+  if(autor.length<2){$('#nm').textContent='Informe seu nome no topo da ficha.';$('#iN').focus();return}
+  if(!area){$('#nm').textContent='Informe sua área no topo da ficha.';$('#iA').focus();return}
   if(!texto){$('#nm').textContent='Escreva a nota.';return}
-  if(!area){$('#nm').textContent='Informe sua área.';$('#na').focus();return}
   $('#nb').disabled=true;$('#nm').textContent='Salvando…';
-  try{await api('note_add',{ots:cur,texto,area});$('#nt').value='';$('#nm').textContent='Nota registrada.';await load()}
+  try{await api('pnote_add',{ots:cur,texto,autor,area});$('#nt').value='';$('#nm').textContent='Nota registrada.';await load()}
   catch(err){$('#nm').textContent=errMsg(err)}
   $('#nb').disabled=false});
-$('#notes').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;const k=b.closest('.note').dataset.k;const n=NOTES[k];if(!n||n.uid!==ME?.uid)return;
-  if(b.dataset.act==='del'){if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar apagar';return}try{await api('note_del',{nid:k});await load()}catch(err){$('#nm').textContent=errMsg(err)}return}
+$('#notes').addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;const k=b.closest('.note').dataset.k;const n=NOTES[k];if(!n||n.dev!==MYDEV)return;
+  if(b.dataset.act==='del'){if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar apagar';return}try{await api('pnote_del',{nid:k});await load()}catch(err){$('#nm').textContent=errMsg(err)}return}
   const box=b.closest('.note');box.querySelector('p').outerHTML=`<div style="display:grid;gap:6px;margin-top:6px"><textarea>${esc(n.texto)}</textarea><div><button data-act2="ok">Salvar nota</button> <button class="ghost" data-act2="no">Cancelar</button></div></div>`;
   box.querySelector('[data-act2=no]').onclick=()=>renderNotes(true);
-  box.querySelector('[data-act2=ok]').onclick=async()=>{const v=box.querySelector('textarea').value.trim();if(!v)return;try{await api('note_edit',{nid:k,texto:v});await load();renderNotes(true)}catch(err){$('#nm').textContent=errMsg(err)}}});
+  box.querySelector('[data-act2=ok]').onclick=async()=>{const v=box.querySelector('textarea').value.trim();if(!v)return;try{await api('pnote_edit',{nid:k,texto:v,autor:who().autor||n.autor});await load();renderNotes(true)}catch(err){$('#nm').textContent=errMsg(err)}}});
 $('#ff').addEventListener('submit',async e=>{e.preventDefault();const o=OTS.find(x=>x.id===cur);if(!o)return;
   const ch={};for(const el of $('#fg').querySelectorAll('[name]')){const k=el.name,t=FIELDS.find(f=>f[0]===k)[2];let v=el.value.trim();if(t==='num')v=v===''?null:Number(v);if((o[k]??(t==='num'?null:''))!==v)ch[k]=v}
   if(!Object.keys(ch).length){$('#svm').textContent='Nada mudou.';return}
+  if(who().autor.length<2){$('#svm').textContent='Informe seu nome no topo da ficha.';$('#iN').focus();return}
   $('#sv').disabled=true;$('#svm').textContent='Salvando…';
-  try{const r=await api('update',{id:cur,changes:ch});$('#svm').textContent=`Salvo (${r.mudou} campo${r.mudou>1?'s':''}).`;$('#sv').blur();await load();openOts(cur,true)}
+  try{const r=await api('pupdate',{id:cur,changes:ch,autor:who().autor});$('#svm').textContent=`Salvo (${r.mudou} campo${r.mudou>1?'s':''}).`;$('#sv').blur();await load();openOts(cur,true)}
   catch(err){$('#svm').textContent=errMsg(err)}
   $('#sv').disabled=false});
-$('#impf').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;$('#impm').textContent='Importando…';
-  try{const d=JSON.parse(await f.text());const r=await api('import',{data:Array.isArray(d)?{ots:d}:d});$('#impm').textContent=`${r.total} designações importadas.`;await load(true)}
-  catch(err){$('#impm').textContent=err instanceof SyntaxError?'Arquivo inválido (precisa ser o .json de importação).':errMsg(err)}
-  e.target.value=''});
-
+for(const [id,k] of [['#iN','ots_nome'],['#iA','ots_area']])$(id).addEventListener('change',e=>{LS.set(k,e.target.value.trim());hdr()});
 $('#dX').onclick=()=>$('#dlg').close();
 $('#dlg').addEventListener('close',()=>{cur=null});
 $('#list').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');tr&&openOts(tr.dataset.id)});
@@ -442,10 +364,9 @@ $('#copy').onclick=async()=>{const cols=['designacao',...FIELDS.map(f=>f[0])];co
   try{await navigator.clipboard.writeText(rows.join('\n'));$('#copy').textContent='CSV copiado'}catch{$('#copy').textContent='Não foi possível copiar'}setTimeout(()=>$('#copy').textContent='Copiar CSV',2500)};
 $('#files').addEventListener('pointerdown',()=>{try{navigator.vibrate?.(10)}catch{}});
 
-render();hdr();
-if(token)load(true);else showLogin();
-setInterval(()=>{if(document.visibilityState==='visible'&&token)load()},30000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&token)load()});
+render();hdr();load(true);
+setInterval(()=>{if(document.visibilityState==='visible')load()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
 }
 </script>
 </body>
