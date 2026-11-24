@@ -466,6 +466,38 @@ export class OtsStore {
       return jsonPlain({ ok: true, token, me: { uid, nome: users[uid].nome, area: users[uid].area, admin: !!users[uid].admin, aprovado: users[uid].aprovado !== false } }, 200);
     }
 
+    /* Esqueci a senha: com código de recuperação troca na hora; sem código vira pedido ao administrador */
+    if (op === 'reset_request') {
+      const nome = String(b.nome || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+      const pin = String(b.pin || '');
+      const codigo = String(b.codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (pin.length < 6) return jsonPlain({ error: 'senha' }, 400);
+      const users = await this.get('users', {});
+      const uid = Object.keys(users).find(u => otsName(users[u].nome) === otsName(nome));
+      if (!uid) return jsonPlain({ ok: true, pedido: true }, 200);   /* não revela se o nome existe */
+      const u = users[uid];
+      if (u.lockUntil && u.lockUntil > now) return jsonPlain({ error: 'bloqueado', ate: u.lockUntil }, 429);
+      const salt = randHex(12), pinHash = await sha256Hex(salt + ':' + pin);
+      if (codigo) {
+        if (!u.recHash || (await sha256Hex(u.recSalt + ':' + codigo)) !== u.recHash) {
+          u.fails = (u.fails || 0) + 1;
+          if (u.fails >= 8) { u.lockUntil = now + 15 * 60000; u.fails = 0; }
+          await this.state.storage.put('users', users);
+          return jsonPlain({ error: 'codigo' }, 403);
+        }
+        u.salt = salt; u.pinHash = pinHash; u.fails = 0; delete u.lockUntil; delete u.recHash; delete u.recSalt; delete u.reset;
+        const ses = await this.get('sessions', {});
+        for (const [k, v] of Object.entries(ses)) if (v.uid === uid) delete ses[k];
+        await this.state.storage.put('sessions', ses);
+        await this.state.storage.put('users', users);
+        return jsonPlain({ ok: true, redefinida: true }, 200);
+      }
+      u.reset = { salt, pinHash, at: now };
+      await this.state.storage.put('users', users);
+      await this.bump();
+      return jsonPlain({ ok: true, pedido: true }, 200);
+    }
+
     const me = await this.me(b.token);
     if (!me) return jsonPlain({ error: 'sessao' }, 401);
     const meOut = { uid: me.uid, nome: me.nome, area: me.area, admin: !!me.admin, aprovado: me.aprovado !== false };
@@ -475,6 +507,30 @@ export class OtsStore {
     }
     /* Conta ainda não aprovada: não vê nem altera nada */
     if (!meOut.aprovado) return jsonPlain({ pendente: true, me: meOut }, 200);
+
+    if (op === 'recovery_code') {
+      const users = await this.get('users', {}); const u = users[me.uid];
+      const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(12));
+      const code = [...r].map(x => A[x % A.length]).join('');
+      u.recSalt = randHex(8); u.recHash = await sha256Hex(u.recSalt + ':' + code); u.recAt = now;
+      await this.state.storage.put('users', users);
+      return jsonPlain({ ok: true, codigo: code.match(/.{4}/g).join('-') }, 200);
+    }
+
+    if (op === 'reset_approve') {
+      if (!me.admin) return jsonPlain({ error: 'admin' }, 403);
+      const users = await this.get('users', {}); const u = users[String(b.uid || '')];
+      if (!u || !u.reset) return jsonPlain({ error: 'id' }, 404);
+      if (b.ok) {
+        u.salt = u.reset.salt; u.pinHash = u.reset.pinHash; u.fails = 0; delete u.lockUntil;
+        const ses = await this.get('sessions', {});
+        for (const [k, v] of Object.entries(ses)) if (v.uid === String(b.uid)) delete ses[k];
+        await this.state.storage.put('sessions', ses);
+      }
+      delete u.reset;
+      await this.state.storage.put('users', users);
+      return jsonPlain({ ok: true, rev: await this.bump() }, 200);
+    }
 
     if (op === 'approve') {
       if (!me.admin) return jsonPlain({ error: 'admin' }, 403);
@@ -495,9 +551,13 @@ export class OtsStore {
       const rev = await this.get('rev', 0);
       if (b.since && Number(b.since) === rev) return jsonPlain({ rev, same: true, me: meOut }, 200);
       const users = await this.get('users', {});
-      const pub = {}, pend = [];
-      for (const [k, u] of Object.entries(users)) { if (u.aprovado === false) pend.push({ uid: k, nome: u.nome, area: u.area, at: u.at }); else pub[k] = { nome: u.nome, area: u.area }; }
-      return jsonPlain({ rev, me: meOut, users: pub, pendentes: me.admin ? pend : [], ots: await this.get('ots', {}), notes: await this.get('notes', {}), config: await this.get('config', {}) }, 200);
+      const pub = {}, pend = [], resets = [];
+      for (const [k, u] of Object.entries(users)) {
+        if (u.aprovado === false) pend.push({ uid: k, nome: u.nome, area: u.area, at: u.at }); else pub[k] = { nome: u.nome, area: u.area };
+        if (u.reset && u.aprovado !== false) resets.push({ uid: k, nome: u.nome, area: u.area, at: u.reset.at });
+      }
+      meOut.temCodigo = !!users[me.uid]?.recHash;
+      return jsonPlain({ rev, me: meOut, users: pub, pendentes: me.admin ? pend : [], resets: me.admin ? resets : [], ots: await this.get('ots', {}), notes: await this.get('notes', {}), config: await this.get('config', {}) }, 200);
     }
 
     if (op === 'update') {

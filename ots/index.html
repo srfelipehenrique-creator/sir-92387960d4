@@ -105,7 +105,7 @@ dialog::backdrop{background:rgb(0 0 0/.45)}
 @media(max-width:600px){.topr{align-items:stretch;width:100%}.files{justify-content:center}}
 button:not(.link):active{transform:translateY(1px)}
 #login{margin:auto;height:fit-content;max-height:calc(100% - 24px);overflow:auto;width:min(440px,calc(100% - 24px));border-radius:10px;padding:24px;background:var(--card)}
-#login form{display:grid;gap:10px}#login label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
+#login form{display:grid;gap:10px}#login form[hidden]{display:none}#login label{display:grid;gap:4px;font-size:13px;color:var(--ink2)}
 @media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 10px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tbody tr{border-bottom:1px solid var(--line)}}
 @media(prefers-reduced-motion:no-preference){.bar s{transition:width .35s ease}}
 </style>
@@ -123,7 +123,7 @@ button:not(.link):active{transform:translateY(1px)}
       <div class="me" id="me"></div>
     </div>
   </div>
-  <div class="card" id="pend" hidden style="margin-top:16px"><h2>Pedidos de acesso</h2><p class="small">Só pessoas aprovadas veem e alteram os dados.</p><div id="pendL"></div></div>
+  <div class="card" id="pend" hidden style="margin-top:16px"><h2>Pedidos de acesso e de troca de senha</h2><p class="small">Só pessoas aprovadas veem e alteram os dados. Ao liberar uma troca de senha, a pessoa entra com a senha nova que ela mesma escolheu.</p><div id="pendL"></div></div>
   <div class="banner" id="empty" hidden>Nenhuma designação no servidor ainda. Se você é o administrador, use “Importar dados” no fim da página com o arquivo <b>ots-importacao.json</b>.</div>
   <div class="kpis" id="kpis"></div>
   <div id="banner"></div>
@@ -195,6 +195,12 @@ button:not(.link):active{transform:translateY(1px)}
   </div>
 </dialog>
 <div id="dls"></div>
+<dialog id="rcd" aria-labelledby="rcT" style="margin:auto;height:fit-content;width:min(440px,calc(100% - 24px));border-radius:10px;padding:24px;background:var(--card)">
+  <h2 id="rcT" style="font-size:20px;font-weight:500">Código de recuperação</h2>
+  <p class="small">Guarde este código num lugar seguro (anote ou salve no celular). Se esquecer a senha, use “Esqueci minha senha” com ele. Ele aparece só agora, vale uma vez e gerar outro anula este.</p>
+  <p id="rcv" style="font-size:26px;font-weight:600;letter-spacing:.06em;margin:14px 0;font-variant-numeric:tabular-nums"></p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rcCopy">Copiar código</button><button class="ghost" id="rcX">Fechar</button></div>
+</dialog>
 <dialog id="login" aria-labelledby="lT">
   <h2 id="lT" style="font-size:22px;font-weight:500;margin-bottom:4px">Entrar no Acompanhamento OTS</h2>
   <p class="small" style="margin:0 0 14px">Na primeira vez, escolha uma senha pessoal: ela garante que só você altera as suas notas. Contas novas são liberadas pelo administrador.</p>
@@ -204,6 +210,17 @@ button:not(.link):active{transform:translateY(1px)}
     <label>Sua área<input id="la" list="dl-area" placeholder="ex.: COP REDE, NOC, Manutenção NO2"></label>
     <button id="lb" type="submit">Entrar</button>
     <span class="msg" id="lmsg"></span>
+    <button type="button" class="link" id="toForgot" style="justify-self:start">Esqueci minha senha</button>
+  </form>
+  <form id="rf" hidden>
+    <p class="small" style="margin:0">Com o <b>código de recuperação</b> que você gerou, a senha troca na hora. Sem o código, o pedido vai para o administrador aprovar.</p>
+    <label>Seu nome<input id="rn" autocomplete="name" required minlength="3"></label>
+    <label>Código de recuperação (se tiver)<input id="rc" autocomplete="off" placeholder="XXXX-XXXX-XXXX" style="text-transform:uppercase"></label>
+    <label>Nova senha (mín. 6 caracteres)<input id="rp" type="password" autocomplete="new-password" required minlength="6"></label>
+    <label>Repita a nova senha<input id="rp2" type="password" autocomplete="new-password" required minlength="6"></label>
+    <button id="rb" type="submit">Trocar senha</button>
+    <span class="msg" id="rmsg"></span>
+    <button type="button" class="link" id="toLogin" style="justify-self:start">Voltar para entrar</button>
   </form>
 </dialog>
 
@@ -244,7 +261,7 @@ async function autoSeed(){
     $('#banner').innerHTML=`<div class="banner">${r.total} designações carregadas da planilha.</div>`;busy=false;await load(true)}
   catch(err){$('#banner').innerHTML=`<div class="banner">Não foi possível carregar os dados: ${esc(err?.name==='OperationError'?'link de carga inválido':errMsg(err))}</div>`}
   seeding=false}
-let PEND=[],ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
+let PEND=[],RESETS=[],ME=null,OTS=[],NOTES={},USERS={},CFG={},REV=0,filt={},cur=null,busy=false;
 const prKey=o=>o.prioridade||'—';
 const ocup=o=>(o.capacidade>0&&o.ocupacao!=null)?o.ocupacao/o.capacidade:null;
 const fmtD=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
@@ -257,7 +274,7 @@ async function api(op,extra={}){
   if(!r.ok)throw Object.assign(j,{status:r.status});
   return j;
 }
-const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode fazer isso.',fila:'Muitos pedidos de acesso pendentes. Fale com o administrador.'};
+const ERR={nome:'Nome com pelo menos 3 letras.',senha:'A senha pessoal precisa de 6 caracteres ou mais.',senha_errada:'Senha pessoal incorreta para esse nome.',bloqueado:'Muitas tentativas. Aguarde 15 minutos.',area:'Informe sua área.',texto:'Escreva a nota.',autor:'Só o autor pode alterar essa nota.',admin:'Só o administrador pode fazer isso.',codigo:'Código de recuperação incorreto.',fila:'Muitos pedidos de acesso pendentes. Fale com o administrador.'};
 const errMsg=e=>ERR[e?.error]||(e instanceof TypeError?'Sem conexão com o servidor.':'Não foi possível concluir. Tente de novo.');
 
 function showLogin(msg){$('#lmsg').textContent=msg||'';if(!$('#login').open)$('#login').showModal()}
@@ -274,7 +291,7 @@ async function load(force){
   if(busy)return;busy=true;
   try{const s=await api('state',{since:force?0:REV});ME=s.me;
     if(s.pendente){OTS=[];NOTES={};render();hdr();$('#banner').innerHTML='<div class="banner"><b>Seu acesso está aguardando aprovação.</b> O administrador precisa liberar sua conta; esta página atualiza sozinha quando isso acontecer.</div>';busy=false;return}
-    if(!s.same){PEND=s.pendentes||[];REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
+    if(!s.same){PEND=s.pendentes||[];RESETS=s.resets||[];REV=s.rev;USERS=s.users||{};CFG=s.config||{};NOTES=s.notes||{};
       OTS=Object.entries(s.ots||{}).map(([id,o])=>({id,...o})).sort((a,b)=>(a.linha||0)-(b.linha||0));
       render();if(cur&&$('#dlg').open&&!$('#ff').contains(document.activeElement))openOts(cur,true)}
     if(!seeding)$('#banner').innerHTML='';hdr();
@@ -282,16 +299,32 @@ async function load(force){
   catch(err){if(err instanceof TypeError)$('#banner').innerHTML='<div class="banner">Sem conexão com o servidor. Os dados mostrados podem estar desatualizados.</div>'}
   busy=false}
 function hdr(){
-  $('#me').innerHTML=ME?`${esc(ME.nome)} · ${esc(ME.area||'sem área')} <button class="link" id="out">Sair</button>`:'';
+  $('#me').innerHTML=ME?`${esc(ME.nome)} · ${esc(ME.area||'sem área')} ${ME.aprovado?`<button class="link" id="genRc">${ME.temCodigo?'Novo código de recuperação':'Gerar código de recuperação'}</button>`:''}<button class="link" id="out">Sair</button>`:'';
   const f=$('#files');if(CFG.filesUrl&&/^https:\/\//.test(CFG.filesUrl)){f.href=CFG.filesUrl;f.hidden=false}else f.hidden=true;
   $('#imp').hidden=!(ME&&ME.admin);
-  $('#pend').hidden=!(ME&&ME.admin&&PEND.length);
-  $('#pendL').innerHTML=PEND.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-ap="1">Aprovar</button><button class="ghost" data-ap="0">Recusar</button></div></div>`).join('');
+  $('#pend').hidden=!(ME&&ME.admin&&(PEND.length||RESETS.length));
+  $('#pendL').innerHTML=RESETS.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu troca de senha em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-rs="1">Liberar nova senha</button><button class="ghost" data-rs="0">Recusar</button></div></div>`).join('')+PEND.map(p=>`<div class="note" data-uid="${esc(p.uid)}"><div class="h"><b>${esc(p.nome)}</b><span class="tag">${esc(p.area)}</span><span>pediu em ${esc(fmtD(p.at))}</span></div><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button data-ap="1">Aprovar</button><button class="ghost" data-ap="0">Recusar</button></div></div>`).join('');
   $('#empty').hidden=!ME||!!OTS.length;
 }
-$('#pendL').addEventListener('click',async e=>{const b=e.target.closest('button[data-ap]');if(!b)return;const uid=b.closest('[data-uid]').dataset.uid;
+$('#pendL').addEventListener('click',async e=>{const r=e.target.closest('button[data-rs]');if(r){r.disabled=true;try{await api('reset_approve',{uid:r.closest('[data-uid]').dataset.uid,ok:r.dataset.rs==='1'});await load(true)}catch(err){r.disabled=false;r.textContent=errMsg(err)}return}
+  const b=e.target.closest('button[data-ap]');if(!b)return;const uid=b.closest('[data-uid]').dataset.uid;
   if(b.dataset.ap==='0'&&b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Confirmar recusa';return}
   b.disabled=true;try{await api('approve',{uid,ok:b.dataset.ap==='1'});await load(true)}catch(err){b.disabled=false;b.textContent=errMsg(err)}});
+$('#toForgot').onclick=()=>{$('#lf').hidden=true;$('#rf').hidden=false;$('#rn').value=$('#ln').value;$('#rmsg').textContent='';$('#rn').focus()};
+$('#toLogin').onclick=()=>{$('#rf').hidden=true;$('#lf').hidden=false};
+$('#rf').addEventListener('submit',async e=>{e.preventDefault();
+  if($('#rp').value!==$('#rp2').value){$('#rmsg').textContent='As duas senhas não são iguais.';return}
+  $('#rb').disabled=true;$('#rmsg').textContent='Enviando…';
+  try{const r=await api('reset_request',{nome:$('#rn').value,codigo:$('#rc').value,pin:$('#rp').value});
+    $('#rp').value=$('#rp2').value=$('#rc').value='';
+    if(r.redefinida){$('#rf').hidden=true;$('#lf').hidden=false;$('#ln').value=$('#rn').value;$('#lmsg').textContent='Senha trocada. Entre com a nova senha. Gere um novo código de recuperação depois de entrar.'}
+    else $('#rmsg').textContent='Pedido enviado. Quando o administrador liberar, entre com a nova senha que você escolheu.'}
+  catch(err){$('#rmsg').textContent=errMsg(err)}
+  $('#rb').disabled=false});
+$('#rcX').onclick=()=>{$('#rcd').close();$('#rcv').textContent=''};
+$('#rcCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#rcv').textContent);$('#rcCopy').textContent='Copiado'}catch{$('#rcCopy').textContent='Copie manualmente'}setTimeout(()=>$('#rcCopy').textContent='Copiar código',2000)};
+document.addEventListener('click',async e=>{if(e.target.id==='genRc'){if(ME.temCodigo&&e.target.dataset.c!=='1'){e.target.dataset.c='1';e.target.textContent='Confirmar: anula o código anterior';return}
+  try{const r=await api('recovery_code');$('#rcv').textContent=r.codigo;ME.temCodigo=true;$('#rcd').showModal();hdr()}catch(err){e.target.textContent=errMsg(err)}}});
 document.addEventListener('click',async e=>{if(e.target.id==='out'){try{await api('logout')}catch{}token='';LS.set('ots_token','');ME=null;OTS=[];NOTES={};render();hdr();showLogin('Você saiu.')}});
 
 function notesFor(id){
