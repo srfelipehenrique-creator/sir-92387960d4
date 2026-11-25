@@ -5,15 +5,11 @@
    Alternância Painel/Grafana (antes Novo/Clássico) salva em localStorage ('sir_layout').
    ══════════════════════════════════════════════════════════════ */
 
-const LS_LAYOUT   = 'sir_layout';      // 'v2' | 'classic'
-const LS_V2_SCOPE = 'sir_v2_scope';    // 'all' | 'mine'
 
-function _lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
-function _lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-
-function getLayout()  { return _lsGet(LS_LAYOUT, 'v2'); }
+/* v67: preferências lidas e gravadas pelo SirStore (js/store.js) */
+function getLayout()  { return SirStore.get('layout'); }
 /* Com áreas salvas, o padrão é mostrar só elas (em qualquer aparelho) */
-function getV2Scope() { return _lsGet(LS_V2_SCOPE, 'mine'); }
+function getV2Scope() { return SirStore.get('scope'); }
 
 /* Ao aplicar "Minhas Áreas", o painel passa a mostrar só elas.
    As demais voltam quando você clicar em "Todas as áreas". */
@@ -21,7 +17,7 @@ if (typeof saveSettings === 'function') {
   const _saveSettingsOrig = saveSettings;
   saveSettings = function (onSaved) {
     return _saveSettingsOrig(function () {
-      if (getUserSavedAreas().length) _lsSet(LS_V2_SCOPE, 'mine');
+      if (getUserSavedAreas().length) SirStore.set('scope', 'mine');
       if (onSaved) onSaved();
     });
   };
@@ -30,14 +26,13 @@ if (typeof saveSettings === 'function') {
 /* Lista de tickets em cartões ou em lista (tabela).
    Você escolhe na própria tela de tickets ('sir_ticket_view'); sem escolha,
    vale o padrão: cartões no layout novo e no celular. */
-const LS_TICKET_VIEW = 'sir_ticket_view';   // 'cards' | 'list'
 function getTicketView() {
-  const v = _lsGet(LS_TICKET_VIEW, '');
+  const v = SirStore.get('ticketView');
   if (v === 'cards' || v === 'list') return v;
   const narrow = !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
   return (getLayout() === 'v2' || narrow) ? 'cards' : 'list';
 }
-function setTicketView(v) { _lsSet(LS_TICKET_VIEW, v === 'list' ? 'list' : 'cards'); }
+function setTicketView(v) { SirStore.set('ticketView', v === 'list' ? 'list' : 'cards'); }
 function useTicketCards() { return getTicketView() === 'cards'; }
 if (typeof openModal === 'function') {
   const _openModalOrig = openModal;
@@ -129,10 +124,9 @@ function _delta(tk, cf, val) {
    Toque no título do card (ex.: "NO2" ou "Minhas áreas") para abrir/fechar.
    Os cards abertos ficam salvos neste aparelho ('sir_v2_open').
    Card aberto ganha o botão de copiar o resumo (mensagem com emojis). */
-const LS_V2_OPEN = 'sir_v2_open';
 const V2_MY = 'MY_AREAS_V2';
-function _v2OpenSet() { try { return new Set(JSON.parse(localStorage.getItem(LS_V2_OPEN) || '[]')); } catch (e) { return new Set(); } }
-function _v2SaveOpen(set) { _lsSet(LS_V2_OPEN, JSON.stringify([...set])); }
+function _v2OpenSet() { return new Set(SirStore.get('openCards')); }
+function _v2SaveOpen(set) { SirStore.set('openCards', [...set]); }
 
 function _v2TagCounts(tk, cf) {
   const list = (modalData[tk] && modalData[tk][cf]) || [];
@@ -216,7 +210,7 @@ function toggleV2Tile(cf) {
 function _v2Tile(cf, ralV, recV, mine) {
   const name = CF_NAMES[cf] || '';
   const open = _v2OpenSet().has(cf);
-  return `<div class="v2-tile v2-exp${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-v2card data-cf="${escapeHtml(cf)}">
+  return `<div class="v2-tile v2-exp${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-v2card data-cf="${escapeHtml(cf)}" data-key="cf:${escapeHtml(cf)}">
     <div class="v2-card-top">
       <button type="button" class="v2-tile-head" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">
         <span class="v2-tile-cf">${escapeHtml(cf)}</span>
@@ -250,7 +244,7 @@ function _v2Kpi(label, key, ralV, recV, accent) {
          ${_v2CopyBtn()}
        </div>`
     : `<div class="v2-kpi-lbl">${escapeHtml(label)}</div>`;
-  return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}${exp ? ' v2-exp' : ''}${open ? ' v2-open' : ''}"${exp ? ` data-v2card data-cf="${V2_MY}"` : ''}>
+  return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}${exp ? ' v2-exp' : ''}${open ? ' v2-open' : ''}"${exp ? ` data-v2card data-cf="${V2_MY}"` : ''} data-key="kpi:${escapeHtml(key)}">
     ${head}
     <div class="v2-kpi-vals">
       <button class="v2-kpi-btn v2-t-${_sevTotal(ralV)}" onclick="openModal('${_q(key)}',true,'${_q('RAL · ' + label)}')">
@@ -310,7 +304,7 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
     ).join('');
     /* Cada grupo traz o seu gráfico (RAL e REC das áreas do grupo) e o botão de encolher */
     const hasCharts = typeof _v2RegionChartsShell === 'function';
-    regions += `<section class="v2-region" data-region="${escapeHtml(rn)}">
+    regions += `<section class="v2-region" data-region="${escapeHtml(rn)}" data-key="reg:${escapeHtml(rn)}">
       <div class="v2-region-head">
         <span class="v2-region-name">${escapeHtml(rn)}</span>
         <span class="v2-region-count">${cfKeys.length} CF${cfKeys.length > 1 ? 's' : ''}</span>
@@ -323,8 +317,14 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
     </section>`;
   }
 
-  document.getElementById('main-grid').innerHTML =
-    `<div class="v2-kpis${scope === 'mine' ? ' v2-kpis-mine' : ''}">${kpis}</div><div class="v2-regions">${regions}</div>`;
+  /* v67: na primeira vez desenha tudo; depois só altera o que mudou (js/morph.js).
+     A Linha do Tempo, logo abaixo, é mantida e atualizada pelo próprio código dela. */
+  const grid  = document.getElementById('main-grid');
+  const kHtml = `<div class="v2-kpis${scope === 'mine' ? ' v2-kpis-mine' : ''}">${kpis}</div>`;
+  const rHtml = `<div class="v2-regions">${regions}</div>`;
+  const oldK = grid.querySelector(':scope > .v2-kpis'), oldR = grid.querySelector(':scope > .v2-regions');
+  if (oldK && oldR && typeof sirMorphEl === 'function') { sirMorphEl(oldK, kHtml); sirMorphEl(oldR, rHtml); }
+  else grid.innerHTML = kHtml + rHtml;
 
   document.querySelectorAll('#main-grid .animate-num').forEach(el => {
     const v = parseInt(el.getAttribute('data-val'), 10);
@@ -385,15 +385,15 @@ function _rerender() {
   loadAll(getUserSavedAreas());
 }
 
-function setV2Scope(s) { _lsSet(LS_V2_SCOPE, s); _rerender(); }
-function setLayout(l)  { _lsSet(LS_LAYOUT, l); applyLayoutClass(); _rerender(); }
+function setV2Scope(s) { SirStore.set('scope', s); _rerender(); }
+function setLayout(l)  { SirStore.set('layout', l); applyLayoutClass(); _rerender(); }
 
 function applyLayoutClass() {
   document.body.classList.toggle('layout-v2', getLayout() === 'v2');
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v66';
+const SIR_APP_VERSION = 'v67';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */

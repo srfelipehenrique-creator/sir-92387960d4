@@ -11,13 +11,11 @@
    Desenho próprio em SVG (sem biblioteca externa → funciona offline).
    ══════════════════════════════════════════════════════════════ */
 
-const LS_CHARTS_COLLAPSED = 'sir_charts_collapsed';   /* escolha antiga (todos os gráficos) */
-const LS_CHARTS_GROUPS    = 'sir_charts_groups';      /* { "ES": true, ... } → encolhido */
-function _chartsGroups() { try { const v = JSON.parse(localStorage.getItem(LS_CHARTS_GROUPS) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function _chartsGroups() { return SirStore.get('chartGroups'); }   /* v67: via SirStore */
 function chartsCollapsed(rn) {
   const g = _chartsGroups();
   if (rn in g) return !!g[rn];
-  try { return localStorage.getItem(LS_CHARTS_COLLAPSED) === '1'; } catch (e) { return false; }
+  return SirStore.get('chartsAllClosed') === '1';
 }
 /* Cor da coluna pela quantidade — mesma regra dos cards (_sev) */
 function _v2ChartSev(v) { return v >= 10 ? 'crit' : v >= 6 ? 'warn' : 'ok'; }
@@ -147,7 +145,7 @@ function _v2RegionChartsShell(rn) {
   const c = chartsCollapsed(rn), name = escapeHtml(rn);
   const legend = `<span class="v2-legend v2-chart-legend" aria-label="Cores por quantidade">
       <span><i class="v2-dot v2-dot-ok"></i>1–5</span><span><i class="v2-dot v2-dot-warn"></i>6–9</span><span><i class="v2-dot v2-dot-crit"></i>10+</span></span>`;
-  const card = (tk, title) => `<div class="v2-chart" data-tk="${tk}"><div class="v2-chart-head"><span class="v2-chart-title">${title} · ${name}</span>${legend}<span class="v2-chart-sub"></span></div><div class="v2-chart-body"></div></div>`;
+  const card = (tk, title) => `<div class="v2-chart" data-tk="${tk}" data-morph-keep><div class="v2-chart-head"><span class="v2-chart-title">${title} · ${name}</span>${legend}<span class="v2-chart-sub"></span></div><div class="v2-chart-body"></div></div>`;
   return `<div class="v2-charts v2-reg-charts" data-reg-charts="${name}"${c ? ' hidden' : ''}>
       ${card('ral', 'RAL por área')}
       ${card('rec', 'REC por área')}
@@ -161,9 +159,8 @@ function _v2RegionToggleBtn(rn) {
 
 /* Encolhe ou expande o gráfico de um grupo */
 function toggleV2Charts(rn) {
-  const c = !chartsCollapsed(rn), g = _chartsGroups();
-  g[rn] = c;
-  try { localStorage.setItem(LS_CHARTS_GROUPS, JSON.stringify(g)); } catch (e) {}
+  const c = !chartsCollapsed(rn);
+  SirStore.update('chartGroups', g => ({ ...g, [rn]: c }));
   const sec = [...document.querySelectorAll('#main-grid .v2-region')].find(s => s.dataset.region === rn);
   if (!sec) return;
   const box = sec.querySelector('.v2-reg-charts'), btn = sec.querySelector('[data-reg-toggle]');

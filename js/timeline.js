@@ -15,12 +15,11 @@
    Desenho próprio em SVG (sem biblioteca externa → funciona offline).
    ══════════════════════════════════════════════════════════════ */
 
-const LS_TL = 'sir_timeline_v3';   /* { PAINEL: { tk, win, area, closed } } */
 const TL_KEY = 'PAINEL';
 const TL_HOURS = Array.from({ length: 24 }, (_, h) => h);
 const _tlHH = h => String(h).padStart(2, '0');
 
-function _tlAll() { try { const v = JSON.parse(localStorage.getItem(LS_TL) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+function _tlAll() { return SirStore.get('timeline'); }   /* v67: via SirStore */
 function _tlOpts(rn) {
   const o = _tlAll()[rn] || {};
   return { tk: o.tk === 'rec' ? 'rec' : 'ral', win: ['le', 'gt'].includes(o.win) ? o.win : 'all', area: o.area || 'ALL', closed: !!o.closed };
@@ -28,7 +27,7 @@ function _tlOpts(rn) {
 function _tlSave(rn, p) {
   const all = _tlAll(), o = { ..._tlOpts(rn), ...p };
   all[rn] = o;
-  try { localStorage.setItem(LS_TL, JSON.stringify(all)); } catch (e) {}
+  SirStore.set('timeline', all);
   return o;
 }
 
@@ -187,11 +186,13 @@ function _tlRenderOne(sec, uid) {
   /* áreas: todas, minhas, grupos e cada CF */
   const sel = sec.querySelector('.tl-area'), mine = getUserSavedAreas(), all = _tlAllCfs();
   const cfOpt = cf => `<option value="${escapeHtml(cf)}">${escapeHtml(cf)}${CF_NAMES[cf] ? ' — ' + escapeHtml(CF_NAMES[cf]) : ''}</option>`;
-  sel.innerHTML = `<option value="ALL">Todas as áreas (${all.length} CFs)</option>` +
+  const opts = `<option value="ALL">Todas as áreas (${all.length} CFs)</option>` +
     (mine.length ? `<option value="MINE">Minhas áreas (${mine.length} CF${mine.length > 1 ? 's' : ''})</option>` : '') +
     `<optgroup label="Grupos">${Object.entries(REGIONS).map(([g, c]) => `<option value="G:${escapeHtml(g)}">${escapeHtml(g)} (${Object.keys(c).length} CFs)</option>`).join('')}</optgroup>` +
     Object.entries(REGIONS).map(([g, c]) => `<optgroup label="${escapeHtml(g)}">${Object.keys(c).map(cfOpt).join('')}</optgroup>`).join('');
-  sel.value = area;
+  /* v67: só refaz a lista se mudou (não fecha o menu aberto a cada atualização) */
+  if (sel._opts !== opts) { sel.innerHTML = opts; sel._opts = opts; }
+  if (sel.value !== area) sel.value = area;
 
   const d = _tlData(tk, rn, area);
   sec.querySelector('.tl-pill').innerHTML = `<b>${d.total}</b> ${tk === 'ral' ? 'RALs de falha' : 'RECs'}`;
@@ -257,7 +258,8 @@ if (typeof renderDashboardV2 === 'function') {
     const r = _rdTl.apply(this, arguments);
     try {
       const regs = document.querySelector('#main-grid .v2-regions');
-      if (regs) regs.insertAdjacentHTML('afterend', _tlShellHTML(TL_KEY));
+      /* v67: a seção fica na tela entre as atualizações; só é criada se ainda não existir */
+      if (regs && !document.querySelector('#main-grid > .v2-timeline')) regs.insertAdjacentHTML('afterend', _tlShellHTML(TL_KEY));
       renderTimeline();
     } catch (e) { console.warn('linha do tempo', e); }
     return r;
