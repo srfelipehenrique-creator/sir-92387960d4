@@ -63,7 +63,7 @@ function _v2Cell(tk, cf, val, delta) {
   const isRal = tk === 'ral';
   const title = _q(_cfTitle(tk, cf));
   return `<button class="v2-cell v2-${_sev(val)}" onclick="openModal('${_q(cf)}',${isRal},'${title}')"
-            title="${isRal ? 'RAL' : 'REC'} ${escapeHtml(cf)}">
+            title="${isRal ? 'RAL' : 'REC'} ${escapeHtml(cf)}" aria-label="${isRal ? 'RAL' : 'REC'} ${escapeHtml(cf)}: ${val} ticket${val === 1 ? '' : 's'}${delta > 0 ? `, mais ${delta} desde a última atualização` : ''}">
     <span class="v2-cell-lbl">${isRal ? 'RAL' : 'REC'}</span>
     <span class="v2-cell-val animate-num" data-val="${val}">${val}</span>
     ${delta > 0 ? `<span class="v2-delta" title="Aumento desde a última atualização">+${delta}</span>` : ''}
@@ -109,7 +109,7 @@ function listTitle(kind, base) {
 function _v2QCell(cf) {
   const n = qualCount(cf);
   return `<button class="v2-cell v2-qual${n ? '' : ' v2-zero'}" onclick="openModal('${_q(QKEY + cf)}',true,'${_q(listTitle('qual', cf))}')"
-            title="RAL de Qualidade ${escapeHtml(cf)}">
+            title="RAL de Qualidade ${escapeHtml(cf)}" aria-label="RAL de Qualidade ${escapeHtml(cf)}: ${n} ticket${n === 1 ? '' : 's'}">
     <span class="v2-cell-lbl">QUAL</span>
     <span class="v2-cell-val animate-num" data-val="${n}">${n}</span>
   </button>`;
@@ -247,13 +247,13 @@ function _v2Kpi(label, key, ralV, recV, accent) {
   return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}${exp ? ' v2-exp' : ''}${open ? ' v2-open' : ''}"${exp ? ` data-v2card data-cf="${V2_MY}"` : ''} data-key="kpi:${escapeHtml(key)}">
     ${head}
     <div class="v2-kpi-vals">
-      <button class="v2-kpi-btn v2-t-${_sevTotal(ralV)}" onclick="openModal('${_q(key)}',true,'${_q('RAL · ' + label)}')">
+      <button class="v2-kpi-btn v2-t-${_sevTotal(ralV)}" onclick="openModal('${_q(key)}',true,'${_q('RAL · ' + label)}')" aria-label="RAL ${escapeHtml(label)}: ${ralV}">
         <span class="v2-kpi-type">RAL</span><span class="animate-num" data-val="${ralV}">${ralV}</span>
       </button>
-      <button class="v2-kpi-btn v2-t-${_sevTotal(recV)}" onclick="openModal('${_q(key)}',false,'${_q('REC · ' + label)}')">
+      <button class="v2-kpi-btn v2-t-${_sevTotal(recV)}" onclick="openModal('${_q(key)}',false,'${_q('REC · ' + label)}')" aria-label="REC ${escapeHtml(label)}: ${recV}">
         <span class="v2-kpi-type">REC</span><span class="animate-num" data-val="${recV}">${recV}</span>
       </button>
-      <button class="v2-kpi-btn v2-kpi-qual" onclick="openModal('${_q(QKEY + key)}',true,'${_q(listTitle('qual', key))}')" title="RALs de Qualidade">
+      <button class="v2-kpi-btn v2-kpi-qual" onclick="openModal('${_q(QKEY + key)}',true,'${_q(listTitle('qual', key))}')" title="RALs de Qualidade" aria-label="RAL de Qualidade ${escapeHtml(label)}: ${qualCount(key)}">
         <span class="v2-kpi-type">QUALID.</span><span class="animate-num" data-val="${qualCount(key)}">${qualCount(key)}</span>
       </button>
     </div>
@@ -393,7 +393,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v67';
+const SIR_APP_VERSION = 'v68';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */

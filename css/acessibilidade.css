@@ -1,0 +1,52 @@
+/* ══════════════════════════════════════════════════════════════
+   v68 — Acessibilidade e toque (boa prática do React Native:
+   área de toque de pelo menos 44 px e nome para o leitor de tela)
+   - Só em telas de toque (celular/tablet): áreas de toque ≥ 44 px.
+     Onde aumentar o botão mudaria o desenho, a área de toque cresce
+     por fora (invisível), sem encostar nos vizinhos.
+   - Em qualquer aparelho: contorno visível ao navegar pelo teclado
+     e menos movimento para quem pediu isso no sistema.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (pointer: coarse) {
+  /* Abrir/fechar card do CF e "Minhas áreas" (antes 20 px e 15 px de altura) */
+  .v2-tile-head { min-height: 44px; align-items: center; }
+  .v2-kpi-toggle { min-height: 44px; display: flex; align-items: center; margin-bottom: 0; }
+
+  /* Menu, escopo e botões de gráfico */
+  .app-menu-btn { width: 44px !important; height: 44px !important; }
+  .hdr-scope-opt { min-height: 44px; }
+  .v2-charts-toggle { min-width: 44px; min-height: 44px; }
+
+  /* Linha do Tempo: RAL/REC, períodos e lista de áreas */
+  .tl-seg button { min-height: 44px; min-width: 44px; }
+  .tl-area { min-height: 44px; }
+
+  /* Avisos */
+  .stale-btn { min-height: 44px; }
+  .stale-x, .toast-close { position: relative; }
+  .stale-x::after, .toast-close::after { content: ''; position: absolute; inset: -8px; }
+
+  /* Rodapé: ícones (30 px) e "Fonte" — cresce por fora, para não aumentar o rodapé */
+  .page-footer .btn-settings.btn-icon { min-width: 44px; position: relative; }
+  .page-footer .btn-settings.btn-icon::after { content: ''; position: absolute; inset: -7px 0; }
+  .data-source { position: relative; }
+  .data-source::after { content: ''; position: absolute; inset: -15px 0; }
+
+  /* "Novas Entradas" (abre/fecha a lista) */
+  .inbox-title-wrap { min-height: 44px; }
+}
+
+/* Contorno ao navegar pelo teclado (Tab) — não aparece no toque nem no clique */
+:is(button, a[href], select, input, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+/* Menos movimento quando o sistema pede (Acessibilidade → Reduzir movimento) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+}

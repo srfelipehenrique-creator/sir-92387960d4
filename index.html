@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="css/visual-3d.css">
 <link rel="stylesheet" href="css/menu.css">
 <link rel="stylesheet" href="css/pressable.css">
+<link rel="stylesheet" href="css/acessibilidade.css">
 <script src="js/theme-mode.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -64,7 +65,7 @@
 </header>
 
 <!-- MENU LATERAL — todas as ferramentas (os botões continuam os mesmos, só mudaram de lugar) -->
-<div class="app-menu-backdrop" id="app-menu-backdrop" onclick="closeAppMenu()"></div>
+<div class="app-menu-backdrop" id="app-menu-backdrop" onclick="closeAppMenu()" aria-hidden="true"></div>
 <nav class="app-menu" id="app-menu" aria-label="Menu" aria-hidden="true" inert>
   <div class="app-menu-head">
     <span class="app-menu-title">Menu</span>
@@ -107,7 +108,7 @@
            aria-controls="inbox-body-wrap" aria-expanded="false" title="Expandir / recolher"
            onclick="toggleInboxBody(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInboxBody(true);}">
         <div class="inbox-title">Novas Entradas</div>
-        <div class="inbox-badge" id="inbox-count">0</div>
+        <div class="inbox-badge" id="inbox-count" aria-live="polite" aria-atomic="true">0</div>
         <svg class="inbox-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">

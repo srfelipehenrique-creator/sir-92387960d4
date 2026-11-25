@@ -6,6 +6,8 @@ const makeIdentity = (tk, i) =>
   `${tk}::${normTicket(i.ticket)}::${normalizeStr(i.cfOrigem)}::${normalizeStr(i.designacao)}::${normalizeStr(i.extra)}`;
 
 function animateValue(el, start, end, dur) {
+  /* v68: sem animação quando o sistema pede "reduzir movimento" */
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { el.innerHTML = end; return; }
   let ts = null;
   const step = t => {
     if (!ts) ts = t;

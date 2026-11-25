@@ -171,3 +171,7 @@ function closeColetor() {
 
 /* O texto "Fonte: …" do rodapé abre esta janela */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#data-source')) openColetor(); });
+/* v68: também abre pelo teclado (Enter ou Espaço), como um botão */
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#data-source')) { e.preventDefault(); openColetor(); }
+});
