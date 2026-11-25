@@ -47,37 +47,76 @@ function openNodeMap(i) {
   window.open(nodeMapUrl(r), '_blank', 'noopener,noreferrer');
 }
 
-/* ── Siglas (v58) ──
-   data/siglas.json: { cols:[sigla, endereco, uf, tipo, nomeFantasia, razaoSocial, predio], dic:{uf,tipo,ng,rs,pr}, rows } */
+/* ── Siglas (v58; v69: em segundo plano) ──
+   O arquivo (data/siglas.json, ~11 MB), o índice e a busca ficam num
+   trabalhador em segundo plano (js/siglas-worker.js), para a janela não
+   travar. A tela guarda só os itens que está mostrando (para Copiar e Mapa).
+   Sem esse recurso no aparelho, faz tudo aqui mesmo (js/siglas-busca.js). */
 const SIGLAS_URL = 'data/siglas.json';
-let _sg = { rows: null, dic: null, idx: null, loading: null, err: false };
+let _sg = { pronto: false, total: 0, loading: null, err: false, itens: new Map(), worker: null, seq: 0, pend: new Map(), local: false };
+function _sgWorker() {
+  if (_sg.worker || _sg.local) return _sg.worker;
+  try {
+    const w = new Worker('js/siglas-worker.js');
+    w.onmessage = e => {
+      const m = e.data || {};
+      if (m.tipo === 'resultado') { const f = _sg.pend.get(m.id); if (f) { _sg.pend.delete(m.id); f(m); } }
+      else if (m.tipo === 'pronto' || m.tipo === 'erro') { const f = _sg.pend.get('load'); if (f) { _sg.pend.delete('load'); f(m); } }
+    };
+    w.onerror = () => { _sgUsarLocal(); };
+    _sg.worker = w;
+  } catch (e) { _sg.local = true; }
+  return _sg.worker;
+}
+/* Sem trabalhador (ou ele falhou): usa a página mesmo */
+function _sgUsarLocal() {
+  if (_sg.worker) { try { _sg.worker.terminate(); } catch (e) {} }
+  _sg.worker = null; _sg.local = true;
+  const f = _sg.pend.get('load'); if (f) { _sg.pend.delete('load'); f({ tipo: 'local' }); }
+  _sg.pend.forEach((fn, id) => fn({ tipo: 'resultado', id, res: { exact: [], starts: [], has: [], text: [] }, itens: {} }));
+  _sg.pend.clear();
+}
 function _sgLoad() {
-  if (_sg.rows) return Promise.resolve();
+  if (_sg.pronto) return Promise.resolve();
   if (_sg.loading) return _sg.loading;
   _sg.err = false;
-  _sg.loading = fetch(SIGLAS_URL).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(j => { _sg.rows = j.rows; _sg.dic = j.dic; _sg.idx = null; })
+  const url = new URL(SIGLAS_URL, location.href).href;
+  const local = () => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(j => { SiglasBusca.carregar(j); _sg.total = SiglasBusca.total(); _sg.pronto = true; });
+  const w = _sgWorker();
+  _sg.loading = (w
+    ? new Promise(res => { _sg.pend.set('load', res); w.postMessage({ tipo: 'carregar', url }); })
+        .then(m => {
+          if (m.tipo === 'pronto') { _sg.total = m.total; _sg.pronto = true; return; }
+          if (m.tipo === 'local') return local();
+          throw new Error(m.msg || 'erro');
+        })
+    : local())
     .catch(() => { _sg.err = true; })
     .finally(() => { _sg.loading = null; });
   return _sg.loading;
 }
-function sgItem(i) {
-  const r = _sg.rows[i], d = _sg.dic;
-  return { sigla: r[0], end: r[1], uf: d.uf[r[2]], tipo: d.tipo[r[3]], fantasia: d.ng[r[4]], razao: d.rs[r[5]], predio: d.pr[r[6]] };
+/* Busca as siglas → Promise de { exact, starts, has, text } (e guarda os itens a mostrar) */
+function _sgBuscar(q, limite) {
+  const vazio = { exact: [], starts: [], has: [], text: [] };
+  if (!_sg.pronto || !String(q).trim()) return Promise.resolve(vazio);
+  const guardar = (res, itens) => { _sg.itens = new Map(Object.entries(itens).map(([k, v]) => [+k, v])); return res; };
+  if (_sg.local || !_sg.worker) {
+    const res = SiglasBusca.buscar(q), itens = {};
+    for (const t of Object.keys(res)) res[t].slice(0, limite).forEach(i => { itens[i] = SiglasBusca.item(i); });
+    return Promise.resolve(guardar(res, itens));
+  }
+  const id = ++_sg.seq;
+  return new Promise(res => { _sg.pend.set(id, res); _sg.worker.postMessage({ tipo: 'buscar', id, q, limite }); })
+    .then(m => guardar(m.res, m.itens));
 }
+function sgItem(i) { return _sg.itens.get(i) || null; }
 const _sgIsMovel = it => /SITE DA M[OÓ]VEL/i.test(it.tipo || '');
-const _sgCompact = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-function _sgIndex() {
-  if (_sg.idx) return _sg.idx;
-  _sg.idx = _sg.rows.map(r => ({ c: _sgCompact(r[0]), n: _ndNorm(r[0]),
-    a: _ndNorm([r[0], r[1], _sg.dic.ng[r[4]], _sg.dic.rs[r[5]], _sg.dic.pr[r[6]]].join(' ')) }));
-  return _sg.idx;
-}
 function sgMapUrl(it) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${it.end}${it.uf ? ' - ' + it.uf : ''}, Brasil`);
 }
 function openSiglaMap(i) {
-  const it = _sg.rows && _sg.rows[i] ? sgItem(i) : null;
+  const it = sgItem(i);
   if (!it || !it.end) { if (typeof showActionToast === 'function') showActionToast('Sem endereço para abrir no mapa', 'error'); return; }
   window.open(sgMapUrl(it), '_blank', 'noopener,noreferrer');
 }
@@ -108,8 +147,8 @@ async function _ndCopyText(text, btn, okMsg) {
     showActionToast(ok ? okMsg : 'Não foi possível copiar', ok ? 'success' : 'error');
 }
 function copySiglaInfo(i, btn) {
-  if (!_sg.rows || !_sg.rows[i]) return;
   const it = sgItem(i);
+  if (!it) return;
   _ndCopyText(formatSiglaMsg(it), btn, `Sigla ${it.sigla || ''} copiada — cole na conversa`);
 }
 
@@ -185,7 +224,7 @@ function openNodes() {
   renderNodeResults();
   setTimeout(() => ov.querySelector('#nodes-q').focus(), 60);
   syncNodes();
-  if (!_sg.rows) _sgLoad().then(renderNodeResults);
+  if (!_sg.pronto) _sgLoad().then(renderNodeResults);
 }
 function closeNodes() { document.getElementById('nodes-modal')?.classList.remove('active'); }
 
@@ -196,7 +235,7 @@ function _ndInfo() {
     const d = _nodes.at ? new Date(_nodes.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '';
     p.push(`${_nodes.rows.length.toLocaleString('pt-BR')} nodes na base${d ? ' (atualizada em ' + d + ')' : ''}`);
   }
-  if (_sg.rows) p.push(`${_sg.rows.length.toLocaleString('pt-BR')} siglas`);
+  if (_sg.pronto) p.push(`${_sg.total.toLocaleString('pt-BR')} siglas`);
   else if (_sg.loading) p.push('carregando siglas…');
   else if (_sg.err) p.push('siglas indisponíveis');
   return p.join(' · ');
@@ -221,24 +260,8 @@ function searchNodes(q) {
   const byName = (a, b) => idx[a].n.localeCompare(idx[b].n);
   return [...exact, ...starts.sort(byName), ...has.sort(byName), ...addr.sort(byName)];
 }
-/* Siglas: igual ao antigo buscador — "ARS RP", "ARSRP" e "ars-rp" acham a mesma sigla */
-function searchSiglas(q) {
-  if (!_sg.rows) return { exact: [], starts: [], has: [], text: [] };
-  const qn = _ndNorm(q), qc = _sgCompact(q);
-  const out = { exact: [], starts: [], has: [], text: [] };
-  if (!qn) return out;
-  _sgIndex().forEach((x, i) => {
-    if (qc && x.c === qc) out.exact.push(i);
-    else if (qc && x.c && x.c.startsWith(qc)) out.starts.push(i);
-    else if (qc && x.c && x.c.includes(qc)) out.has.push(i);
-    else if (qn.length >= 3 && x.a.includes(qn)) out.text.push(i);
-  });
-  const by = (a, b) => _sg.idx[a].n.localeCompare(_sg.idx[b].n);
-  out.starts.sort(by); out.has.sort(by); out.text.sort(by);
-  return out;
-}
 /* Junta nodes e siglas na mesma lista, do mais parecido para o menos */
-function searchAll(q) {
+function searchAll(q, sg) {   /* sg: resultado de _sgBuscar */
   const qn = _ndNorm(q);
   const tiers = { exact: [], starts: [], has: [], text: [] };
   if (_nodes.rows.length) {
@@ -248,15 +271,25 @@ function searchAll(q) {
       tiers[n === qn ? 'exact' : n.startsWith(qn) ? 'starts' : n.includes(qn) ? 'has' : 'text'].push({ k: 'n', i });
     });
   }
-  const sg = searchSiglas(q);
+  sg = sg || { exact: [], starts: [], has: [], text: [] };
   for (const t of Object.keys(tiers)) sg[t].forEach(i => tiers[t].push({ k: 's', i }));
   return [...tiers.exact, ...tiers.starts, ...tiers.has, ...tiers.text];
 }
 
+let _ndRenderSeq = 0;
 function renderNodeResults() {
   const box = document.getElementById('nodes-results');
   if (!box) return;
   const q = document.getElementById('nodes-q').value;
+  const seq = ++_ndRenderSeq;
+  if (q.trim()) {
+    /* v69: siglas buscadas em segundo plano; só desenha a resposta da última busca digitada */
+    _sgBuscar(q, NODES_MAX_RESULTS).then(sg => { if (seq === _ndRenderSeq) _ndDrawResults(box, q, sg); });
+    return;
+  }
+  _ndDrawResults(box, q, null);
+}
+function _ndDrawResults(box, q, sg) {
   const nodesMsg = _nodes.rows.length ? '' : (_ndReady()
       ? 'Base de nodes ainda não carregada. Toque em <b>Atualizar base</b> e escolha a planilha <b>.xlsx</b> de endereços.'
       : 'Nodes: disponível no SIR publicado (site), com a chave de acesso.');
@@ -265,7 +298,7 @@ function renderNodeResults() {
     _ndStatus(_ndInfo());
     return;
   }
-  const res = searchAll(q);
+  const res = searchAll(q, sg);
   const extra = _sg.loading ? ' · carregando siglas…' : (_sg.err ? ' · siglas indisponíveis' : '');
   _ndStatus((res.length ? `${res.length} resultado${res.length > 1 ? 's' : ''}${res.length > NODES_MAX_RESULTS ? ` · mostrando ${NODES_MAX_RESULTS}` : ''}` : 'Nada encontrado') + extra);
   if (!res.length) {

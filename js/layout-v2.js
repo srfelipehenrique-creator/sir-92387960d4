@@ -46,28 +46,11 @@ if (typeof openModal === 'function') {
 /* Guarda a renderização original para o modo clássico */
 const _renderDashboardClassic = renderDashboard;
 
-function _sev(v) {
-  if (v >= 10) return 'crit';
-  if (v >= 6)  return 'warn';
-  if (v >= 1)  return 'ok';
-  return 'zero';
-}
-function _sevTotal(v) {
-  if (v > 49) return 'crit';
-  if (v > 29) return 'warn';
-  return 'ok';
-}
-function _q(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+/* v69: cores e escape ficam nos componentes (js/componentes/celula.js) */
+const _sev = SirUI.sevCF, _sevTotal = SirUI.sevTotal, _q = SirUI.js;
 
 function _v2Cell(tk, cf, val, delta) {
-  const isRal = tk === 'ral';
-  const title = _q(_cfTitle(tk, cf));
-  return `<button class="v2-cell v2-${_sev(val)}" onclick="openModal('${_q(cf)}',${isRal},'${title}')"
-            title="${isRal ? 'RAL' : 'REC'} ${escapeHtml(cf)}" aria-label="${isRal ? 'RAL' : 'REC'} ${escapeHtml(cf)}: ${val} ticket${val === 1 ? '' : 's'}${delta > 0 ? `, mais ${delta} desde a última atualização` : ''}">
-    <span class="v2-cell-lbl">${isRal ? 'RAL' : 'REC'}</span>
-    <span class="v2-cell-val animate-num" data-val="${val}">${val}</span>
-    ${delta > 0 ? `<span class="v2-delta" title="Aumento desde a última atualização">+${delta}</span>` : ''}
-  </button>`;
+  return SirUI.celula({ tipo: tk, cf, valor: val, delta, titulo: _cfTitle(tk, cf) });
 }
 
 /* ── RALs de Qualidade por área ──
@@ -107,12 +90,7 @@ function listTitle(kind, base) {
 }
 
 function _v2QCell(cf) {
-  const n = qualCount(cf);
-  return `<button class="v2-cell v2-qual${n ? '' : ' v2-zero'}" onclick="openModal('${_q(QKEY + cf)}',true,'${_q(listTitle('qual', cf))}')"
-            title="RAL de Qualidade ${escapeHtml(cf)}" aria-label="RAL de Qualidade ${escapeHtml(cf)}: ${n} ticket${n === 1 ? '' : 's'}">
-    <span class="v2-cell-lbl">QUAL</span>
-    <span class="v2-cell-val animate-num" data-val="${n}">${n}</span>
-  </button>`;
+  return SirUI.celulaQual({ cf, valor: qualCount(cf), chave: QKEY + cf, titulo: listTitle('qual', cf) });
 }
 
 function _delta(tk, cf, val) {
@@ -146,11 +124,7 @@ function _v2SumCol(tk, cf) {
 }
 function _v2SumHTML(cf) { return _v2SumCol('ral', cf) + _v2SumCol('rec', cf); }
 
-function _v2CopyBtn() {
-  return `<button type="button" class="v2-sum-copy" data-v2copy title="Copiar resumo para enviar por mensagem" aria-label="Copiar resumo">
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-  </button>`;
-}
+function _v2CopyBtn() { return SirUI.botaoCopiar(); }
 
 /* ── Texto do resumo para WhatsApp (o mesmo que aparece no card) ── */
 function _v2SumLines(tk, cf) {
@@ -207,25 +181,16 @@ function toggleV2Tile(cf) {
   if (open) { box.innerHTML = _v2SumHTML(cf); box.hidden = false; } else { box.hidden = true; box.innerHTML = ''; }
 }
 
+/* v69: só reúne os dados (props) e chama o componente (js/componentes/card-cf.js) */
 function _v2Tile(cf, ralV, recV, mine) {
-  const name = CF_NAMES[cf] || '';
-  const open = _v2OpenSet().has(cf);
-  return `<div class="v2-tile v2-exp${mine ? ' v2-mine' : ''}${open ? ' v2-open' : ''}" data-v2card data-cf="${escapeHtml(cf)}" data-key="cf:${escapeHtml(cf)}">
-    <div class="v2-card-top">
-      <button type="button" class="v2-tile-head" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">
-        <span class="v2-tile-cf">${escapeHtml(cf)}</span>
-        <span class="v2-tile-name">${escapeHtml(name)}</span>
-        <i class="v2-chev" aria-hidden="true"></i>
-      </button>
-      ${_v2CopyBtn()}
-    </div>
-    <div class="v2-tile-cells">
-      ${_v2Cell('ral', cf, ralV, _delta('ral', cf, ralV))}
-      ${_v2Cell('rec', cf, recV, _delta('rec', cf, recV))}
-      ${_v2QCell(cf)}
-    </div>
-    <div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(cf) : ''}</div>
-  </div>`;
+  const aberto = _v2OpenSet().has(cf);
+  return SirUI.cardCF({
+    cf, nome: CF_NAMES[cf] || '', minha: !!mine, aberto,
+    resumoHTML: aberto ? _v2SumHTML(cf) : '',
+    ral:  { valor: ralV, delta: _delta('ral', cf, ralV), titulo: _cfTitle('ral', cf) },
+    rec:  { valor: recV, delta: _delta('rec', cf, recV), titulo: _cfTitle('rec', cf) },
+    qual: { valor: qualCount(cf), chave: QKEY + cf, titulo: listTitle('qual', cf) },
+  });
 }
 document.addEventListener('click', e => {
   if (!e.target.closest) return;
@@ -235,30 +200,17 @@ document.addEventListener('click', e => {
   if (h) toggleV2Tile(h.closest('[data-v2card]').dataset.cf);
 });
 
+/* v69: só reúne os dados (props) e chama o componente (js/componentes/card-total.js) */
 function _v2Kpi(label, key, ralV, recV, accent) {
-  const exp = key === V2_MY;   /* só o card "Minhas áreas" expande */
-  const open = exp && _v2OpenSet().has(V2_MY);
-  const head = exp
-    ? `<div class="v2-card-top">
-         <button type="button" class="v2-kpi-lbl v2-kpi-toggle" data-v2toggle aria-expanded="${open}" title="Toque para ${open ? 'fechar' : 'ver'} o resumo por classificação">${escapeHtml(label)}<i class="v2-chev" aria-hidden="true"></i></button>
-         ${_v2CopyBtn()}
-       </div>`
-    : `<div class="v2-kpi-lbl">${escapeHtml(label)}</div>`;
-  return `<div class="v2-kpi${accent ? ' v2-kpi-accent' : ''}${exp ? ' v2-exp' : ''}${open ? ' v2-open' : ''}"${exp ? ` data-v2card data-cf="${V2_MY}"` : ''} data-key="kpi:${escapeHtml(key)}">
-    ${head}
-    <div class="v2-kpi-vals">
-      <button class="v2-kpi-btn v2-t-${_sevTotal(ralV)}" onclick="openModal('${_q(key)}',true,'${_q('RAL · ' + label)}')" aria-label="RAL ${escapeHtml(label)}: ${ralV}">
-        <span class="v2-kpi-type">RAL</span><span class="animate-num" data-val="${ralV}">${ralV}</span>
-      </button>
-      <button class="v2-kpi-btn v2-t-${_sevTotal(recV)}" onclick="openModal('${_q(key)}',false,'${_q('REC · ' + label)}')" aria-label="REC ${escapeHtml(label)}: ${recV}">
-        <span class="v2-kpi-type">REC</span><span class="animate-num" data-val="${recV}">${recV}</span>
-      </button>
-      <button class="v2-kpi-btn v2-kpi-qual" onclick="openModal('${_q(QKEY + key)}',true,'${_q(listTitle('qual', key))}')" title="RALs de Qualidade" aria-label="RAL de Qualidade ${escapeHtml(label)}: ${qualCount(key)}">
-        <span class="v2-kpi-type">QUALID.</span><span class="animate-num" data-val="${qualCount(key)}">${qualCount(key)}</span>
-      </button>
-    </div>
-    ${exp ? `<div class="v2-sum"${open ? '' : ' hidden'}>${open ? _v2SumHTML(V2_MY) : ''}</div>` : ''}
-  </div>`;
+  const expansivel = key === V2_MY;   /* só o card "Minhas áreas" expande */
+  const aberto = expansivel && _v2OpenSet().has(V2_MY);
+  return SirUI.cardTotal({
+    rotulo: label, chave: key, destaque: !!accent, expansivel, aberto, idCard: V2_MY,
+    resumoHTML: aberto ? _v2SumHTML(V2_MY) : '',
+    ral:  { valor: ralV, titulo: 'RAL · ' + label },
+    rec:  { valor: recV, titulo: 'REC · ' + label },
+    qual: { valor: qualCount(key), chave: QKEY + key, titulo: listTitle('qual', key) },
+  });
 }
 
 function _buildMyAreasModalData(areas) {
@@ -304,17 +256,11 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
     ).join('');
     /* Cada grupo traz o seu gráfico (RAL e REC das áreas do grupo) e o botão de encolher */
     const hasCharts = typeof _v2RegionChartsShell === 'function';
-    regions += `<section class="v2-region" data-region="${escapeHtml(rn)}" data-key="reg:${escapeHtml(rn)}">
-      <div class="v2-region-head">
-        <span class="v2-region-name">${escapeHtml(rn)}</span>
-        <span class="v2-region-count">${cfKeys.length} CF${cfKeys.length > 1 ? 's' : ''}</span>
-        ${hasCharts ? _v2RegionToggleBtn(rn) : ''}
-      </div>
-      <div class="v2-region-body">
-        <div class="v2-tiles">${tiles}</div>
-        ${hasCharts ? _v2RegionChartsShell(rn) : ''}
-      </div>
-    </section>`;
+    regions += SirUI.grupo({
+      nome: rn, qtdCFs: cfKeys.length, cardsHTML: tiles,
+      botaoGraficoHTML: hasCharts ? _v2RegionToggleBtn(rn) : '',
+      graficosHTML: hasCharts ? _v2RegionChartsShell(rn) : '',
+    });
   }
 
   /* v67: na primeira vez desenha tudo; depois só altera o que mudou (js/morph.js).
@@ -393,7 +339,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v68';
+const SIR_APP_VERSION = 'v69';
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */

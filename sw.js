@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v68';
+const CACHE_NAME   = 'sir-v69';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -46,6 +46,10 @@ const SHELL_ASSETS = [
   'js/historico.js',
   'js/timer.js',
   'js/data-loader.js',
+  'js/componentes/celula.js',
+  'js/componentes/card-cf.js',
+  'js/componentes/card-total.js',
+  'js/componentes/grupo.js',
   'js/layout-v2.js',
   'js/charts-v2.js',
   'js/timeline.js',
@@ -59,6 +63,8 @@ const SHELL_ASSETS = [
   'js/fit-tela.js',
   'js/stale.js',
   'js/siglas.js',
+  'js/siglas-busca.js',
+  'js/siglas-worker.js',
   'js/nodes.js',
   'js/coletor-ui.js',
   'js/personalizacao.js',
