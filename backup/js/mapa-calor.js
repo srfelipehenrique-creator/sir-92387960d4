@@ -10,6 +10,8 @@
    - Fica guardado no seu servidor por 60 dias (rota /mapa), igual para o
      PC, o celular e quem tiver a chave do SIR. Sem servidor/chave, guarda
      só neste aparelho.
+   - v72: a busca usa o Google pelo servidor (chave escondida lá) e, sem
+     chave ou sem resultado, o OpenStreetMap.
    - Computador: abaixo de "Novas Entradas", à direita.
      Celular/tablet: logo abaixo de "Novas Entradas".
    ══════════════════════════════════════════════════════════════ */
@@ -151,34 +153,51 @@ function _mpJanela() {
   return ov;
 }
 
-/* Busca no OpenStreetMap (Nominatim) — 1 busca por clique, como pede o serviço */
+/* Busca do endereço (v72):
+   1º Google, pelo seu servidor (a chave fica escondida lá; limite diário dentro da cota grátis);
+   2º OpenStreetMap (Nominatim), se não houver chave, passar do limite ou não achar nada. */
+async function _mpGoogle(q) {
+  if (!_mpServidor()) return null;
+  try {
+    const r = await fetch(_pushUrl() + '/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: _pushKey(), q }) });
+    const j = await r.json();
+    return (j.fonte === 'google' && j.resultados && j.resultados.length) ? j.resultados : null;
+  } catch (e) { return null; }
+}
+async function _mpOsm(q) {
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=br&accept-language=pt-BR'
+    + '&viewbox=' + MAPA_VIEWBOX + '&q=' + encodeURIComponent(q);
+  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error(r.status);
+  return (await r.json()).map(x => ({ lat: +x.lat, lon: +x.lon, display_name: x.display_name }));
+}
+const _MP_PRECISAO = { ROOFTOP: 'número exato', RANGE_INTERPOLATED: 'número aproximado', GEOMETRIC_CENTER: 'centro da rua/região', APPROXIMATE: 'aproximado' };
 async function _mpBuscar() {
   const ov = _mpJanela(), q = ov.querySelector('#mpe-q').value.trim(), box = ov.querySelector('.mpe-res');
   if (q.length < 4) { box.innerHTML = '<div class="mpe-dica">Digite um endereço mais completo.</div>'; return; }
   box.innerHTML = '<div class="mpe-dica">Procurando…</div>';
-  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=br&accept-language=pt-BR'
-    + '&viewbox=' + MAPA_VIEWBOX + '&q=' + encodeURIComponent(q);
+  let lista = null, fonte = 'Google';
   try {
-    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!r.ok) throw new Error(r.status);
-    const lista = await r.json();
-    if (!lista.length) {
-      box.innerHTML = '<div class="mpe-dica">Nada encontrado. Tente sem o complemento (sala, loja) ou com o bairro e a cidade.</div>';
-      return;
-    }
-    box.innerHTML = lista.map((x, i) => `<button type="button" class="mpe-op" data-i="${i}">
-        <span aria-hidden="true">📍</span><span>${escapeHtml(x.display_name)}</span></button>`).join('')
-      + '<div class="mpe-dica">Escolha o resultado certo. Depois, se precisar, arraste o pino para o local exato.</div>';
-    box.querySelectorAll('.mpe-op').forEach(b => b.addEventListener('click', () => {
-      const x = lista[+b.dataset.i];
-      box.querySelectorAll('.mpe-op').forEach(o => o.classList.toggle('on', o === b));
-      _mpAtual.escolhido = { lat: +x.lat, lon: +x.lon, achado: x.display_name };
-      _mpMostrarEscolha();
-    }));
-    if (lista.length === 1) box.querySelector('.mpe-op').click();
+    lista = await _mpGoogle(q);
+    if (!lista) { fonte = 'OpenStreetMap'; lista = await _mpOsm(q); }
   } catch (e) {
     box.innerHTML = '<div class="mpe-dica">Não foi possível buscar agora (sem internet ou serviço de mapas fora do ar). Tente de novo em instantes.</div>';
+    return;
   }
+  if (!lista.length) {
+    box.innerHTML = '<div class="mpe-dica">Nada encontrado. Tente sem o complemento (sala, loja) ou com o bairro e a cidade.</div>';
+    return;
+  }
+  box.innerHTML = lista.map((x, i) => `<button type="button" class="mpe-op" data-i="${i}">
+      <span aria-hidden="true">📍</span><span>${escapeHtml(x.display_name)}${_MP_PRECISAO[x.precisao] ? ` <small class="mpe-prec">· ${_MP_PRECISAO[x.precisao]}</small>` : ''}</span></button>`).join('')
+    + `<div class="mpe-dica">Escolha o resultado certo. Depois, se precisar, arraste o pino para o local exato. <span class="mpe-fonte">Fonte: ${fonte}</span></div>`;
+  box.querySelectorAll('.mpe-op').forEach(b => b.addEventListener('click', () => {
+    const x = lista[+b.dataset.i];
+    box.querySelectorAll('.mpe-op').forEach(o => o.classList.toggle('on', o === b));
+    _mpAtual.escolhido = { lat: +x.lat, lon: +x.lon, achado: x.display_name };
+    _mpMostrarEscolha();
+  }));
+  if (lista.length === 1) box.querySelector('.mpe-op').click();
 }
 
 /* Prévia com pino arrastável */

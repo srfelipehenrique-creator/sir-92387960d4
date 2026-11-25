@@ -889,6 +889,40 @@ export default {
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 
+    /* ── Busca de endereço no Google (v72) ──
+       A chave do Google fica só aqui (segredo GOOGLE_MAPS_KEY do Worker), nunca no site.
+       Limite de GEO_LIMITE_DIA buscas por dia → nunca passa das 10.000 grátis por mês.
+       Sem chave, acima do limite ou com erro: o SIR usa o OpenStreetMap. */
+    if (req.method === 'POST' && url.pathname === '/geocode') {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const q = String(body.q || '').trim().slice(0, 200);
+      if (q.length < 4) return json({ error: 'endereco' }, 400, h);
+      if (!env.GOOGLE_MAPS_KEY) return json({ semChave: true, resultados: [] }, 200, h);
+      const LIM = Number(env.GEO_LIMITE_DIA) || 300;
+      const dia = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);   /* dia de Brasília */
+      const ck = 'geo:' + dia, usados = Number(await env.SIR_KV.get(ck)) || 0;
+      if (usados >= LIM) return json({ limite: true, resultados: [] }, 200, h);
+      await env.SIR_KV.put(ck, String(usados + 1), { expirationTtl: 3 * 86400 });
+      const g = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+      g.searchParams.set('address', q);
+      g.searchParams.set('language', 'pt-BR');
+      g.searchParams.set('region', 'br');
+      g.searchParams.set('components', 'country:BR');
+      g.searchParams.set('bounds', '-23.45,-44.95|-17.85,-39.6');   /* preferência RJ + ES */
+      g.searchParams.set('key', env.GOOGLE_MAPS_KEY);
+      try {
+        const r = await fetch(g.toString());
+        const j = await r.json();
+        if (j.status !== 'OK' && j.status !== 'ZERO_RESULTS') return json({ erro: j.status || 'google', resultados: [] }, 200, h);
+        const resultados = (j.results || []).slice(0, 6).map(x => ({
+          lat: x.geometry.location.lat, lon: x.geometry.location.lng,
+          display_name: x.formatted_address, precisao: x.geometry.location_type || ''
+        }));
+        return json({ fonte: 'google', resultados, usadosHoje: usados + 1, limiteDia: LIM }, 200, h);
+      } catch (e) { return json({ erro: 'google', resultados: [] }, 200, h); }
+    }
+
     /* ── Mapa de calor (v71): endereços de eventos RAL/REC, 60 dias ── */
     if (req.method === 'POST' && url.pathname === '/mapa') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }

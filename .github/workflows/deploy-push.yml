@@ -15,6 +15,7 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
     defaults:
       run:
         working-directory: worker
@@ -50,6 +51,17 @@ jobs:
 
       - name: Publicar
         run: npx wrangler deploy 2>&1 | tee deploy.log
+
+      # v72 — chave do Google (busca de endereços do mapa de calor). Opcional:
+      # cadastre o segredo GOOGLE_MAPS_KEY no GitHub e rode este workflow de novo.
+      - name: Chave do Google (busca de endereço)
+        run: |
+          if [ -n "$GOOGLE_MAPS_KEY" ]; then
+            printf '%s' "$GOOGLE_MAPS_KEY" | npx wrangler secret put GOOGLE_MAPS_KEY
+            echo "### Busca de endereço: Google ativado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "::notice title=Google::Sem o segredo GOOGLE_MAPS_KEY — a busca de endereço usa o OpenStreetMap"
+          fi
 
       - name: Endereço do servidor
         run: |

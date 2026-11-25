@@ -339,7 +339,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v71';
+const SIR_APP_VERSION = 'v72';
 /* v70: mesma base de código nas duas versões; a de testes fica na pasta /backup/ */
 const SIR_IS_BACKUP = /\/backup\//.test(location.pathname);
 
