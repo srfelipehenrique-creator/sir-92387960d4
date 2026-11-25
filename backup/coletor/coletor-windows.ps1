@@ -1,5 +1,8 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w5)
+#  Coletor SIR para Windows  (versão w6)
+#  - w6: se a lista de REC vier sem nenhuma tabela (sessão do SIR expirada sem
+#    mostrar a tela de senha), entra de novo e relê, em vez de travar no erro
+#    "esperava 9 colunas, veio 0". O diagnóstico mostra para onde a página manda.
 #  - w5: usa o endereço do SIR 10.53.224.155 (index.cfm?nofoc=yes); se não
 #    responder, tenta o endereço antigo 172.30.130.133.
 #  - w4: na página do link da coluna Ass. lê também as RAL (não só as REC),
@@ -17,7 +20,7 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w5'
+$VERSAO   = 'w6'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $BASES    = @('http://10.53.224.155', 'http://172.30.130.133')   # o 1º que responder é usado
@@ -92,7 +95,13 @@ function Abrir([string]$url, [string]$metodo = 'GET', $campos = $null) {
   try { if ($r.BaseResponse.RequestMessage.RequestUri) { $final = $r.BaseResponse.RequestMessage.RequestUri.AbsoluteUri } } catch {}
   $html = Decodificar $ms.ToArray()
   $q = ([regex]::Matches($html, '(?is)<i?frame\b[^>]*name\s*=\s*["'']?([\w-]+)') | ForEach-Object { $_.Groups[1].Value }) -join ','
-  $script:Trilha += ,('   -> {0} | quadros: {1} | forms: {2} | tabelas: {3} | login: {4}' -f ([Uri]$final).AbsolutePath, $q, ([regex]::Matches($html, '(?i)<form\b')).Count, ([regex]::Matches($html, '(?i)<table\b')).Count, (Eh-Login $html))
+  $nt = ([regex]::Matches($html, '(?i)<table\b')).Count
+  $script:Trilha += ,('   -> {0} | quadros: {1} | forms: {2} | tabelas: {3} | login: {4}' -f ([Uri]$final).AbsolutePath, $q, ([regex]::Matches($html, '(?i)<form\b')).Count, $nt, (Eh-Login $html))
+  if ($nt -eq 0 -and ([Uri]$final).AbsolutePath -eq $REC_PATH) {   # lista de REC sem tabela: registra só pistas (tamanho, redirecionamento, começo do texto)
+    $rd = [regex]::Match($html, '(?is)(?:location(?:\.href)?\s*(?:=|\.replace\(|\.assign\()\s*|http-equiv\s*=\s*["'']?refresh[^>]*url\s*=\s*)["'']?([^"''\s>);]+)')
+    $tx = Texto-Celula $html; if ($tx.Length -gt 120) { $tx = $tx.Substring(0, 120) + '...' }
+    $script:Trilha += ,('      sem tabela | {0} bytes | manda para: {1} | texto: {2}' -f $html.Length, $(if ($rd.Success) { $rd.Groups[1].Value } else { '-' }), $tx)
+  }
   return @{ Html = $html; Url = $final }
 }
 function Juntar([string]$base, [string]$rel) {
@@ -233,9 +242,15 @@ function Entrar($cred) {
 }
 
 # ─────────── Coletas ───────────
-function Coletar-Rec {
+function Coletar-Rec([bool]$repetindo = $false) {
   $p = Abrir ($BASE + $REC_PATH)
   if (Eh-Login $p.Html) { throw 'sessao' }
+  # Sem nenhuma tabela = o SIR derrubou a sessão sem mostrar a tela de senha.
+  # 1ª vez: pede novo login; se repetir logo depois do login, avisa e tenta na próxima.
+  if (-not [regex]::IsMatch($p.Html, '(?i)<table\b')) {
+    if ($repetindo) { throw 'vazio:REC (página sem tabela mesmo depois de entrar de novo)' }
+    throw 'sessao'
+  }
   return Para-Csv (Linhas-Tabela $p.Html) $HEAD_REC 'REC'
 }
 # Desce pelos quadros (primeiro os nomes conhecidos) até achar a tabela de 13 colunas
@@ -415,7 +430,7 @@ function Explicar([string]$e) {
       if ($e -eq 'servidor:codigo') { return 'Este coletor ficou antigo. Abra o painel, vá em Configurações > Dados > Meu coletor e baixe de novo.' }
       return "Não consegui entregar ao seu servidor ($e). A rede pode estar bloqueando workers.dev."
     }
-    default    { return "Não consegui abrir o SIR. Confira se a VPN da Claro está ligada; tento de novo sozinho. ($e)" }
+    default    { return "Não consegui abrir o SIR. Confira se o computador está na rede da Claro (cabo da intranet ou VPN); tento de novo sozinho. ($e)" }
   }
 }
 
@@ -447,7 +462,7 @@ Write-Host '   COLETOR SIR' -ForegroundColor Cyan
 Write-Host '   Leva as RAL e REC do SIR para o seu painel' -ForegroundColor Cyan
 Write-Host '  ==============================================' -ForegroundColor Cyan
 Write-Host ''
-Write-Host '   1. A VPN da Claro precisa estar ligada.'
+Write-Host '   1. O computador precisa estar na rede da Claro (cabo da intranet ou VPN).'
 Write-Host '   2. DEIXE ESTA JANELA ABERTA (pode minimizar).'
 Write-Host '   3. Para desligar o coletor, feche esta janela.'
 Write-Host ''
@@ -465,7 +480,7 @@ while ($true) {
     if (-not $logado) { Entrar $cred; $logado = $true }
     Info 'Lendo RAL e REC no SIR...'
     try { $rec = Coletar-Rec; $ral = Coletar-Ral }
-    catch { if ("$($_.Exception.Message)" -eq 'sessao') { $logado = $false; Entrar $cred; $logado = $true; $rec = Coletar-Rec; $ral = Coletar-Ral } else { throw } }
+    catch { if ("$($_.Exception.Message)" -eq 'sessao') { $logado = $false; Entrar $cred; $logado = $true; $rec = Coletar-Rec $true; $ral = Coletar-Ral } else { throw } }
     $diag.ral = $ral.N; $diag.rec = $rec.N; $diag.associadas = $script:DiagAss
     Info "Enviando ao seu servidor (RAL $($ral.N) · REC $($rec.N))..."
     $j = Enviar $ral.Csv $rec.Csv
@@ -477,7 +492,7 @@ while ($true) {
     $falhas++; $diag.erro = $msg; $diag.trilha = $script:Trilha
     Erro (Explicar $msg)
     if ($msg -eq 'login') { $logado = $false; $cred = Ler-Login $true }
-    elseif ($msg -like 'sessao*') { $logado = $false }
+    elseif ($msg -notlike 'servidor*') { $logado = $false }    # qualquer falha de leitura: entra de novo no SIR na próxima tentativa
     try { ($diag | ConvertTo-Json) | Set-Content -Path $ARQ_DIAG -Encoding UTF8; Info "Diagnóstico salvo em $ARQ_DIAG (sem dados de tickets nem senha)" } catch {}
   }
   if ($env:SIR_UMA_VEZ) { break }            # só para testes
