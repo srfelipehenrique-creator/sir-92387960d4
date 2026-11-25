@@ -18,6 +18,7 @@
 
 const MAPA_DIAS = 60;
 const MAPA_POLL_MS = 120000;
+const MAPA_CALOR_MAX = 5;   /* v75: com 5 ou mais eventos no mesmo local o calor fica vermelho completo */
 const MAPA_LIBS = {
   css:  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   js:   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -279,8 +280,9 @@ function _mpAplicarTema() {
   const esc = _mpEscuro();
   document.querySelectorAll('.mp-map, .mpe-prev-map').forEach(el => el.classList.toggle('mp-escuro', esc));
 }
-function _mpIcone(tk) {
-  return L.divIcon({ className: 'mp-pin-wrap', html: `<span class="mp-pin mp-pin-${tk}"></span>`, iconSize: [22, 30], iconAnchor: [11, 29], popupAnchor: [0, -26] });
+function _mpIcone(tk, n) {
+  return L.divIcon({ className: 'mp-pin-wrap', iconSize: [22, 30], iconAnchor: [11, 29], popupAnchor: [0, -26],
+    html: `<span class="mp-pin mp-pin-${tk}"></span>${n > 1 ? `<b class="mp-pin-n">${n}</b>` : ''}` });
 }
 
 /* ── Painel do mapa ── */
@@ -293,12 +295,13 @@ function _mpPainelHTML() {
       <div class="mp-seg" data-mp="periodo" role="group" aria-label="Período">
         <button type="button" data-v="1">Hoje</button><button type="button" data-v="7">7 dias</button><button type="button" data-v="30">30 dias</button><button type="button" data-v="60">60 dias</button>
       </div>
-      <div class="mp-seg" data-mp="tipo" role="group" aria-label="Tipo">
-        <button type="button" data-v="ral">RAL</button><button type="button" data-v="rec">REC</button><button type="button" data-v="ambos">Ambos</button>
-      </div>
     </div>
     <div class="mp-map"><div class="mp-vazio">Carregando mapa…</div></div>
-    <div class="mp-rodape"><span class="mp-leg"><i class="mp-pin mp-pin-ral"></i>RAL <i class="mp-pin mp-pin-rec"></i>REC</span><span class="mp-info"></span></div>`;
+    <div class="mp-rodape">
+      <span class="mp-leg"><i class="mp-pin mp-pin-ral"></i>RAL <i class="mp-pin mp-pin-rec"></i>REC <i class="mp-pin mp-pin-mix"></i>RAL+REC</span>
+      <span class="mp-escala" title="Cor do calor pela quantidade de eventos no mesmo local">1<i></i>${MAPA_CALOR_MAX}+</span>
+      <span class="mp-info"></span>
+    </div>`;
 }
 function _mpPainel() {
   let sec = document.getElementById('mapa-calor');
@@ -320,28 +323,27 @@ function _mpPainel() {
   sec.addEventListener('click', e => {
     const b = e.target.closest('.mp-seg button'); if (!b) return;
     const grupo = b.parentNode.dataset.mp;
-    SirStore.set(grupo === 'periodo' ? 'mapaPeriodo' : 'mapaTipo', b.dataset.v);
+    if (grupo === 'periodo') SirStore.set('mapaPeriodo', b.dataset.v);
     _mpDesenhar(true);
   });
   return sec;
 }
 
 function _mpFiltrados() {
-  const dias = +SirStore.get('mapaPeriodo') || 60, tipo = SirStore.get('mapaTipo');
+  const dias = +SirStore.get('mapaPeriodo') || 60;   /* v75: RAL e REC sempre juntos no mesmo mapa */
   let desde;
   if (dias === 1) { const d = new Date(); d.setHours(0, 0, 0, 0); desde = d.getTime(); }   /* "Hoje" = desde 00h */
   else desde = Date.now() - dias * 86400000;
   return Object.entries(_mp.itens)
-    .filter(([, it]) => (it.dt || it.at || 0) >= desde && (tipo === 'ambos' || it.tk === tipo))
+    .filter(([, it]) => (it.dt || it.at || 0) >= desde)
     .map(([id, it]) => ({ id, ...it }));
 }
 
 let _mpUltimaChave = '';
 async function _mpDesenhar(ajustarVista) {
   const sec = _mpPainel(); if (!sec) return;
-  const per = SirStore.get('mapaPeriodo'), tipo = SirStore.get('mapaTipo');
+  const per = SirStore.get('mapaPeriodo');
   sec.querySelectorAll('[data-mp="periodo"] button').forEach(b => b.classList.toggle('on', b.dataset.v === per));
-  sec.querySelectorAll('[data-mp="tipo"] button').forEach(b => b.classList.toggle('on', b.dataset.v === tipo));
   const lista = _mpFiltrados();
   const nRal = lista.filter(x => x.tk === 'ral').length, nRec = lista.length - nRal;
   sec.querySelector('.mp-qtd').textContent = `${lista.length} evento${lista.length === 1 ? '' : 's'}`;
@@ -358,32 +360,55 @@ async function _mpDesenhar(ajustarVista) {
     _mp.mapa.on('mouseout', () => { if (!sec.classList.contains('mp-full')) _mp.mapa.scrollWheelZoom.disable(); });
     _mp.tiles = _mpTiles().addTo(_mp.mapa);
     _mpAplicarTema();
-    _mp.calor = L.heatLayer([], { radius: 28, blur: 22, maxZoom: 15, minOpacity: 0.35,
-      gradient: { 0.2: '#3b82f6', 0.45: '#22d3ee', 0.65: '#facc15', 0.85: '#f97316', 1: '#ef4444' } }).addTo(_mp.mapa);
+    /* v75: círculo menor e claro; vai até o vermelho completo com MAPA_CALOR_MAX eventos no mesmo local.
+       maxZoom 0 = a mesma força em qualquer zoom (o plugin enfraquece o calor ao afastar). */
+    _mp.calor = L.heatLayer([], { radius: 16, blur: 12, maxZoom: 0, max: MAPA_CALOR_MAX, minOpacity: 0.18,
+      gradient: { 0.15: '#fef3c7', 0.35: '#fde68a', 0.55: '#fbbf24', 0.75: '#f97316', 0.9: '#ef4444', 1: '#dc2626' } }).addTo(_mp.mapa);
     _mp.pinos = L.layerGroup().addTo(_mp.mapa);
     new ResizeObserver(() => _mp.mapa && _mp.mapa.invalidateSize()).observe(el);
   }
-  _mp.calor.setLatLngs(lista.map(x => [x.lat, x.lon, 1]));
+  /* Eventos no mesmo local (até ~40 m) viram um ponto só: o calor soma e o pino mostra a quantidade */
+  const grupos = _mpAgrupar(lista);
+  _mp.calor.setLatLngs(grupos.map(g => [g.lat, g.lon, g.itens.length]));
   _mp.pinos.clearLayers();
-  lista.forEach(x => {
-    const m = L.marker([x.lat, x.lon], { icon: _mpIcone(x.tk), title: `${x.tk.toUpperCase()} ${x.ticket}`, keyboard: true });
-    m.bindPopup(_mpPopupHTML(x), { maxWidth: 280 });
-    m._mpId = x.id;
+  grupos.forEach(g => {
+    const tipos = new Set(g.itens.map(x => x.tk)), tk = tipos.size > 1 ? 'mix' : [...tipos][0];
+    const m = L.marker([g.lat, g.lon], { icon: _mpIcone(tk, g.itens.length), keyboard: true,
+      title: g.itens.length > 1 ? `${g.itens.length} eventos neste local` : `${g.itens[0].tk.toUpperCase()} ${g.itens[0].ticket}` });
+    m.bindPopup(_mpPopupHTML(g), { maxWidth: 300 });
+    m._mpIds = g.itens.map(x => x.id);
     _mp.pinos.addLayer(m);
   });
-  const chave = per + tipo + lista.length;
+  const chave = per + lista.length;
   if ((ajustarVista || chave !== _mpUltimaChave) && lista.length) {
     const b = L.latLngBounds(lista.map(x => [x.lat, x.lon]));
     _mp.mapa.fitBounds(b.pad(0.25), { maxZoom: 15 });
   }
   _mpUltimaChave = chave;
 }
-function _mpPopupHTML(x) {
+/* Agrupa eventos a até ~40 m um do outro (mesmo prédio/esquina) */
+function _mpAgrupar(lista) {
+  const grupos = [], perto = (a, b) => {
+    const dy = (a.lat - b.lat) * 111320, dx = (a.lon - b.lon) * 111320 * Math.cos(a.lat * Math.PI / 180);
+    return dx * dx + dy * dy <= 40 * 40;
+  };
+  lista.slice().sort((a, b) => (b.dt || 0) - (a.dt || 0)).forEach(x => {
+    const g = grupos.find(g => perto(g, x));
+    if (g) g.itens.push(x); else grupos.push({ lat: x.lat, lon: x.lon, itens: [x] });
+  });
+  return grupos;
+}
+function _mpPopupHTML(g) {
+  const n = g.itens.length, nRal = g.itens.filter(x => x.tk === 'ral').length;
+  const end = g.itens[0].end || g.itens[0].achado || '';
   return `<div class="mp-pop">
-    <div class="mp-pop-h"><b class="mp-pop-tk mp-pop-${x.tk}">${x.tk.toUpperCase()}</b> <b>${escapeHtml(x.ticket)}</b>${x.cf ? ` <span class="mp-pop-cf">CF ${escapeHtml(x.cf)}</span>` : ''}</div>
-    ${x.desig ? `<div class="mp-pop-l">${escapeHtml(x.desig)}</div>` : ''}
-    <div class="mp-pop-l">📍 ${escapeHtml(x.end || x.achado || '')}</div>
-    <div class="mp-pop-s">Abertura: ${_mpDataTxt(x.dt)}${x.by ? ` · marcado por ${escapeHtml(x.by)}` : ''}</div>
+    ${n > 1 ? `<div class="mp-pop-h"><b>${n} eventos neste local</b> <span class="mp-pop-cf">${nRal} RAL · ${n - nRal} REC</span></div>` : ''}
+    <div class="mp-pop-l">📍 ${escapeHtml(end)}</div>
+    <div class="mp-pop-lista">${g.itens.map(x => `<div class="mp-pop-it">
+      <div><b class="mp-pop-tk mp-pop-${x.tk}">${x.tk.toUpperCase()}</b> <b>${escapeHtml(x.ticket)}</b>${x.cf ? ` <span class="mp-pop-cf">CF ${escapeHtml(x.cf)}</span>` : ''}</div>
+      ${x.desig ? `<div class="mp-pop-l">${escapeHtml(x.desig)}</div>` : ''}
+      <div class="mp-pop-s">Abertura: ${_mpDataTxt(x.dt)}${x.by ? ` · marcado por ${escapeHtml(x.by)}` : ''}</div>
+    </div>`).join('')}</div>
   </div>`;
 }
 function _mpAtualizarTela() { _mpAtualizarBotoes(); _mpDesenhar(false); }
@@ -392,7 +417,7 @@ function _mpAtualizarTela() { _mpAtualizarBotoes(); _mpDesenhar(false); }
 function mapaFocar(id) {
   const it = _mp.itens[id]; if (!it || !_mp.mapa) return;
   _mp.mapa.setView([it.lat, it.lon], 15);
-  _mp.pinos.eachLayer(m => { if (m._mpId === id) m.openPopup(); });
+  _mp.pinos.eachLayer(m => { if ((m._mpIds || []).includes(id)) m.openPopup(); });
 }
 /* Tela cheia (v74): o mapa vai para o fim da página enquanto está em tela cheia
    (a coluna da direita "gruda" na tela e prendia o mapa atrás dos cards) e volta ao lugar ao fechar. */
