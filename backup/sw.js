@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '72';
+const CACHE_NAME   = CACHE_PREFIX + '73';
 const SHELL_ASSETS = [
   './',
   'index.html',

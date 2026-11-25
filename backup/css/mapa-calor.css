@@ -129,5 +129,9 @@ body.mp-full-on::after { content: ''; position: fixed; inset: 0; background: rgb
 .mpe-acoes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .mpe-esp { flex: 1; }
 @media (pointer: coarse) { .mpe-btn, .mpe-input { min-height: 44px; } .mp-seg button { min-height: 40px; padding: 0 10px; } .mp-ico { width: 44px; height: 44px; } }
-.mpe-prec { color: var(--text-muted); font-size: 11px; }
-.mpe-fonte { display: inline-block; margin-left: 4px; font-size: 10.5px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); font-family: var(--font-mono); }
+.mpe-op-txt { display: flex; flex-direction: column; gap: 2px; }
+.mpe-prec { color: var(--text-muted); font-size: 11px; display: flex; gap: 6px; align-items: center; }
+.mpe-fonte { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); font-family: var(--font-mono); }
+.mpe-f-tomtom { color: #ef4444; border-color: rgba(239,68,68,.4); }
+.mpe-f-cep { color: #f59e0b; border-color: rgba(245,158,11,.45); }
+.mpe-f-openstreetmap { color: #22c55e; border-color: rgba(34,197,94,.4); }

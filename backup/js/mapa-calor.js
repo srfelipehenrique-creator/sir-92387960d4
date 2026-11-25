@@ -10,8 +10,8 @@
    - Fica guardado no seu servidor por 60 dias (rota /mapa), igual para o
      PC, o celular e quem tiver a chave do SIR. Sem servidor/chave, guarda
      só neste aparelho.
-   - v72: a busca usa o Google pelo servidor (chave escondida lá) e, sem
-     chave ou sem resultado, o OpenStreetMap.
+   - v73: a busca usa o servidor (CEP pela AwesomeAPI e TomTom, com a chave
+     escondida lá) e, sem resultado da TomTom, o OpenStreetMap.
    - Computador: abaixo de "Novas Entradas", à direita.
      Celular/tablet: logo abaixo de "Novas Entradas".
    ══════════════════════════════════════════════════════════════ */
@@ -113,7 +113,7 @@ function abrirEnderecoEvento(btn) {
   ov.querySelector('.mpe-tit').textContent = `${tk.toUpperCase()} ${item.ticket}`;
   ov.querySelector('.mpe-sub').textContent = [item.cfOrigem && 'CF ' + item.cfOrigem, item.designacao, item.abertura].filter(Boolean).join(' · ');
   ov.querySelector('#mpe-q').value = salvo ? salvo.end : '';
-  ov.querySelector('.mpe-res').innerHTML = salvo ? '' : '<div class="mpe-dica">Digite rua, número, bairro e cidade. Ex.: <i>Rua Uruguai 200, Tijuca, Rio de Janeiro</i></div>';
+  ov.querySelector('.mpe-res').innerHTML = salvo ? '' : '<div class="mpe-dica">Digite rua, número, bairro e cidade — ou só o CEP. Ex.: <i>Rua Uruguai 200, Tijuca, Rio de Janeiro</i> ou <i>20510-060</i></div>';
   ov.querySelector('.mpe-del').hidden = !salvo;
   ov.querySelector('.mpe-quem').textContent = salvo ? `Salvo em ${_mpDataTxt(salvo.at)}${salvo.by ? ' por ' + salvo.by : ''}` : '';
   _mpMostrarEscolha();
@@ -134,7 +134,7 @@ function _mpJanela() {
     </div>
     <div class="mpe-body">
       <form class="mpe-busca" onsubmit="event.preventDefault(); _mpBuscar();">
-        <input type="search" id="mpe-q" class="mpe-input" placeholder="Endereço do evento" autocomplete="off" aria-label="Endereço do evento">
+        <input type="search" id="mpe-q" class="mpe-input" placeholder="Endereço do evento ou CEP" autocomplete="off" aria-label="Endereço do evento">
         <button type="submit" class="mpe-btn mpe-btn-pri">Buscar</button>
       </form>
       <div class="mpe-res" aria-live="polite"></div>
@@ -153,15 +153,17 @@ function _mpJanela() {
   return ov;
 }
 
-/* Busca do endereço (v72):
-   1º Google, pelo seu servidor (a chave fica escondida lá; limite diário dentro da cota grátis);
-   2º OpenStreetMap (Nominatim), se não houver chave, passar do limite ou não achar nada. */
-async function _mpGoogle(q) {
+/* Busca do endereço (v73):
+   1º seu servidor: CEP (AwesomeAPI/IBGE) e TomTom (chave escondida lá; limite diário na cota grátis);
+   2º OpenStreetMap (Nominatim), quando a TomTom não trouxer nada (sem chave, limite do dia ou sem resultado).
+   Cada resultado mostra de onde veio e a precisão. */
+async function _mpServidorBusca(q) {
   if (!_mpServidor()) return null;
   try {
     const r = await fetch(_pushUrl() + '/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: _pushKey(), q }) });
+    if (!r.ok) return null;
     const j = await r.json();
-    return (j.fonte === 'google' && j.resultados && j.resultados.length) ? j.resultados : null;
+    return Array.isArray(j.resultados) ? j : null;
   } catch (e) { return null; }
 }
 async function _mpOsm(q) {
@@ -169,28 +171,31 @@ async function _mpOsm(q) {
     + '&viewbox=' + MAPA_VIEWBOX + '&q=' + encodeURIComponent(q);
   const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
   if (!r.ok) throw new Error(r.status);
-  return (await r.json()).map(x => ({ lat: +x.lat, lon: +x.lon, display_name: x.display_name }));
+  return (await r.json()).map(x => ({ lat: +x.lat, lon: +x.lon, display_name: x.display_name, fonte: 'OpenStreetMap',
+    precisao: x.addresstype === 'house' || x.type === 'house' ? 'numero' : (x.addresstype === 'road' ? 'rua' : 'aprox') }));
 }
-const _MP_PRECISAO = { ROOFTOP: 'número exato', RANGE_INTERPOLATED: 'número aproximado', GEOMETRIC_CENTER: 'centro da rua/região', APPROXIMATE: 'aproximado' };
+const _MP_PRECISAO = { numero: 'número exato', faixa: 'número aproximado', rua: 'rua', cruzamento: 'cruzamento', CEP: 'região do CEP', aprox: 'aproximado' };
 async function _mpBuscar() {
   const ov = _mpJanela(), q = ov.querySelector('#mpe-q').value.trim(), box = ov.querySelector('.mpe-res');
-  if (q.length < 4) { box.innerHTML = '<div class="mpe-dica">Digite um endereço mais completo.</div>'; return; }
+  if (q.length < 4) { box.innerHTML = '<div class="mpe-dica">Digite um endereço mais completo ou o CEP.</div>'; return; }
   box.innerHTML = '<div class="mpe-dica">Procurando…</div>';
-  let lista = null, fonte = 'Google';
-  try {
-    lista = await _mpGoogle(q);
-    if (!lista) { fonte = 'OpenStreetMap'; lista = await _mpOsm(q); }
-  } catch (e) {
-    box.innerHTML = '<div class="mpe-dica">Não foi possível buscar agora (sem internet ou serviço de mapas fora do ar). Tente de novo em instantes.</div>';
-    return;
+  const srv = await _mpServidorBusca(q);
+  let lista = srv ? srv.resultados.slice() : [];
+  const soCep = /^\s*(cep[:\s]*)?\d{2}\.?\d{3}-?\d{3}\s*$/i.test(q);
+  if (!lista.some(x => x.fonte === 'TomTom') && !(soCep && lista.length)) {
+    try { lista = lista.concat(await _mpOsm(q)); }
+    catch (e) {
+      if (!lista.length) { box.innerHTML = '<div class="mpe-dica">Não foi possível buscar agora (sem internet ou serviço de mapas fora do ar). Tente de novo em instantes.</div>'; return; }
+    }
   }
   if (!lista.length) {
-    box.innerHTML = '<div class="mpe-dica">Nada encontrado. Tente sem o complemento (sala, loja) ou com o bairro e a cidade.</div>';
+    box.innerHTML = '<div class="mpe-dica">Nada encontrado. Tente sem o complemento (sala, loja), com o bairro e a cidade, ou só o CEP.</div>';
     return;
   }
   box.innerHTML = lista.map((x, i) => `<button type="button" class="mpe-op" data-i="${i}">
-      <span aria-hidden="true">📍</span><span>${escapeHtml(x.display_name)}${_MP_PRECISAO[x.precisao] ? ` <small class="mpe-prec">· ${_MP_PRECISAO[x.precisao]}</small>` : ''}</span></button>`).join('')
-    + `<div class="mpe-dica">Escolha o resultado certo. Depois, se precisar, arraste o pino para o local exato. <span class="mpe-fonte">Fonte: ${fonte}</span></div>`;
+      <span aria-hidden="true">📍</span><span class="mpe-op-txt">${escapeHtml(x.display_name)}
+        <small class="mpe-prec"><b class="mpe-fonte mpe-f-${escapeHtml(String(x.fonte || '').toLowerCase())}">${escapeHtml(x.fonte || '')}</b>${_MP_PRECISAO[x.precisao] ? ' ' + _MP_PRECISAO[x.precisao] : ''}</small></span></button>`).join('')
+    + '<div class="mpe-dica">Escolha o resultado certo. Depois, se precisar, arraste o pino para o local exato.</div>';
   box.querySelectorAll('.mpe-op').forEach(b => b.addEventListener('click', () => {
     const x = lista[+b.dataset.i];
     box.querySelectorAll('.mpe-op').forEach(o => o.classList.toggle('on', o === b));

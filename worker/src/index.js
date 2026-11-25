@@ -889,38 +889,72 @@ export default {
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 
-    /* ── Busca de endereço no Google (v72) ──
-       A chave do Google fica só aqui (segredo GOOGLE_MAPS_KEY do Worker), nunca no site.
-       Limite de GEO_LIMITE_DIA buscas por dia → nunca passa das 10.000 grátis por mês.
-       Sem chave, acima do limite ou com erro: o SIR usa o OpenStreetMap. */
+    /* ── Busca de endereço do mapa de calor (v73) ──
+       1) CEP (AwesomeAPI, grátis, base IBGE com latitude/longitude), se houver um CEP no texto;
+       2) TomTom (chave só aqui, segredo TOMTOM_KEY; grátis sem cartão), com limite diário
+          GEO_LIMITE_DIA (padrão 600/dia ≈ 18.600/mês, dentro da cota grátis).
+       Sem resultados aqui, o SIR usa o OpenStreetMap direto do navegador. */
     if (req.method === 'POST' && url.pathname === '/geocode') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       const q = String(body.q || '').trim().slice(0, 200);
       if (q.length < 4) return json({ error: 'endereco' }, 400, h);
-      if (!env.GOOGLE_MAPS_KEY) return json({ semChave: true, resultados: [] }, 200, h);
-      const LIM = Number(env.GEO_LIMITE_DIA) || 300;
-      const dia = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);   /* dia de Brasília */
-      const ck = 'geo:' + dia, usados = Number(await env.SIR_KV.get(ck)) || 0;
-      if (usados >= LIM) return json({ limite: true, resultados: [] }, 200, h);
-      await env.SIR_KV.put(ck, String(usados + 1), { expirationTtl: 3 * 86400 });
-      const g = new URL('https://maps.googleapis.com/maps/api/geocode/json');
-      g.searchParams.set('address', q);
-      g.searchParams.set('language', 'pt-BR');
-      g.searchParams.set('region', 'br');
-      g.searchParams.set('components', 'country:BR');
-      g.searchParams.set('bounds', '-23.45,-44.95|-17.85,-39.6');   /* preferência RJ + ES */
-      g.searchParams.set('key', env.GOOGLE_MAPS_KEY);
-      try {
-        const r = await fetch(g.toString());
-        const j = await r.json();
-        if (j.status !== 'OK' && j.status !== 'ZERO_RESULTS') return json({ erro: j.status || 'google', resultados: [] }, 200, h);
-        const resultados = (j.results || []).slice(0, 6).map(x => ({
-          lat: x.geometry.location.lat, lon: x.geometry.location.lng,
-          display_name: x.formatted_address, precisao: x.geometry.location_type || ''
-        }));
-        return json({ fonte: 'google', resultados, usadosHoje: usados + 1, limiteDia: LIM }, 200, h);
-      } catch (e) { return json({ erro: 'google', resultados: [] }, 200, h); }
+      const resultados = [], avisos = [];
+
+      /* CEP: "20510-060", "20510060" ou "20.510-060" */
+      const mCep = q.match(/\b(\d{2})\.?(\d{3})-?(\d{3})\b/);
+      if (mCep) {
+        try {
+          const cep = mCep[1] + mCep[2] + mCep[3];
+          const r = await fetch('https://cep.awesomeapi.com.br/json/' + cep, { headers: { 'Accept': 'application/json' } });
+          if (r.ok) {
+            const c = await r.json();
+            const lat = Number(c.lat), lon = Number(c.lng);
+            if (lat && lon) resultados.push({
+              lat, lon, fonte: 'CEP', precisao: 'CEP',
+              display_name: [[c.address_type, c.address_name].filter(Boolean).join(' ') || c.address, c.district, c.city && (c.city + (c.state ? ' - ' + c.state : '')), 'CEP ' + cep.replace(/(\d{5})(\d{3})/, '$1-$2')].filter(Boolean).join(', ')
+            });
+          }
+        } catch (e) { avisos.push('cep'); }
+      }
+
+      /* TomTom: só se ainda houver algo além do CEP para buscar */
+      const texto = mCep ? q.replace(mCep[0], ' ').replace(/\bcep\b[:\s]*/i, ' ').replace(/[\s,;-]+$/,'').trim() : q;
+      if (env.TOMTOM_KEY && texto.length >= 4) {
+        const LIM = Number(env.GEO_LIMITE_DIA) || 600;
+        const dia = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);   /* dia de Brasília */
+        const ck = 'geo:' + dia, usados = Number(await env.SIR_KV.get(ck)) || 0;
+        if (usados >= LIM) avisos.push('limite');
+        else {
+          await env.SIR_KV.put(ck, String(usados + 1), { expirationTtl: 3 * 86400 });
+          const t = new URL('https://api.tomtom.com/search/2/geocode/' + encodeURIComponent(q) + '.json');
+          t.searchParams.set('key', env.TOMTOM_KEY);
+          t.searchParams.set('countrySet', 'BR');
+          t.searchParams.set('language', 'pt-BR');
+          t.searchParams.set('limit', '6');
+          t.searchParams.set('topLeft', '-17.85,-44.95');      /* preferência RJ + ES */
+          t.searchParams.set('btmRight', '-23.45,-39.6');
+          try {
+            const r = await fetch(t.toString());
+            const j = await r.json();
+            const PREC = { 'Point Address': 'numero', 'Address Range': 'faixa', 'Street': 'rua', 'Cross Street': 'cruzamento' };
+            (j.results || []).slice(0, 6).forEach(x => {
+              if (!x.position) return;
+              resultados.push({
+                lat: x.position.lat, lon: x.position.lon, fonte: 'TomTom',
+                display_name: (x.address && x.address.freeformAddress) || q,
+                precisao: PREC[x.type] || 'aprox'
+              });
+            });
+            if (j.errorText || j.error) avisos.push('tomtom');
+          } catch (e) { avisos.push('tomtom'); }
+        }
+      } else if (!env.TOMTOM_KEY) avisos.push('semChave');
+
+      /* Endereço com número (TomTom) primeiro; depois o CEP */
+      const ordem = { numero: 0, faixa: 1, CEP: 2, rua: 3, cruzamento: 4, aprox: 5 };
+      resultados.sort((a, b) => (ordem[a.precisao] ?? 9) - (ordem[b.precisao] ?? 9));
+      return json({ resultados, avisos }, 200, h);
     }
 
     /* ── Mapa de calor (v71): endereços de eventos RAL/REC, 60 dias ── */
