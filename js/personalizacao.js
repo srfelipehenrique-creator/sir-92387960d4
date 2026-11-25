@@ -5,18 +5,21 @@ const LS_TOOLBAR    = 'sir_toolbar_config';
 const LS_DENSITY    = 'sir_compact';
 const LS_VIEW_MODE  = 'sir_view_mode';
 
-/* ── Botões configuráveis ── */
-const TOOLBAR_DEFS = [
+/* ── Botões configuráveis ──
+   oculto: true → o botão sai do menu, mas tudo continua no código.
+   Para trazer de volta, basta apagar o "oculto: true" da linha. */
+const TOOLBAR_DEFS_TODOS = [
   { id: 'cfg-torpedos',   label: 'Torpedos',   icon: 'megaphone',    onclick: 'openTorpedos()',     visible: true, group: 'incidente' },
   { id: 'cfg-mascaras',   label: 'Máscaras',   icon: 'bot',          onclick: 'openMascaras()',     visible: true, group: 'incidente' },
   { id: 'cfg-qualidade',  label: 'Qualidade',  icon: 'shield-alert', onclick: 'openQualidade()',    visible: true, group: 'incidente' },
   { id: 'cfg-scripts',    label: 'Textos',     icon: 'pen-line',     onclick: 'openScripts()',      visible: true, group: 'consulta'  },
   { id: 'cfg-historico',  label: 'Histórico',  icon: 'archive',      onclick: 'openHistorico()',    visible: true, group: 'consulta'  },
-  { id: 'cfg-siglas',     label: 'Siglas',     icon: 'book-open',    onclick: 'openSiglas()',       visible: true, group: 'consulta'  },
+  { id: 'cfg-siglas',     label: 'Siglas',     icon: 'book-open',    onclick: 'openSiglas()',       visible: true, group: 'consulta', oculto: true },  /* v65: fora do menu — as siglas seguem na busca de ENDEREÇOS */
   { id: 'cfg-nodes',      label: 'ENDEREÇOS', icon: 'map-pinned', onclick: 'openNodes()',   visible: true, group: 'consulta'  },
   { id: 'cfg-ots',        label: 'Projeto OTS - FIDERE', icon: 'external-link', onclick: 'openOtsFidere()', visible: true, group: 'consulta' },
   { id: 'cfg-timer',      label: 'Timer',      icon: 'timer',        onclick: 'toggleTimerFloat()', visible: true, group: 'util'      },
 ];
+const TOOLBAR_DEFS = TOOLBAR_DEFS_TODOS.filter(d => !d.oculto);
 
 const TOOL_GROUPS = {
   incidente: 'Incidente',

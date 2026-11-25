@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v64';
+const CACHE_NAME   = 'sir-v65';
 const SHELL_ASSETS = [
   './',
   'index.html',
