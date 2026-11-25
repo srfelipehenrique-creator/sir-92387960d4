@@ -233,3 +233,18 @@ body.layout-v2 .page-footer { padding-top: 6px; padding-bottom: 6px; }
 .v2-chart-svg:hover .g-col:hover .g-bar { opacity: 1; }
 .v2-chart-svg .g-col:focus-visible { outline: none; }
 .v2-chart-svg .g-col:focus-visible .g-bar { stroke-width: 2.5; }
+
+/* ══ v66 — Página inteira na tela do computador (js/fit-tela.js) ══
+   body.fit-tela só existe no computador e com todos os cards recolhidos. */
+body.fit-tela .v2-dash-col { gap: 10px; }
+body.fit-tela .v2-kpis { margin-bottom: 10px; }
+body.fit-tela .v2-regions { gap: 10px; }
+/* Cada grupo de CFs numa linha só (até 6 cards lado a lado) */
+body.fit-tela .v2-tiles { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+/* Totais numa linha só, quando a largura permite */
+@media (min-width: 1280px) {
+  body.fit-tela .v2-kpis:not(.v2-kpis-mine) {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  }
+}
+body.fit-tela .v2-kpis:not(.v2-kpis-mine) .v2-kpi-btn { padding-left: 6px; padding-right: 6px; gap: 4px; }

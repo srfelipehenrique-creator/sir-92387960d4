@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'sir-v65';
+const CACHE_NAME   = 'sir-v66';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -53,6 +53,7 @@ const SHELL_ASSETS = [
   'js/tickets-ui.js',
   'js/lixeira.js',
   'js/menu.js',
+  'js/fit-tela.js',
   'js/stale.js',
   'js/siglas.js',
   'js/nodes.js',
