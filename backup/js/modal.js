@@ -458,7 +458,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
         <td>${escapeHtml(item.extra)}</td>
         <td class="obs-cell">${buildObsHTML('')}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>
-        <td class="copy-col"><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
+        <td class="copy-col">${typeof mapaBotaoHTML === 'function' ? mapaBotaoHTML(tk, item) : ''}<button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
       </tr>`;
     };
 

@@ -312,6 +312,7 @@ export class NotesStore {
   }
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    if (path === '/mapa') return this.mapa(request);
     if (path === '/status') { const n = await this.load(); return jsonPlain({ tickets: Object.keys(n).length, notas: Object.values(n).reduce((a, x) => a + (Array.isArray(x.list) ? x.list.length : (x.obs ? 1 : 0)), 0) }, 200); }
     const body = await request.json();
       const notes = await this.load();
@@ -395,6 +396,38 @@ export class NotesStore {
       else notes[id] = cur;
       await this.state.storage.put('notesmap', notes);
       return jsonPlain({ ok: true, note: notes[id] || null }, 200);
+  }
+
+  /* ── Mapa de calor (v71): endereço de cada evento RAL/REC, guardado por 60 dias ──
+     Instância própria (idFromName('mapa')): não mistura com as notas.
+     Cada evento numa chave 'm:<tk>:<ticket>' (sem limite de tamanho do mapa todo).
+     body: { op:'list' } | { op:'set', id, item:{...} } | { op:'del', id } */
+  async mapa(request) {
+    let b = {}; try { b = await request.json(); } catch (e) {}
+    const st = this.state.storage, now = Date.now(), LIM = 60 * 86400000;
+    const all = await st.list({ prefix: 'm:' });
+    const itens = {}, velhos = [];
+    for (const [k, v] of all) {
+      if (Math.max(v.dt || 0, v.at || 0) < now - LIM) velhos.push(k); else itens[k.slice(2)] = v;
+    }
+    for (let i = 0; i < velhos.length; i += 128) await st.delete(velhos.slice(i, i + 128));
+    const op = String(b.op || 'list');
+    if (op === 'list') return jsonPlain({ itens, at: now }, 200);
+    const id = String(b.id || '').slice(0, 120);
+    if (!/^(ral|rec):.+/.test(id)) return jsonPlain({ error: 'id' }, 400);
+    if (op === 'del') { await st.delete('m:' + id); return jsonPlain({ ok: true }, 200); }
+    if (op !== 'set') return jsonPlain({ error: 'op' }, 400);
+    const e = b.item || {};
+    const txt = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+    const lat = Number(e.lat), lon = Number(e.lon), dt = Number(e.dt) || now;
+    if (!(lat >= -34 && lat <= 6 && lon >= -75 && lon <= -28)) return jsonPlain({ error: 'coordenadas' }, 400);   /* dentro do Brasil */
+    const item = {
+      tk: id.startsWith('rec:') ? 'rec' : 'ral', ticket: txt(e.ticket, 40), desig: txt(e.desig, 120), cf: txt(e.cf, 12),
+      end: txt(e.end, 200), achado: txt(e.achado, 240), lat: +lat.toFixed(6), lon: +lon.toFixed(6),
+      dt: Math.min(dt, now + 86400000), by: txt(b.by, 40), at: now
+    };
+    await st.put('m:' + id, item);
+    return jsonPlain({ ok: true, id, item }, 200);
   }
 }
 
@@ -853,6 +886,14 @@ export default {
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       const stub = env.NOTES.get(env.NOTES.idFromName('notes'));
       const r = await stub.fetch('https://notes' + url.pathname, { method: 'POST', body: JSON.stringify(body) });
+      return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
+    }
+
+    /* ── Mapa de calor (v71): endereços de eventos RAL/REC, 60 dias ── */
+    if (req.method === 'POST' && url.pathname === '/mapa') {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const r = await env.NOTES.get(env.NOTES.idFromName('mapa')).fetch('https://notes/mapa', { method: 'POST', body: JSON.stringify(body) });
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 
