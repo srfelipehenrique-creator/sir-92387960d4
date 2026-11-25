@@ -13,7 +13,7 @@ const TOOLBAR_DEFS = [
   { id: 'cfg-scripts',    label: 'Textos',     icon: 'pen-line',     onclick: 'openScripts()',      visible: true, group: 'consulta'  },
   { id: 'cfg-historico',  label: 'Histórico',  icon: 'archive',      onclick: 'openHistorico()',    visible: true, group: 'consulta'  },
   { id: 'cfg-siglas',     label: 'Siglas',     icon: 'book-open',    onclick: 'openSiglas()',       visible: true, group: 'consulta'  },
-  { id: 'cfg-nodes',      label: 'Endereços de Node', icon: 'map-pinned', onclick: 'openNodes()',   visible: true, group: 'consulta'  },
+  { id: 'cfg-nodes',      label: 'ENDEREÇOS', icon: 'map-pinned', onclick: 'openNodes()',   visible: true, group: 'consulta'  },
   { id: 'cfg-ots',        label: 'Projeto OTS - FIDERE', icon: 'external-link', onclick: 'openOtsFidere()', visible: true, group: 'consulta' },
   { id: 'cfg-timer',      label: 'Timer',      icon: 'timer',        onclick: 'toggleTimerFloat()', visible: true, group: 'util'      },
 ];

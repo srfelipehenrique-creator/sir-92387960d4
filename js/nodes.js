@@ -147,7 +147,7 @@ function _ndModal() {
   ov.innerHTML = `
     <div class="modal-content nodes-modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div class="modal-title">Endereços de Node e Siglas</div>
+        <div class="modal-title">ENDEREÇOS</div>
         <div class="modal-tools">
           <button type="button" class="modal-csv-btn" id="nodes-update-btn" title="Enviar uma planilha .xlsx nova para todos">Atualizar base</button>
           <button class="modal-close-btn" onclick="closeNodes()">&times;</button>
