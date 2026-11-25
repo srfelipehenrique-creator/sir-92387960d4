@@ -13,7 +13,8 @@
 .mapa-calor .mp-map { height: 340px; }
 body:not(.layout-v2) .mapa-calor { order: -2; }   /* Grafana: logo abaixo de Novas Entradas */
 @media (max-width: 640px) {
-  body.layout-v2 .mapa-calor { order: 3; }        /* celular: logo abaixo de Novas Entradas */
+  /* v76 — celular: o mapa sobe para logo abaixo do TOTAL (antes ficava no fim, depois de todas as áreas) */
+  body.layout-v2 .mapa-calor { order: 2; margin-bottom: 4px; }
   .mapa-calor .mp-map { height: 320px; }
 }
 

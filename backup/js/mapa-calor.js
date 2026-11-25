@@ -13,7 +13,7 @@
    - v73: a busca usa o servidor (CEP pela AwesomeAPI e TomTom, com a chave
      escondida lá) e, sem resultado da TomTom, o OpenStreetMap.
    - Computador: abaixo de "Novas Entradas", à direita.
-     Celular/tablet: logo abaixo de "Novas Entradas".
+     Celular (v76): logo abaixo do TOTAL, antes das áreas. Tablet: no topo.
    ══════════════════════════════════════════════════════════════ */
 
 const MAPA_DIAS = 60;
