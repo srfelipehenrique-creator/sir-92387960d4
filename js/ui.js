@@ -13,7 +13,8 @@ function showActionToast(msg, type = 'success') {
 
 function updatePageTitle() {
   const n = appState.inboxItems.length;
-  document.title = n > 0 ? `(${n}) SIR · Dashboard` : 'SIR · Dashboard';
+  const base = (/\/backup\//.test(location.pathname) ? 'BACKUP · ' : '') + 'SIR · Dashboard';   /* v70 */
+  document.title = n > 0 ? `(${n}) ${base}` : base;
 }
 
 function playInboxSound() {

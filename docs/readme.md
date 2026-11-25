@@ -4,6 +4,15 @@ Sistema operacional web desenvolvido para o **Centro de Operações de Rede Fibr
 
 ---
 
+## Duas versões: Principal e Backup (v70)
+
+- **Principal** — raiz do repositório, endereço `…/sir-92387960d4/`. É a usada no dia a dia.
+- **Backup** — pasta `backup/`, endereço `…/sir-92387960d4/backup/`. Todas as mudanças são feitas aqui primeiro.
+- **"Publique na principal"** → o conteúdo de `backup/` é copiado para a raiz.
+- Regras completas em [`CLAUDE.md`](../CLAUDE.md).
+
+---
+
 ## Visão Geral
 
 O SIR Dashboard é uma **Progressive Web App (PWA)** completamente client-side. Toda a persistência de dados é local (localStorage + IndexedDB) e os dados de chamados são obtidos de arquivos CSV hospedados no GitHub, atualizados automaticamente a cada 5 minutos.

@@ -1,0 +1,91 @@
+/* ══════════════════════════════════════════════════════════════
+   Visual "Neon" — painel azul-marinho com bordas iluminadas
+   Vale no modo ESCURO (o modo claro continua como era).
+   Cores de destaque (Personalização → Tema) continuam valendo
+   nos botões; as bordas iluminadas usam --neon.
+   ══════════════════════════════════════════════════════════════ */
+
+:root:not([data-mode="light"]) {
+  --bg-dark:    #06101d;
+  --bg-panel:   #0b1a2c;
+  --bg-panel-2: #0f2237;
+  --bg-panel-3: #08131f;
+  --bg-elevated:#12294a;
+  --bg-float:   #15304f;
+  --bg-hover:   rgba(56,189,248,0.07);
+  --line:        rgba(56,189,248,0.14);
+  --line-strong: rgba(56,189,248,0.30);
+
+  --neon:       #38bdf8;
+  --neon-line:  rgba(56,189,248,0.55);
+  --neon-glow:  rgba(56,189,248,0.22);
+  --card-bg:    linear-gradient(180deg, rgba(17,40,66,0.95) 0%, rgba(9,23,40,0.95) 100%);
+
+  --v2-ok:    #3ee6a0;
+  --v2-warn:  #f5c518;
+  --v2-crit:  #ff6b6b;
+}
+:root:not([data-mode="light"]) body {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(56,189,248,0.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(99,102,241,0.08), transparent 60%),
+    var(--bg-dark);
+  background-attachment: fixed;
+}
+
+/* ── Cartões com borda iluminada ── */
+:root:not([data-mode="light"]) body.layout-v2 :is(.v2-kpi, .v2-tile, .v2-chart),
+:root:not([data-mode="light"]) body.layout-v2 .inbox-section {
+  background: var(--card-bg);
+  border: 1px solid var(--neon-line);
+  border-radius: 11px;
+  box-shadow: 0 0 0 1px rgba(56,189,248,0.06) inset, 0 0 16px var(--neon-glow);
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-tile.v2-mine {
+  border-color: rgba(129,140,248,0.75);
+  box-shadow: 0 0 0 1px rgba(129,140,248,0.10) inset, 0 0 16px rgba(129,140,248,0.25);
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-tile.v2-open { border-color: var(--neon); }
+
+/* ── Faixa de totais (KPIs) com silhueta de prédios ao fundo ── */
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi {
+  position: relative; overflow: hidden; padding: 9px 11px 10px;
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi::after {
+  content: ''; position: absolute; right: -4px; bottom: -2px; width: 120px; height: 58px; pointer-events: none;
+  opacity: .22;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 58'><g fill='none' stroke='%2338bdf8' stroke-width='1.2'><path d='M4 58V30h16v28M20 58V18h20v40M40 58V26h14v32M54 58V8h22v50M76 58V22h16v36M92 58V14h24v44'/><path d='M8 36h8M8 42h8M8 48h8M24 24h12M24 30h12M24 36h12M24 42h12M24 48h12M58 14h14M58 20h14M58 26h14M58 32h14M58 38h14M58 44h14M80 28h8M80 34h8M80 40h8M96 20h16M96 26h16M96 32h16M96 38h16M96 44h16'/></g></svg>") no-repeat right bottom / contain;
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi > * { position: relative; z-index: 1; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-lbl,
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-toggle {
+  color: #e8f3ff; font-size: 12px; font-weight: 800; letter-spacing: .6px;
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn {
+  background: rgba(8,20,36,0.75); border: 1px solid rgba(56,189,248,0.22); color: #f2f8ff;
+}
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn:hover { border-color: var(--neon); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-type { color: rgba(214,232,255,0.75); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-accent { background: var(--card-bg); }
+
+/* ── Regiões ── */
+:root:not([data-mode="light"]) body.layout-v2 .v2-region-head { border-left: 3px solid #5b7cfa; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-region-name { font-size: 15px; color: #f2f8ff; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-region-count { color: rgba(214,232,255,0.6); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-tile-cf { color: #f2f8ff; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-tile-name { color: rgba(214,232,255,0.6); }
+
+/* ── Células RAL/REC ── */
+:root:not([data-mode="light"]) body.layout-v2 .v2-cell { border-radius: 8px; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-cell-lbl { color: rgba(214,232,255,0.7); opacity: 1; }
+:root:not([data-mode="light"]) body.layout-v2 .v2-ok   { background: rgba(20,78,72,0.55);  border-color: rgba(62,230,160,0.20); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-zero { background: rgba(22,40,62,0.70);  border-color: rgba(56,189,248,0.10); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-warn { background: rgba(98,78,12,0.55);  border-color: rgba(245,197,24,0.75); box-shadow: 0 0 10px rgba(245,197,24,0.18); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-crit { background: rgba(110,28,40,0.60); border-color: rgba(255,107,107,0.80); box-shadow: 0 0 10px rgba(255,107,107,0.20); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-delta { background: #ff5a5a; color: #fff; border-radius: 8px; }
+
+/* Barra de controles e cabeçalho no mesmo tom */
+:root:not([data-mode="light"]) header { background: rgba(6,16,29,0.85); border-bottom-color: var(--line); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-seg { background: rgba(9,23,40,0.8); border-color: var(--line-strong); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-warn { color: var(--v2-warn); }
+:root:not([data-mode="light"]) body.layout-v2 .v2-kpi-btn.v2-t-crit { color: var(--v2-crit); }

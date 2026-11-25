@@ -1,4 +1,7 @@
-const CACHE_NAME   = 'sir-v69';
+/* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
+   e cada versão só apaga os caches antigos dela mesma */
+const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
+const CACHE_NAME   = CACHE_PREFIX + '70';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -94,7 +97,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

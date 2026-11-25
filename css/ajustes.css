@@ -221,3 +221,9 @@ body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: au
 .off-btn-main { background: #F5A524; color: #1A1206; }
 .off-btn-main:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 640px) { .off-zones { grid-template-columns: 1fr; } .off-head { padding: 14px; } .off-body { padding: 12px 14px; } }
+
+/* v70 — selo da versão backup (aparece só na pasta /backup/) */
+.sir-backup-tag {
+  display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px;
+  background: #f59e0b; color: #1a1000; font-size: 9px; font-weight: 800; letter-spacing: 1px; line-height: 15px;
+}

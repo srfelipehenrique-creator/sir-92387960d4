@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador V4.0 UX Premium | NOC Operations</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGNpcmNsZSBjeD0iMTEiIGN5PSIxMSIgcj0iOCI+PC9jaXJjbGU+PGxpbmUgeDE9IjIxIiB5MT0iMjEiIHgyPSIxNi42NSIgeTI9IjE2LjY1Ij48L2xpbmU+PC9zdmc+">
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        :root {
+            /* Raycast Dark Mode Premium */
+            --bg-app: #0D0D0D;
+            --bg-surface: rgba(255, 255, 255, 0.04);
+            --bg-surface-hover: rgba(255, 255, 255, 0.08);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(255, 255, 255, 0.2);
+            --text-main: #EEEEEE;
+            --text-secondary: #888888;
+            --accent-red: #FF6B6B;
+            
+            /* Mantendo cores funcionais da sua lógica */
+            --success: #4ade80;
+            --highlight-bg: rgba(255, 255, 255, 0.15);
+            --highlight-text: #FFFFFF;
+            
+            /* Geometria e Animação */
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition-smooth: all 0.2s ease;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Sidebar com Glassmorphism */
+        aside {
+            width: 300px;
+            background-color: rgba(13, 13, 13, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        .sidebar-brand {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+        }
+
+        .sidebar-brand svg { width: 20px; height: 20px; }
+        .sidebar-section { margin-bottom: 2rem; }
+        
+        .sidebar-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-history {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; font-size: 0.7rem; text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+        .clear-history:hover { color: var(--text-main); }
+
+        .sidebar-list { list-style: none; }
+        
+        .sidebar-item {
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            transition: var(--transition-smooth);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover { 
+            background-color: var(--bg-surface-hover); 
+            border-color: transparent; 
+        }
+        
+        .fav-remove {
+            color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px; font-size: 1rem; opacity: 0; transition: var(--transition-smooth);
+        }
+        .sidebar-item:hover .fav-remove { opacity: 1; }
+        .fav-remove:hover { color: var(--accent-red); transform: scale(1.1); }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 2rem;
+            overflow-y: auto;
+            position: relative;
+            scroll-behavior: smooth;
+        }
+
+        /* Área de Busca Fixa com Glassmorphism */
+        .search-container {
+            max-width: 800px; margin: 0 auto; width: 100%;
+            position: sticky; top: 0; 
+            background-color: rgba(13, 13, 13, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 2rem 0 1rem 0; 
+            z-index: 10;
+        }
+
+        .search-wrapper { 
+            position: relative; width: 100%; transition: var(--transition-smooth); 
+            border-radius: var(--radius-lg); 
+        }
+        
+        .search-wrapper:focus-within { 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+            transform: translateY(-1px); 
+        }
+        
+        .search-icon {
+            position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%);
+            width: 18px; height: 18px; stroke: var(--text-secondary); fill: none; stroke-width: 2;
+            transition: var(--transition-smooth);
+        }
+        .search-wrapper:focus-within .search-icon { stroke: var(--text-main); }
+
+        #searchInput {
+            width: 100%; padding: 1.25rem 3rem 1.25rem 3rem; font-size: 1.1rem;
+            background-color: var(--bg-surface); border: 1px solid var(--border-subtle);
+            color: var(--text-main); border-radius: var(--radius-lg); outline: none;
+            transition: var(--transition-smooth); font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+        
+        #searchInput::placeholder { color: var(--text-secondary); font-weight: 400; }
+        #searchInput:focus { 
+            border-color: var(--border-focus); 
+            background-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .clear-btn-search {
+            position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%) scale(0.8);
+            background: none; border: none; color: var(--text-secondary); cursor: pointer;
+            width: 20px; height: 20px; display: none; opacity: 0; transition: var(--transition-smooth);
+        }
+        .clear-btn-search.visible { display: flex; opacity: 1; transform: translateY(-50%) scale(1); align-items: center; justify-content: center; }
+        .clear-btn-search:hover { color: var(--text-main); }
+        .clear-btn-search svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.8rem;
+            height: 20px; font-weight: 400;
+        }
+
+        #results-container {
+            max-width: 800px; margin: 0 auto; width: 100%;
+            display: flex; flex-direction: column; gap: 12px; padding-bottom: 3rem;
+        }
+
+        /* Cards Estilo Raycast */
+        .card {
+            background-color: var(--bg-surface); 
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); 
+            padding: 1.25rem 1.5rem; 
+            transition: var(--transition-smooth);
+            position: relative; opacity: 0; transform: translateY(10px);
+            animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .card:hover { 
+            background-color: var(--bg-surface-hover);
+            border-color: var(--border-focus); 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4); 
+        }
+        
+        .card:active { transform: scale(0.99); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        
+        .card.active { 
+            border-color: var(--border-focus); 
+            background-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); 
+        }
+
+        .card-header { 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            margin-bottom: 1rem; padding-bottom: 1rem; 
+            border-bottom: 1px solid var(--border-subtle); 
+        }
+
+        .card-title-group { display: flex; flex-direction: column; gap: 4px; }
+        
+        .card-actions { display: flex; gap: 8px; }
+
+        .action-btn {
+            background: transparent; border: 1px solid transparent;
+            color: var(--text-secondary); border-radius: var(--radius-md); padding: 0.4rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition-smooth); position: relative;
+        }
+
+        .action-btn:hover { 
+            background: var(--bg-surface-hover); 
+            color: var(--text-main);
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; pointer-events: none; transition: var(--transition-smooth); }
+        .action-btn.fav-active { color: var(--text-main); }
+        .action-btn.fav-active svg { fill: currentColor; }
+        
+        .action-btn.success { border-color: var(--success); color: var(--success); background: rgba(74, 222, 128, 0.1); }
+
+        /* Tooltips refinados */
+        .action-btn[data-tooltip]::before {
+            content: attr(data-tooltip);
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+            margin-bottom: 8px; padding: 6px 10px; border-radius: 6px;
+            background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            color: var(--text-main); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            font-size: 0.75rem; font-weight: 500; white-space: nowrap; opacity: 0;
+            pointer-events: none; transition: var(--transition-smooth); box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .action-btn[data-tooltip]:hover::before { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .card-item { line-height: 1.5; }
+        
+        .label { 
+            color: var(--text-secondary); font-size: 0.75rem; 
+            margin-bottom: 0.2rem; font-weight: 500; 
+        }
+        
+        .value { font-size: 0.95rem; font-weight: 400; color: var(--text-main); word-break: break-word; }
+        
+        .highlight { 
+            background-color: var(--highlight-bg); 
+            color: var(--highlight-text); 
+            padding: 0 4px; border-radius: 4px; 
+            font-weight: 500; 
+        }
+
+        .badges-container { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+        
+        .badge {
+            font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: 500; 
+            display: inline-flex; align-items: center; gap: 4px; background: var(--bg-surface);
+            border: 1px solid var(--border-subtle); color: var(--text-secondary);
+        }
+        .badge-exact { background-color: rgba(74, 222, 128, 0.1); color: var(--success); border-color: rgba(74, 222, 128, 0.2); }
+        .badge-mobile { color: var(--text-main); }
+
+        /* Toast macOS Notification Style */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: rgba(30, 30, 30, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: var(--text-main); padding: 12px 20px; border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); font-weight: 500; font-size: 0.9rem;
+            transform: translateY(100px); opacity: 0; transition: var(--transition-smooth);
+            z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        .loading {
+            display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border-subtle);
+            border-top-color: var(--text-main); border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+
+        .empty-state {
+            text-align: center; padding: 4rem 1rem; color: var(--text-secondary); animation: slideUp 0.3s ease forwards;
+        }
+        .empty-state-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; opacity: 0.6; }
+        .empty-state-title { font-size: 1.1rem; font-weight: 500; color: var(--text-main); margin-bottom: 0.5rem; }
+        .empty-state-desc { font-size: 0.9rem; }
+
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; border: 2px solid var(--bg-app); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow: auto; }
+            aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border-subtle); max-height: 250px; background-color: var(--bg-app); }
+            main { overflow-y: visible; padding: 1rem; }
+            .search-container { padding: 1rem 0; background-color: var(--bg-app); backdrop-filter: none; }
+        }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="sidebar-brand">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Buscador V4.0
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-title">Favoritos</div>
+            <ul class="sidebar-list" id="favoritesList"></ul>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-title">
+                Histórico
+                <button class="clear-history" id="clearHistoryBtn">Limpar</button>
+            </div>
+            <ul class="sidebar-list" id="historyList"></ul>
+        </div>
+    </aside>
+
+    <main id="mainArea">
+        <div class="search-container">
+            <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="searchInput" placeholder="Digite uma sigla, endereço ou nome... (Use ↑ ↓)" autocomplete="off" spellcheck="false">
+                <button class="clear-btn-search" id="clearSearchBtn" aria-label="Limpar busca">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="status-bar">
+                <span id="resultsCount">Inicializando motor de busca...</span>
+                <span id="loadingIndicator" style="display: none;"><span class="loading"></span> Processando...</span>
+            </div>
+        </div>
+        <div id="results-container"></div>
+    </main>
+
+    <div id="toast" class="toast">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span id="toastMsg">Ação realizada!</span>
+    </div>
+
+    <script>
+        const rawHeaders = ["UF", "SIGLA_LOC", "SIGLA_EST", "SIGLA", "NOME_PREDIO", "MUNICIPIO", "BAIRRO", "End_Completo", "DESC_TIPO", "NOMEGUERRA", "RAZAOSOCIAL"];
+        /* v65: base única — o Buscador lê o mesmo arquivo da busca de ENDEREÇOS (data/siglas.json).
+           Qualquer sigla cadastrada nesse arquivo aparece nos dois lugares. */
+        const SIGLAS_URL = '../data/siglas.json';
+        let rawData = [];
+        function carregarSiglas() {
+            return fetch(SIGLAS_URL, { cache: 'no-cache' })
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(j => {
+                    const d = j.dic;
+                    rawData = j.rows.map(r => [d.uf[r[2]], '', '', r[0], d.pr[r[6]], '', '', r[1], d.tipo[r[3]], d.ng[r[4]], d.rs[r[5]]]);
+                });
+        }
+
+        const app = {
+            state: {
+                data: [], favorites: [], history: [],
+                debounceTimer: null, activeCardIndex: -1, currentResults: []
+            },
+            config: { STORAGE_FAV: 'noc_favorites_v4', STORAGE_HIST: 'noc_history_v4', MAX_RESULTS: 100 },
+            el: {
+                input: document.getElementById('searchInput'),
+                clearBtn: document.getElementById('clearSearchBtn'),
+                container: document.getElementById('results-container'),
+                count: document.getElementById('resultsCount'),
+                loading: document.getElementById('loadingIndicator'),
+                favList: document.getElementById('favoritesList'),
+                histList: document.getElementById('historyList'),
+                clearHistBtn: document.getElementById('clearHistoryBtn'),
+                toast: document.getElementById('toast'),
+                toastMsg: document.getElementById('toastMsg')
+            },
+
+            utils: {
+                escapeHTML(str) {
+                    if (str === null || str === undefined) return '';
+                    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                },
+                normalizeSigla(str) {
+                    if (!str) return '';
+                    return String(str).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                },
+                safeCopy(text, btnElement) {
+                    if (!text) return;
+                    const triggerFeedback = () => {
+                        app.ui.showToast('Dados copiados com sucesso!');
+                        if(btnElement) {
+                            const originalHTML = btnElement.innerHTML;
+                            btnElement.classList.add('success');
+                            btnElement.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                            setTimeout(() => { btnElement.classList.remove('success'); btnElement.innerHTML = originalHTML; }, 2000);
+                        }
+                    };
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(text).then(triggerFeedback).catch(() => app.ui.showToast('Erro ao copiar.'));
+                    } else {
+                        try {
+                            const textArea = document.createElement("textarea");
+                            textArea.value = text;
+                            textArea.style.position = "fixed"; textArea.style.left = "-999999px";
+                            document.body.appendChild(textArea); textArea.focus(); textArea.select();
+                            document.execCommand('copy'); textArea.remove(); triggerFeedback();
+                        } catch (err) { app.ui.showToast('Erro ao copiar (Fallback).'); }
+                    }
+                },
+                safeOpenMap(address) {
+                    if(!address || address === '-') return app.ui.showToast('Endereço inválido para abrir no mapa.');
+                    const url = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(address.trim());
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                }
+            },
+
+            init() {
+                this.el.count.innerHTML = '<span class="loading"></span> Construindo base de dados segura...';
+                carregarSiglas().then(() => {
+                    this.state.data = rawData.map(row => {
+                        let obj = {};
+                        rawHeaders.forEach((h, i) => {
+                            const key = h.toUpperCase();
+                            if(key !== 'SIGLA_LOC' && key !== 'SIGLA_EST') {
+                                obj[key] = String(row[i] || '').trim();
+                            }
+                        });
+                        obj._searchString = `${obj.SIGLA || ''} ${obj.END_COMPLETO || ''} ${obj.RAZAOSOCIAL || ''} ${obj.NOMEGUERRA || ''}`.toUpperCase();
+                        obj._siglaNormalized = app.utils.normalizeSigla(obj.SIGLA);
+                        return obj;
+                    });
+                    
+                    this.storage.load(); this.ui.renderSidebar(); this.setupListeners();
+                    this.el.count.textContent = `${this.state.data.length.toLocaleString('pt-BR')} registros carregados e otimizados.`;
+                    this.el.input.focus();
+                }).catch(() => {
+                    this.el.count.textContent = 'Não foi possível carregar a base de siglas. Verifique a conexão e reabra.';
+                });
+            },
+
+            setupListeners() {
+                this.el.input.addEventListener('input', (e) => {
+                    this.searchEngine.handleInput(e.target.value);
+                    this.ui.toggleClearBtn();
+                });
+                this.el.input.addEventListener('keydown', (e) => this.ui.handleKeydown(e));
+                
+                this.el.clearBtn.addEventListener('click', () => {
+                    this.el.input.value = '';
+                    this.searchEngine.handleInput('');
+                    this.ui.toggleClearBtn();
+                    this.el.input.focus();
+                });
+
+                this.el.clearHistBtn.addEventListener('click', () => this.storage.clearHistory());
+                
+                this.el.container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.action-btn');
+                    if (!btn) return;
+                    const action = btn.dataset.action, index = parseInt(btn.dataset.index, 10);
+                    if (action === 'copy') this.ui.copyCardData(index, btn);
+                    else if (action === 'fav') this.storage.toggleFav(btn.dataset.sigla);
+                    else if (action === 'map') {
+                        const item = this.state.currentResults[index];
+                        if (item) this.utils.safeOpenMap(item.END_COMPLETO);
+                    }
+                });
+                
+                const handleSidebar = (e) => {
+                    const itemEl = e.target.closest('.sidebar-item'), removeBtn = e.target.closest('.fav-remove');
+                    if (removeBtn) return this.storage.toggleFav(removeBtn.dataset.sigla);
+                    if (itemEl && itemEl.dataset.term) {
+                        this.el.input.value = itemEl.dataset.term;
+                        this.ui.toggleClearBtn();
+                        this.searchEngine.handleInput(itemEl.dataset.term);
+                        if(window.innerWidth <= 768) window.scrollTo({top: document.getElementById('mainArea').offsetTop, behavior: 'smooth'});
+                    }
+                };
+                this.el.favList.addEventListener('click', handleSidebar);
+                this.el.histList.addEventListener('click', handleSidebar);
+            },
+
+            storage: {
+                load() {
+                    try {
+                        const f = localStorage.getItem(app.config.STORAGE_FAV), h = localStorage.getItem(app.config.STORAGE_HIST);
+                        const pF = f ? JSON.parse(f) : [], pH = h ? JSON.parse(h) : [];
+                        app.state.favorites = Array.isArray(pF) ? pF : [];
+                        app.state.history = Array.isArray(pH) ? pH : [];
+                    } catch(e) { app.state.favorites = []; app.state.history = []; }
+                },
+                save(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {} },
+                addToHistory(term) {
+                    if(!term || term.length < 2) return;
+                    let hist = app.state.history.filter(t => t.toUpperCase() !== term.toUpperCase());
+                    hist.unshift(term); if(hist.length > 10) hist.pop();
+                    app.state.history = hist; this.save(app.config.STORAGE_HIST, hist); app.ui.renderSidebar();
+                },
+                clearHistory() { app.state.history = []; this.save(app.config.STORAGE_HIST, []); app.ui.renderSidebar(); },
+                toggleFav(sigla) {
+                    const item = app.state.data.find(d => d.SIGLA === sigla);
+                    if(!item) return;
+                    const exists = app.state.favorites.findIndex(f => f.SIGLA === sigla);
+                    if(exists >= 0) { app.state.favorites.splice(exists, 1); app.ui.showToast('Removido dos favoritos.'); }
+                    else { app.state.favorites.push({ SIGLA: item.SIGLA, DESC_TIPO: item.DESC_TIPO }); app.ui.showToast('Salvo nos favoritos!'); }
+                    this.save(app.config.STORAGE_FAV, app.state.favorites); app.ui.renderSidebar();
+                    if(app.el.input.value.trim()) app.ui.renderResults(app.el.input.value.trim());
+                }
+            },
+
+            searchEngine: {
+                handleInput(term) {
+                    term = term.trim();
+                    if(!term) {
+                        clearTimeout(app.state.debounceTimer); app.el.container.innerHTML = '';
+                        app.el.count.textContent = `${app.state.data.length.toLocaleString('pt-BR')} registros prontos.`;
+                        app.el.loading.style.display = 'none'; app.state.activeCardIndex = -1; return;
+                    }
+                    app.el.loading.style.display = 'inline-block'; clearTimeout(app.state.debounceTimer);
+                    app.state.debounceTimer = setTimeout(() => { this.execute(term); app.storage.addToHistory(term); }, 250);
+                },
+                execute(term) {
+                    const termUp = term.toUpperCase(), termNorm = app.utils.normalizeSigla(term);
+                    let results = [], exactMatchFound = false;
+                    
+                    if (termNorm.length > 0) {
+                        for(let i=0; i < app.state.data.length; i++) {
+                            const item = app.state.data[i];
+                            if(item._siglaNormalized === termNorm) { results.push({ item, score: 1000, isExact: true }); exactMatchFound = true; }
+                        }
+                    }
+                    if (!exactMatchFound) {
+                        for(let i=0; i < app.state.data.length; i++) {
+                            const item = app.state.data[i];
+                            if(item._searchString.includes(termUp)) {
+                                let score = 0; const sigla = (item.SIGLA || '').toUpperCase();
+                                if(sigla.startsWith(termUp)) score += 50; else if(sigla.includes(termUp)) score += 20; else score += 5;
+                                results.push({ item, score, isExact: false });
+                            }
+                        }
+                        results.sort((a, b) => b.score - a.score);
+                    }
+                    app.state.currentResults = results.slice(0, app.config.MAX_RESULTS).map(r => { r.item._isExactMatch = r.isExact; return r.item; });
+                    app.state.activeCardIndex = -1; app.ui.renderResults(term); app.el.loading.style.display = 'none';
+                }
+            },
+
+            ui: {
+                toggleClearBtn() {
+                    if (app.el.input.value.length > 0) app.el.clearBtn.classList.add('visible');
+                    else app.el.clearBtn.classList.remove('visible');
+                },
+                renderResults(term) {
+                    app.el.container.innerHTML = '';
+                    if(app.state.currentResults.length === 0) {
+                        app.el.count.textContent = '0 resultados.';
+                        app.el.container.innerHTML = `
+                            <div class="empty-state">
+                                <span class="empty-state-icon">😕</span>
+                                <div class="empty-state-title">Nenhum resultado encontrado</div>
+                                <div class="empty-state-desc">Não achamos correspondência para "<b>${app.utils.escapeHTML(term)}</b>". Tente buscar por outra sigla, nome ou endereço.</div>
+                            </div>`;
+                        return;
+                    }
+                    app.el.count.textContent = `${app.state.currentResults.length} resultado(s) retornado(s).`;
+                    const fragment = document.createDocumentFragment();
+                    app.state.currentResults.forEach((item, index) => {
+                        const isMobile = (item.DESC_TIPO || '').toUpperCase().includes('SITE DA MÓVEL');
+                        const isFav = app.state.favorites.some(f => f.SIGLA === item.SIGLA);
+                        const card = document.createElement('div');
+                        card.className = 'card'; card.id = `card-${index}`; card.style.animationDelay = `${index * 0.02}s`;
+
+                        const exactBadge = item._isExactMatch ? `<span class="badge badge-exact" title="Correspondência exata encontrada">✔️</span>` : '';
+                        const mobileBadge = isMobile ? `<span class="badge badge-mobile" title="Infraestrutura Móvel">Site da Móvel</span>` : '';
+
+                        let contentHtml = `
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <div class="label">SIGLA DO ELEMENTO</div>
+                                    <div class="value" style="font-size:1.4rem; font-weight:600; letter-spacing:-0.5px;">${this.highlightSafe(item.SIGLA, term)}</div>
+                                    <div class="badges-container">${exactBadge} ${mobileBadge}</div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="action-btn ${isFav ? 'fav-active' : ''}" data-action="fav" data-sigla="${app.utils.escapeHTML(item.SIGLA)}" data-tooltip="Favoritar/Desfavoritar"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                                    <button class="action-btn" data-action="copy" data-index="${index}" data-tooltip="Copiar Elemento"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                                    <button class="action-btn" data-action="map" data-index="${index}" data-tooltip="Traçar Rota no Maps"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+                                </div>
+                            </div>
+                            <div class="card-grid">
+                                <div class="card-item"><span class="label">ENDEREÇO COMPLETO</span> <span class="value">${this.highlightSafe(item.END_COMPLETO, term) || '-'}</span></div>
+                                <div class="card-item"><span class="label">TIPO DE SITE</span> <span class="value">${this.highlightSafe(item.DESC_TIPO, term) || '-'}</span></div>
+                        `;
+                        if(!isMobile) {
+                            contentHtml += `<div class="card-item"><span class="label">RAZÃO SOCIAL</span> <span class="value">${this.highlightSafe(item.RAZAOSOCIAL, term) || '-'}</span></div>
+                                            <div class="card-item"><span class="label">NOME FANTASIA</span> <span class="value">${this.highlightSafe(item.NOMEGUERRA, term) || '-'}</span></div>
+                                            <div class="card-item"><span class="label">NOME DO PRÉDIO</span> <span class="value">${this.highlightSafe(item.NOME_PREDIO, term) || '-'}</span></div>`;
+                        }
+                        contentHtml += `</div>`; card.innerHTML = contentHtml; fragment.appendChild(card);
+                    });
+                    app.el.container.appendChild(fragment);
+                },
+
+                highlightSafe(text, term) {
+                    if(!text) return ''; let safeText = app.utils.escapeHTML(text); if(!term) return safeText;
+                    const safeTerm = app.utils.escapeHTML(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    return safeText.replace(new RegExp(`(${safeTerm})`, 'gi'), '<span class="highlight">$1</span>');
+                },
+
+                renderSidebar() {
+                    app.el.histList.innerHTML = '';
+                    if (!app.state.history.length) app.el.histList.innerHTML = '<li class="sidebar-item" style="color:var(--text-muted); cursor:default; border:none; background:none;">Nenhum histórico recente.</li>';
+                    else app.state.history.forEach(term => {
+                        const li = document.createElement('li'); li.className = 'sidebar-item'; li.dataset.term = term; 
+                        li.innerHTML = `<span style="display:flex; align-items:center; gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${app.utils.escapeHTML(term)}</span>`;
+                        app.el.histList.appendChild(li);
+                    });
+
+                    app.el.favList.innerHTML = '';
+                    if (!app.state.favorites.length) app.el.favList.innerHTML = '<li class="sidebar-item" style="color:var(--text-muted); cursor:default; border:none; background:none;">Nenhuma sigla salva.</li>';
+                    else app.state.favorites.forEach(fav => {
+                        const safeSigla = app.utils.escapeHTML(fav.SIGLA), safeTipo = app.utils.escapeHTML(fav.DESC_TIPO ? fav.DESC_TIPO.substring(0,20)+'...' : '');
+                        const li = document.createElement('li'); li.className = 'sidebar-item'; li.dataset.term = fav.SIGLA;
+                        li.innerHTML = `<div style="display:flex; flex-direction:column; gap:2px;"><span style="font-weight:600;">${safeSigla}</span><span style="font-size:0.7rem; color:var(--text-muted); opacity:0.8;">${safeTipo}</span></div><button class="fav-remove" data-sigla="${safeSigla}" aria-label="Remover">×</button>`;
+                        app.el.favList.appendChild(li);
+                    });
+                },
+
+                copyCardData(index, btnElement) {
+                    const item = app.state.currentResults[index]; if(!item) return;
+                    const isMobile = (item.DESC_TIPO || '').toUpperCase().includes('SITE DA MÓVEL');
+                    let text = `ELEMENTO: ${item.SIGLA}\nENDEREÇO COMPLETO: ${item.END_COMPLETO}\nTIPO: ${item.DESC_TIPO}`;
+                    if(!isMobile) text += `\nRAZÃO SOCIAL: ${item.RAZAOSOCIAL}\nNOME FANTASIA: ${item.NOMEGUERRA}\nNOME DO PRÉDIO: ${item.NOME_PREDIO}`;
+                    app.utils.safeCopy(text, btnElement);
+                },
+
+                handleKeydown(e) {
+                    if(app.state.currentResults.length === 0) return;
+                    if(e.key === 'ArrowDown') { e.preventDefault(); if(app.state.activeCardIndex < app.state.currentResults.length - 1) app.state.activeCardIndex++; this.updateActiveCard(); } 
+                    else if(e.key === 'ArrowUp') { e.preventDefault(); if(app.state.activeCardIndex > 0) app.state.activeCardIndex--; this.updateActiveCard(); }
+                    else if(e.key === 'Enter') {
+                        e.preventDefault();
+                        if(app.state.activeCardIndex >= 0) { const activeEl = document.getElementById(`card-${app.state.activeCardIndex}`); this.copyCardData(app.state.activeCardIndex, activeEl ? activeEl.querySelector('[data-action="copy"]') : null); }
+                        else app.searchEngine.handleInput(app.el.input.value);
+                    }
+                },
+
+                updateActiveCard() {
+                    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                    if(app.state.activeCardIndex >= 0) {
+                        const activeEl = document.getElementById(`card-${app.state.activeCardIndex}`);
+                        if(activeEl) { 
+                            activeEl.classList.add('active'); 
+                            activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                        }
+                    }
+                },
+
+                showToast(msg) { 
+                    app.el.toastMsg.textContent = msg; 
+                    app.el.toast.classList.add('show'); 
+                    setTimeout(() => app.el.toast.classList.remove('show'), 3000); 
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

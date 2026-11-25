@@ -339,7 +339,9 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v69';
+const SIR_APP_VERSION = 'v70';
+/* v70: mesma base de código nas duas versões; a de testes fica na pasta /backup/ */
+const SIR_IS_BACKUP = /\/backup\//.test(location.pathname);
 
 /* Botão "Minhas Áreas" dentro da grade de ferramentas (usado no celular/tablet).
    Assim todos os botões ficam na mesma grade, sem depender de truques de CSS. */
@@ -394,6 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (footer && !document.getElementById('app-version')) {
     const v = document.createElement('span');
     v.id = 'app-version'; v.textContent = 'SIR ' + SIR_APP_VERSION;
+    if (SIR_IS_BACKUP) v.insertAdjacentHTML('beforeend', ' <b class="sir-backup-tag" title="Versão backup — onde as mudanças são testadas antes de ir para a principal">BACKUP</b>');
     footer.insertBefore(v, footer.lastElementChild);
   }
 });

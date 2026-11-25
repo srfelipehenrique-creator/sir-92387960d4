@@ -1,0 +1,149 @@
+/* ══════════════════════════════════════════════════════════════
+   Copiar RAL/REC formatado para WhatsApp
+   - Botão "Copiar" em cada ticket da lista
+   - Botão "Copiar todos" no topo da lista (respeita o filtro)
+   Usa *negrito* do WhatsApp. SLA é calculado no momento da cópia.
+   ══════════════════════════════════════════════════════════════ */
+
+function _waSla(abertura, isRal) {
+  const r = calcSla(abertura || '', isRal);
+  if (!r) return '';
+  const fmt = ms => {
+    const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+    return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`;
+  };
+  if (r.remaining <= 0) return `⛔ SLA PERDIDO (+${fmt(Math.abs(r.remaining))})`;
+  /* Mesmas faixas de cor da lista: verde > 2h, amarelo < 2h, vermelho < 1h */
+  const dot = r.remaining < 3600000 ? '🔴' : r.remaining < 7200000 ? '🟡' : '🟢';
+  return `${dot} ${fmt(r.remaining)} restantes (${isRal ? '6h' : '4h'})`;
+}
+
+const _WA_STATUS_EMOJI = { 'sem-acesso': '🚫', 'area-de-risco': '⚠️', 'liberacao-noc': '📡' };
+
+function _waWhen(ts) {
+  return new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+}
+
+function _waTicketLabel(ticket, isRal) {
+  const t = String(ticket || 'N/D').trim();
+  return /^[A-Za-z]/.test(t) ? t : `${isRal ? 'RAL' : 'REC'} ${t}`;
+}
+
+function formatTicketWA(item, isRal) {
+  const st = appState.ticketStates[makeIdentity(isRal ? 'ral' : 'rec', item)] || {};
+  const status = st.obsStatus && st.obsStatus !== 'none'
+    ? (OBS_STATUSES.find(s => s.key === st.obsStatus) || {}).label : '';
+  /* v58 — classificação primeiro; sem a linha "Tipo"; linha em branco antes das notas */
+  const lines = [
+    ...(typeof getTicketTag === 'function' && getTicketTag(st.eventColor)
+        ? [`${getTicketTag(st.eventColor).emoji} *${getTicketTag(st.eventColor).label}*`] : []),
+    `🏷️ *${_waTicketLabel(item.ticket, isRal)}* -📍 CF ${item.cfOrigem || 'N/D'}`,
+    `📋 Designação: ${item.designacao || 'N/D'}`,
+  ];
+  if (!isRal && item.extra && item.extra !== 'N/D') lines.push(`👤 Cliente: ${item.extra}`);
+  if (item.abertura) lines.push(`📅 Abertura: ${item.abertura}`);
+  const sla = _waSla(item.abertura, isRal);
+  if (sla) lines.push(`⏳ SLA: ${sla}`);
+  const notes = typeof getTicketNotes === 'function' ? getTicketNotes(makeIdentity(isRal ? 'ral' : 'rec', item))
+              : (st.obs ? [{ t: st.obs }] : []);
+  if (notes.length) lines.push('');
+  if (notes.length === 1) lines.push(`📝 Nota${notes[0].at ? ' (' + _waWhen(notes[0].at) + (notes[0].by ? ' · ' + notes[0].by : '') + ')' : ''}: ${notes[0].t}`);
+  else if (notes.length > 1) {
+    lines.push(`📝 Notas:`);
+    notes.forEach(n => lines.push(`   • ${n.at ? _waWhen(n.at) + (n.by ? ' · ' + n.by : '') + ' — ' : ''}${n.t}`));
+  }
+  if (status) lines.push(`${_WA_STATUS_EMOJI[st.obsStatus] || '📌'} Status: ${status}`);
+  return lines.join('\n');
+}
+
+function _waCurrentList() {
+  const tk = appState.currentModalType, key = appState.currentModalKey;
+  return { tk, isRal: tk === 'ral', list: (tk && modalData[tk] && modalData[tk][key]) || [] };
+}
+
+async function _waWrite(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext !== false) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* tenta o método antigo abaixo */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px;';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+
+function _waFlash(btn, ok) {
+  if (!btn) return;
+  const old = btn.dataset.label || btn.textContent;
+  btn.dataset.label = old;
+  btn.textContent = ok ? 'Copiado ✓' : 'Falhou';
+  btn.classList.toggle('copied', ok);
+  clearTimeout(btn._waT);
+  btn._waT = setTimeout(() => { btn.textContent = old; btn.classList.remove('copied'); }, 1600);
+}
+
+async function copyTicketWA(btn) {
+  const row = btn.closest('tr.ticket-row');
+  if (!row) return;
+  const { tk, isRal, list } = _waCurrentList();
+  const id = row.dataset.identity;
+  const item = list.find(i => makeIdentity(tk, i) === id)
+            || (modalData[tk]['ALL'] || []).find(i => makeIdentity(tk, i) === id);
+  if (!item) return;
+  const ok = await _waWrite(formatTicketWA(item, isRal));
+  _waFlash(btn, ok);
+  if (typeof showActionToast === 'function')
+    showActionToast(ok ? 'Copiado — cole no WhatsApp' : 'Não foi possível copiar', ok ? 'success' : 'error');
+}
+
+async function copyAllWA(btn) {
+  const { tk, isRal, list } = _waCurrentList();
+  if (!list.length) return;
+  /* Fonte: as linhas que estão na tela (respeita filtro, ordenação e fixados).
+     Se a lista usa rolagem virtual (muitas linhas no PC), filtra os dados pelo mesmo texto. */
+  const q = (document.getElementById('modal-filter-input')?.value || '').toLowerCase().trim();
+  const rows = Array.from(document.querySelectorAll('#modal-tbody tr.ticket-row'));
+  let ordered;
+  if (rows.length >= list.length) {
+    const pool = new Map();
+    list.forEach(i => { const k = makeIdentity(tk, i); if (!pool.has(k)) pool.set(k, []); pool.get(k).push(i); });
+    ordered = rows.filter(r => r.style.display !== 'none').map(r => (pool.get(r.dataset.identity) || []).shift()).filter(Boolean);
+  } else {
+    ordered = (!q ? list : list.filter(i =>
+      [i.ticket, i.cfOrigem, i.designacao, i.extra, i.abertura].join(' ').toLowerCase().includes(q)))
+      .slice().sort((a, b) => parseAbertura(b.abertura) - parseAbertura(a.abertura));
+  }
+  const items = ordered;
+  if (!items.length) return;
+
+  const title = (document.getElementById('modal-title')?.textContent || '').trim();
+  const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const head = `🚨 *COP REDE — ${title}*\n📊 ${items.length} ${isRal ? 'RAL' : 'REC'}${items.length > 1 ? 's' : ''} · 📅 ${now}`;
+  const text = head + '\n\n' + ordered.map(i => formatTicketWA(i, isRal)).join('\n\n');
+
+  const ok = await _waWrite(text);
+  _waFlash(btn, ok);
+  if (typeof showActionToast === 'function')
+    showActionToast(ok ? `${items.length} copiado${items.length > 1 ? 's' : ''} — cole no WhatsApp` : 'Não foi possível copiar', ok ? 'success' : 'error');
+}
+
+/* Ao abrir outra lista, o filtro começa vazio (evita copiar só parte dos tickets) */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof openModal !== 'function') return;
+  const _open = openModal;
+  openModal = function () {
+    const f = document.getElementById('modal-filter-input');
+    if (f) f.value = '';
+    const r = _open.apply(this, arguments);
+    if (typeof filterModalTable === 'function') filterModalTable();
+    return r;
+  };
+});

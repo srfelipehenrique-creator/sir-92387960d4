@@ -1,0 +1,56 @@
+/* ══════════════════════════════════════════════════════════════
+   Pressable — resposta ao toque em TODOS os botões do painel (v62)
+   Estados: normal → hover (mouse) → pressionado → solto; foco por teclado;
+   desabilitado. A classe .is-pressed é posta por js/pressable.js no
+   instante do toque (pointerdown), sem esperar o clique terminar.
+   Usa a propriedade "scale" (separada de "transform"), para não
+   desmontar posicionamentos e animações que já usam transform.
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  --press-dur-in:  70ms;    /* afundar: quase imediato */
+  --press-dur-out: 180ms;   /* voltar: um pouco mais suave */
+  --press-ease-out: cubic-bezier(.2, .9, .3, 1.25); /* volta com leve "mola" */
+}
+
+.pressable {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;          /* sem atraso de 300 ms no celular */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  scale: 1;
+  transition-property: scale, filter, opacity, background-color, border-color, box-shadow, color, transform;
+  transition-duration: var(--press-dur-out);
+  transition-timing-function: var(--press-ease-out);
+}
+
+/* Pressionado (toque, clique ou Espaço/Enter no teclado) */
+.pressable.is-pressed {
+  scale: var(--press-scale, .96);
+  filter: brightness(.9);
+  transition-duration: var(--press-dur-in);
+  transition-timing-function: ease-out;
+}
+/* Cartões e células grandes afundam menos: o JS ajusta --press-scale pelo tamanho */
+
+/* Foco visível só para quem navega pelo teclado */
+.pressable:focus-visible {
+  outline: 2px solid var(--accent, #4f8cff);
+  outline-offset: 2px;
+}
+.pressable:focus:not(:focus-visible) { outline: none; }
+
+/* Desabilitado: não reage */
+.pressable:disabled,
+.pressable[aria-disabled="true"] {
+  cursor: not-allowed;
+  scale: 1 !important;
+  filter: none !important;
+}
+
+/* Quem prefere menos movimento: só escurece, sem encolher */
+@media (prefers-reduced-motion: reduce) {
+  .pressable { transition-duration: 0ms; }
+  .pressable.is-pressed { scale: 1; filter: brightness(.85); }
+}
