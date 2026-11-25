@@ -169,7 +169,7 @@ async function _mpServidorBusca(q) {
 async function _mpOsm(q) {
   const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=br&accept-language=pt-BR'
     + '&viewbox=' + MAPA_VIEWBOX + '&q=' + encodeURIComponent(q);
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const r = await fetch(url, { headers: { 'Accept': 'application/json' }, referrerPolicy: 'origin' });
   if (!r.ok) throw new Error(r.status);
   return (await r.json()).map(x => ({ lat: +x.lat, lon: +x.lon, display_name: x.display_name, fonte: 'OpenStreetMap',
     precisao: x.addresstype === 'house' || x.type === 'house' ? 'numero' : (x.addresstype === 'road' ? 'rua' : 'aprox') }));
@@ -219,6 +219,7 @@ async function _mpMostrarEscolha() {
   if (!_mpPrev) {
     _mpPrev = L.map(el, { zoomControl: true, attributionControl: true });
     _mpTiles().addTo(_mpPrev);
+    _mpAplicarTema();
     _mpPrevPino = L.marker([e.lat, e.lon], { draggable: true, icon: _mpIcone(_mpAtual.tk) }).addTo(_mpPrev);
     _mpPrevPino.on('dragend', () => {
       const p = _mpPrevPino.getLatLng();
@@ -265,12 +266,18 @@ function _mpLibs() {
     .catch(() => { _mpLibsP = null; const m = document.querySelector('#mapa-calor .mp-map'); if (m) m.innerHTML = '<div class="mp-vazio">Não foi possível carregar o mapa (sem internet?).</div>'; return false; });
   return _mpLibsP;
 }
+/* v74: fundo do OpenStreetMap (grátis, sem chave). O CARTO passou a exigir chave.
+   No tema escuro o fundo é escurecido por CSS (.mp-escuro), sem mudar os pinos e o calor. */
+function _mpEscuro() { return document.documentElement.getAttribute('data-mode') !== 'light'; }
 function _mpTiles() {
-  const escuro = document.documentElement.getAttribute('data-mode') !== 'light';
-  return L.tileLayer(`https://{s}.basemaps.cartocdn.com/${escuro ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
-    maxZoom: 19, subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+  return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, referrerPolicy: 'origin',   /* o OpenStreetMap pede a origem do site (a página usa no-referrer) */
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
   });
+}
+function _mpAplicarTema() {
+  const esc = _mpEscuro();
+  document.querySelectorAll('.mp-map, .mpe-prev-map').forEach(el => el.classList.toggle('mp-escuro', esc));
 }
 function _mpIcone(tk) {
   return L.divIcon({ className: 'mp-pin-wrap', html: `<span class="mp-pin mp-pin-${tk}"></span>`, iconSize: [22, 30], iconAnchor: [11, 29], popupAnchor: [0, -26] });
@@ -350,6 +357,7 @@ async function _mpDesenhar(ajustarVista) {
     _mp.mapa.on('focus click', () => _mp.mapa.scrollWheelZoom.enable());
     _mp.mapa.on('mouseout', () => { if (!sec.classList.contains('mp-full')) _mp.mapa.scrollWheelZoom.disable(); });
     _mp.tiles = _mpTiles().addTo(_mp.mapa);
+    _mpAplicarTema();
     _mp.calor = L.heatLayer([], { radius: 28, blur: 22, maxZoom: 15, minOpacity: 0.35,
       gradient: { 0.2: '#3b82f6', 0.45: '#22d3ee', 0.65: '#facc15', 0.85: '#f97316', 1: '#ef4444' } }).addTo(_mp.mapa);
     _mp.pinos = L.layerGroup().addTo(_mp.mapa);
@@ -386,9 +394,20 @@ function mapaFocar(id) {
   _mp.mapa.setView([it.lat, it.lon], 15);
   _mp.pinos.eachLayer(m => { if (m._mpId === id) m.openPopup(); });
 }
+/* Tela cheia (v74): o mapa vai para o fim da página enquanto está em tela cheia
+   (a coluna da direita "gruda" na tela e prendia o mapa atrás dos cards) e volta ao lugar ao fechar. */
+let _mpLugar = null;
 function mapaTelaCheia() {
   const sec = document.getElementById('mapa-calor'); if (!sec) return;
-  const on = sec.classList.toggle('mp-full');
+  const on = !sec.classList.contains('mp-full');
+  if (on) {
+    _mpLugar = document.createComment('lugar do mapa');
+    sec.parentNode.insertBefore(_mpLugar, sec);
+    document.body.appendChild(sec);
+  } else if (_mpLugar && _mpLugar.parentNode) {
+    _mpLugar.parentNode.insertBefore(sec, _mpLugar); _mpLugar.remove(); _mpLugar = null;
+  }
+  sec.classList.toggle('mp-full', on);
   document.body.classList.toggle('mp-full-on', on);
   const b = sec.querySelector('.mp-ico'); b.textContent = on ? '✕' : '⤢';
   b.title = on ? 'Fechar tela cheia' : 'Ver em tela cheia'; b.setAttribute('aria-label', b.title);
@@ -398,11 +417,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('mapa-calor')?.classList.contains('mp-full')) mapaTelaCheia();
 });
 
-/* Tema claro/escuro: troca o fundo do mapa */
-new MutationObserver(() => {
-  if (!_mp.mapa || !_mp.tiles) return;
-  _mp.mapa.removeLayer(_mp.tiles); _mp.tiles = _mpTiles().addTo(_mp.mapa); _mp.tiles.bringToBack();
-}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+/* Tema claro/escuro: escurece ou clareia o fundo do mapa */
+new MutationObserver(_mpAplicarTema).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
 
 /* Início: painel + dados; atualiza a cada 2 min e ao voltar para o app */
 document.addEventListener('DOMContentLoaded', () => {
