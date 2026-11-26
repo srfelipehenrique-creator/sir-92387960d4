@@ -28,13 +28,8 @@ const TOOL_GROUPS = {
 };
 
 const THEMES = [
-  { id: 'default', label: 'Índigo',    color: '#6366f1' },
-  { id: 'blue',    label: 'Azul',      color: '#3b82f6' },
-  { id: 'cyan',    label: 'Ciano',     color: '#06b6d4' },
-  { id: 'green',   label: 'Esmeralda', color: '#10b981' },
-  { id: 'amber',   label: 'Âmbar',    color: '#f59e0b' },
-  { id: 'rose',    label: 'Rosa',      color: '#ec4899' },
-  { id: 'amoled',  label: 'AMOLED',   color: '#6366f1', dark: true },
+  { id: 'dark',  label: 'Escuro',      color: '#E50914', bg: '#141414', dark: true  },
+  { id: 'light', label: 'Claro suave', color: '#B8252E', bg: '#ECE8E1', dark: false },
 ];
 
 const VIEW_MODES = [
@@ -49,7 +44,7 @@ let _originalState = null;
 
 function _captureState() {
   return {
-    theme:   localStorage.getItem(LS_THEME) || 'default',
+    theme:   typeof window.getThemeModePref === 'function' ? window.getThemeModePref() : 'dark',
     compact: localStorage.getItem(LS_DENSITY) === 'true',
     view:    localStorage.getItem(LS_VIEW_MODE) || 'cards',
     toolbar: localStorage.getItem(LS_TOOLBAR) || null,
@@ -127,16 +122,20 @@ function openOtsFidere() {
   else location.href = OTS_FIDERE_URL; /* bloqueador de pop-up: abre na mesma aba */
 }
 
-/* ── Tema ── */
+/* ── Tema (v94: apenas Escuro com vermelho principal e Claro suave) ── */
 function applyTheme(themeId) {
-  localStorage.setItem(LS_THEME, themeId);
-  document.documentElement.setAttribute('data-theme', themeId);
+  const mode = themeId === 'light' ? 'light' : 'dark';
+  if (typeof window.setThemeMode === 'function') window.setThemeMode(mode, true);
+  else {
+    try { localStorage.setItem('sir_mode', mode); } catch (e) {}
+    document.documentElement.setAttribute('data-mode', mode);
+  }
+  document.documentElement.setAttribute('data-theme', 'red');
   updatePreview();
 }
 
 function initTheme() {
-  const saved = localStorage.getItem(LS_THEME) || 'default';
-  document.documentElement.setAttribute('data-theme', saved);
+  document.documentElement.setAttribute('data-theme', 'red');
 }
 
 /* ── Densidade ── */
@@ -233,23 +232,27 @@ function cancelPersonalizacao() {
   closePersonalizacao();
 }
 
-/* ── Theme picker ── */
+/* ── Theme picker (v94: Escuro e Claro suave) ── */
 function renderThemePicker() {
   const container = document.getElementById('theme-swatches');
   if (!container) return;
-  const current = localStorage.getItem(LS_THEME) || 'default';
+  const current = typeof window.getThemeModePref === 'function' ? window.getThemeModePref() : 'dark';
   container.innerHTML = THEMES.map(t => `
-    <button class="theme-swatch${t.id === current ? ' theme-active' : ''}"
-            onclick="_selectTheme(this,'${t.id}')" title="${t.label}" data-theme-btn="${t.id}">
-      <span class="theme-swatch-dot" style="background:${t.color}${t.dark ? ';box-shadow:0 0 0 5px #000 inset' : ''}"></span>
+    <button type="button" class="theme-swatch${t.id === current ? ' theme-active' : ''}"
+            onclick="_selectTheme(this,'${t.id}')" title="${t.label}" data-theme-btn="${t.id}" aria-pressed="${t.id === current}">
+      <span class="theme-swatch-dot" style="background:${t.bg};box-shadow:0 0 0 4px ${t.color} inset"></span>
       <span class="theme-swatch-label">${t.label}</span>
     </button>`
   ).join('');
 }
 
 function _selectTheme(btn, themeId) {
-  document.querySelectorAll('.theme-swatch').forEach(el => el.classList.remove('theme-active'));
+  document.querySelectorAll('.theme-swatch').forEach(el => {
+    el.classList.remove('theme-active');
+    el.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('theme-active');
+  btn.setAttribute('aria-pressed', 'true');
   applyTheme(themeId);
 }
 
@@ -313,13 +316,13 @@ function updatePreview() {
   const preview = document.getElementById('pers-preview-box');
   if (!preview) return;
 
-  const theme   = localStorage.getItem(LS_THEME) || 'default';
+  const theme   = typeof window.getThemeModePref === 'function' ? window.getThemeModePref() : 'dark';
   const t       = THEMES.find(x => x.id === theme) || THEMES[0];
   const compact = localStorage.getItem(LS_DENSITY) === 'true';
   const view    = getViewMode();
-  const bg      = t.dark ? '#000' : '#141416';
-  const panel   = t.dark ? '#0c0c0e' : '#1c1c1f';
-  const elevated= t.dark ? '#161618' : '#28282c';
+  const bg      = t.dark ? '#141414' : '#ECE8E1';
+  const panel   = t.dark ? '#181818' : '#F6F3EE';
+  const elevated= t.dark ? '#242424' : '#E9E4DC';
 
   const toolbarBtns = loadToolbarConfig().sort((a,b)=>a.order-b.order).filter(b=>b.visible);
   const cardH = compact ? '32px' : '42px';

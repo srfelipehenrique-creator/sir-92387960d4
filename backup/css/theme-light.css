@@ -1,39 +1,48 @@
 /* ══════════════════════════════════════════════════════════════
-   Modo CLARO — ativo quando <html data-mode="light">
-   (escolhido pelo botão ☀/☾ no topo ou automático pelo aparelho)
-   As cores de destaque (Personalização → Tema) continuam valendo.
+   Modo CLARO SUAVE (v94) — ativo quando <html data-mode="light">
+   Paleta quente tipo linho/papel macio (#ECE8E1 / #F6F3EE), sem
+   branco puro ofuscante, com vermelho suave como destaque principal.
    ══════════════════════════════════════════════════════════════ */
 
 :root[data-mode="light"] {
-  --bg-dark:    #f3f4f6;
-  --bg-panel:   #ffffff;
-  --bg-panel-2: #f5f6f8;
-  --bg-panel-3: #eceef2;
-  --bg-elevated:#ffffff;
-  --bg-float:   #ffffff;
-  --bg-hover:   rgba(15,23,42,0.045);
+  --bg-dark:    #ECE8E1;
+  --bg-panel:   #F6F3EE;
+  --bg-panel-2: #E9E4DC;
+  --bg-panel-3: #E1DBD1;
+  --bg-elevated:#FAF8F4;
+  --bg-float:   #FAF8F4;
+  --bg-hover:   rgba(54,46,38,0.06);
 
-  --text-main:  #17191d;
-  --text-soft:  rgba(23,25,29,0.76);
-  --text-muted: rgba(23,25,29,0.54);
-  --text-dim:   rgba(23,25,29,0.34);
-  --line:        rgba(15,23,42,0.09);
-  --line-strong: rgba(15,23,42,0.17);
+  --text-main:  #242220;
+  --text-soft:  #46423E;
+  --text-muted: #66605A;
+  --text-dim:   rgba(36,34,32,0.46);
+  --line:        rgba(54,46,38,0.11);
+  --line-strong: rgba(54,46,38,0.22);
 
-  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent:      #B8252E;
+  --accent-soft: rgba(184,37,46,0.10);
+  --accent-glow: rgba(184,37,46,0.22);
 
-  --sh-sm: 0 1px 2px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.06);
-  --sh:    0 4px 14px rgba(15,23,42,0.08), 0 1px 4px rgba(15,23,42,0.06);
-  --sh-lg: 0 12px 36px rgba(15,23,42,0.14), 0 4px 10px rgba(15,23,42,0.06);
-  --sh-xl: 0 24px 60px rgba(15,23,42,0.18), 0 8px 20px rgba(15,23,42,0.08);
+  --sh-sm: 0 1px 2px rgba(45,38,30,0.06), 0 1px 3px rgba(45,38,30,0.05);
+  --sh:    0 4px 14px rgba(45,38,30,0.08), 0 1px 4px rgba(45,38,30,0.05);
+  --sh-lg: 0 12px 32px rgba(45,38,30,0.12), 0 4px 10px rgba(45,38,30,0.05);
+  --sh-xl: 0 22px 54px rgba(45,38,30,0.16), 0 8px 18px rgba(45,38,30,0.07);
 
-  /* Cores de quantidade do layout novo (mais escuras para ler no branco) */
-  --v2-ok:   #047857;
-  --v2-warn: #b45309;
-  --v2-crit: #dc2626;
-  --v2-ok-bg:   rgba(16,185,129,0.10);
-  --v2-warn-bg: rgba(245,158,11,0.15);
-  --v2-crit-bg: rgba(239,68,68,0.12);
+  /* Cores semânticas suaves com contraste >= 4,5:1 */
+  --v2-ok:   #1E6F43;
+  --v2-warn: #9A5B13;
+  --v2-crit: #B8252E;
+  --v2-ok-bg:   rgba(30,111,67,0.11);
+  --v2-warn-bg: rgba(154,91,19,0.13);
+  --v2-crit-bg: rgba(184,37,46,0.12);
+}
+
+/* Destaque vermelho também fora do modo Netflix (v94) */
+:root[data-theme="red"]:not([data-mode="light"]) {
+  --accent:      #E50914;
+  --accent-soft: rgba(229,9,20,0.15);
+  --accent-glow: rgba(229,9,20,0.32);
 }
 
 /* AMOLED é um tema escuro: no modo claro vale o fundo claro */

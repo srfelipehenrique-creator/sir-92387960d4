@@ -61,44 +61,51 @@ html.rec-netflix:not([data-mode="light"]) {
   --mini-rec:      #60A5FA;
 }
 
-/* ── Modo Claro adaptado ao estilo Netflix (contraste ≥ 4,5:1) ── */
+/* ── Modo Claro Suave (v94) — linho quente macio aos olhos, sem branco ofuscante (contraste ≥ 4,5:1) ── */
 html.rec-netflix[data-mode="light"] {
-  --nf-red:        #C80813;
-  --nf-red-hover:  #A80610;
-  --nf-red-soft:   rgba(200, 8, 19, 0.10);
-  --nf-red-glow:   rgba(200, 8, 19, 0.22);
-  --nf-green:      #15803D;
+  --nf-red:        #B8252E;
+  --nf-red-hover:  #9C1D25;
+  --nf-red-soft:   rgba(184, 37, 46, 0.10);
+  --nf-red-glow:   rgba(184, 37, 46, 0.18);
+  --nf-green:      #1E6F43;
   --nf-font-disp:  'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
 
-  --bg-dark:       #F4F4F6;
-  --bg-panel:      #FFFFFF;
-  --bg-panel-2:    #F0F0F3;
-  --bg-panel-3:    #E8E8EC;
-  --bg-elevated:   #FFFFFF;
-  --bg-float:      #FFFFFF;
-  --bg-hover:      rgba(20, 20, 20, 0.06);
+  --bg-dark:       #ECE8E1;
+  --bg-panel:      #F6F3EE;
+  --bg-panel-2:    #E9E4DC;
+  --bg-panel-3:    #E1DBD1;
+  --bg-elevated:   #FAF8F4;
+  --bg-float:      #FAF8F4;
+  --bg-hover:      rgba(54, 46, 38, 0.06);
 
-  --text-main:     #141414;
-  --text-soft:     #2D2D32;
-  --text-muted:    #56565E;
-  --text-dim:      rgba(20, 20, 20, 0.46);
+  --text-main:     #242220;
+  --text-soft:     #46423E;
+  --text-muted:    #66605A;
+  --text-dim:      rgba(36, 34, 32, 0.46);
 
-  --line:          rgba(20, 20, 20, 0.10);
-  --line-strong:   rgba(20, 20, 20, 0.20);
+  --line:          rgba(54, 46, 38, 0.11);
+  --line-strong:   rgba(54, 46, 38, 0.22);
 
-  --accent:        #C80813;
-  --accent-soft:   rgba(200, 8, 19, 0.10);
-  --accent-glow:   rgba(200, 8, 19, 0.22);
+  --accent:        #B8252E;
+  --accent-soft:   rgba(184, 37, 46, 0.10);
+  --accent-glow:   rgba(184, 37, 46, 0.20);
 
-  --v2-ok:         #15803D;
-  --v2-ok-bg:      rgba(21, 128, 61, 0.12);
-  --v2-warn:       #B45309;
-  --v2-warn-bg:    rgba(180, 83, 9, 0.13);
-  --v2-crit:       #B91C1C;
-  --v2-crit-bg:    rgba(185, 28, 28, 0.13);
+  --v2-ok:         #1E6F43;
+  --v2-ok-bg:      rgba(30, 111, 67, 0.11);
+  --v2-warn:       #9A5B13;
+  --v2-warn-bg:    rgba(154, 91, 19, 0.13);
+  --v2-crit:       #B8252E;
+  --v2-crit-bg:    rgba(184, 37, 46, 0.12);
 
-  --hud:           #C80813;
-  --hud-line:      rgba(20, 20, 20, 0.12);
+  --sk-zero-bg:    #EAE5DD;
+  --sk-qual-bg:    rgba(91, 62, 150, 0.11);
+  --sk-qual-fg:    #5B3E96;
+  --sk-qual-line:  rgba(91, 62, 150, 0.32);
+  --mini-ral:      #B8252E;
+  --mini-rec:      #2563EB;
+
+  --hud:           #B8252E;
+  --hud-line:      rgba(54, 46, 38, 0.12);
 }
 
 /* Fundo cinematográfico limpo (vence a grade do HUD) */
@@ -111,9 +118,9 @@ html.rec-netflix:not([data-mode="light"]) body {
   background-attachment: scroll !important;
 }
 html.rec-netflix[data-mode="light"] body {
-  background-color: #F4F4F6 !important;
+  background-color: #ECE8E1 !important;
   background-image:
-    radial-gradient(ellipse 80% 35% at 20% -5%, rgba(200, 8, 19, 0.07) 0%, transparent 60%) !important;
+    radial-gradient(ellipse 80% 35% at 20% -5%, rgba(184, 37, 46, 0.06) 0%, transparent 60%) !important;
 }
 
 /* ── 2. Barra Superior estilo Netflix ── */
@@ -130,12 +137,12 @@ html.rec-netflix body.nf-scrolled header {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
 }
 html.rec-netflix[data-mode="light"] header {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-bottom: 1px solid rgba(20, 20, 20, 0.10) !important;
+  background: rgba(246, 243, 238, 0.94) !important;
+  border-bottom: 1px solid rgba(54, 46, 38, 0.11) !important;
 }
 html.rec-netflix[data-mode="light"] body.nf-scrolled header {
-  background: #FFFFFF !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  background: #F6F3EE !important;
+  box-shadow: 0 6px 18px rgba(45, 38, 30, 0.08);
 }
 
 /* Wordmark SIR em vermelho Netflix (substitui o anel ciano do HUD quando Netflix está ligado) */
@@ -217,10 +224,10 @@ html.rec-netflix body.layout-v2 .nf-hero {
 }
 html.rec-netflix[data-mode="light"] .nf-hero {
   background:
-    radial-gradient(ellipse 68% 120% at 92% 18%, rgba(200, 8, 19, 0.12) 0%, rgba(200, 8, 19, 0.03) 48%, transparent 72%),
-    linear-gradient(115deg, #FFFFFF 0%, #FAFAFC 60%, #F4F4F7 100%);
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07);
+    radial-gradient(ellipse 68% 120% at 92% 18%, rgba(184, 37, 46, 0.10) 0%, rgba(184, 37, 46, 0.03) 48%, transparent 72%),
+    linear-gradient(115deg, #FAF8F4 0%, #F5F1EA 62%, #EFEAE0 100%);
+  border: 1px solid rgba(54, 46, 38, 0.14);
+  box-shadow: 0 10px 26px rgba(45, 38, 30, 0.08);
 }
 html.rec-netflix .nf-hero.nf-hero-crit {
   border-color: rgba(229, 9, 20, 0.45);
@@ -325,6 +332,8 @@ html.rec-netflix[data-mode="light"] .nf-tag {
 }
 .nf-tag.warn { border-color: color-mix(in srgb, var(--v2-warn) 60%, transparent); color: var(--v2-warn); }
 .nf-tag.crit { border-color: color-mix(in srgb, var(--v2-crit) 65%, transparent); color: var(--v2-crit); }
+button.nf-tag { cursor: pointer; font-family: var(--font-sans); }
+button.nf-tag:hover { background: var(--nf-red-soft); }
 
 .nf-hero-actions {
   display: flex;
@@ -332,6 +341,17 @@ html.rec-netflix[data-mode="light"] .nf-tag {
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+}
+.nf-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.nf-hero-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 .nf-btn-play,
 .nf-btn-info,
@@ -357,10 +377,10 @@ html.rec-netflix[data-mode="light"] .nf-tag {
 }
 .nf-btn-play:hover { background: rgba(255, 255, 255, 0.86); }
 html.rec-netflix[data-mode="light"] .nf-btn-play {
-  background: #141414;
-  color: #FFFFFF;
+  background: #242220;
+  color: #FAF8F4;
 }
-html.rec-netflix[data-mode="light"] .nf-btn-play:hover { background: #2D2D32; }
+html.rec-netflix[data-mode="light"] .nf-btn-play:hover { background: #3A3632; }
 
 .nf-btn-info {
   min-height: 40px;
@@ -371,10 +391,10 @@ html.rec-netflix[data-mode="light"] .nf-btn-play:hover { background: #2D2D32; }
 }
 .nf-btn-info:hover { background: rgba(109, 109, 110, 0.48); }
 html.rec-netflix[data-mode="light"] .nf-btn-info {
-  background: rgba(20, 20, 20, 0.09);
-  color: #141414;
+  background: rgba(54, 46, 38, 0.10);
+  color: #242220;
 }
-html.rec-netflix[data-mode="light"] .nf-btn-info:hover { background: rgba(20, 20, 20, 0.16); }
+html.rec-netflix[data-mode="light"] .nf-btn-info:hover { background: rgba(54, 46, 38, 0.17); }
 
 .nf-chip {
   min-height: 36px;
@@ -390,7 +410,7 @@ html.rec-netflix[data-mode="light"] .nf-btn-info:hover { background: rgba(20, 20
   color: var(--text-main);
 }
 html.rec-netflix[data-mode="light"] .nf-chip {
-  background: #FFFFFF;
+  background: #FAF8F4;
   border-color: var(--line-strong);
   color: var(--text-main);
 }
@@ -760,8 +780,8 @@ html.rec-netflix .app-menu {
   border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
 html.rec-netflix[data-mode="light"] .app-menu {
-  background: #FFFFFF !important;
-  border-right: 1px solid rgba(20, 20, 20, 0.12) !important;
+  background: #F6F3EE !important;
+  border-right: 1px solid rgba(54, 46, 38, 0.14) !important;
 }
 html.rec-netflix .menu-layout-opt.on {
   color: var(--nf-red) !important;
@@ -773,7 +793,7 @@ html.rec-netflix .page-footer {
   border-top: 1px solid var(--line);
 }
 html.rec-netflix[data-mode="light"] .page-footer {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(246, 243, 238, 0.96);
 }
 
 @media (max-width: 640px) {
@@ -782,8 +802,8 @@ html.rec-netflix[data-mode="light"] .page-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
   }
   html.rec-netflix[data-mode="light"].rec-navcel .nav-celular:not([hidden]) {
-    background: rgba(255, 255, 255, 0.97) !important;
-    border-top: 1px solid rgba(20, 20, 20, 0.12) !important;
+    background: rgba(246, 243, 238, 0.97) !important;
+    border-top: 1px solid rgba(54, 46, 38, 0.14) !important;
   }
   html.rec-netflix.rec-navcel .nav-celular button.on {
     color: var(--text-main) !important;
@@ -795,11 +815,11 @@ html.rec-netflix[data-mode="light"] .page-footer {
   }
 }
 
-/* ── 11. Responsivo (Tablet & Celular ≤ 640px) ── */
+/* ── 11. Responsivo (Tablet & Celular ≤ 640px) — reorganizado v94 ── */
 @media (max-width: 960px) {
-  html.rec-netflix .nf-hero {
+  html.rec-netflix body.layout-v2 .nf-hero {
     grid-template-columns: 1fr;
-    padding: 16px 16px;
+    padding: 16px;
   }
   html.rec-netflix .nf-hero-top {
     max-width: none;
@@ -812,34 +832,174 @@ html.rec-netflix[data-mode="light"] .page-footer {
 }
 
 @media (max-width: 640px) {
-  html.rec-netflix .app-bar-title { font-size: 22px; letter-spacing: 2px; }
-  html.rec-netflix .nf-hero {
-    padding: 14px 14px;
-    border-radius: 10px;
+  /* 1. Barra superior enxuta: esconde a faixa HUD duplicada (o Hero já exibe SLA e abertos) */
+  html.rec-netflix .hud-status { display: none !important; }
+  html.rec-netflix body.layout-v2 .page-shell {
+    margin-top: 0 !important;
+    padding-top: 10px !important;
+    gap: 12px !important;
+    /* Ordem limpa no celular: Hero + Totais + Regiões primeiro, Novas Entradas depois, Mapa por último */
+    grid-template-areas: "bar" "dash" "inbox" !important;
   }
-  html.rec-netflix .nf-hero-title { font-size: 26px; }
+  html.rec-netflix .app-bar-title { font-size: 22px; letter-spacing: 2px; }
+  html.rec-netflix .hdr-scope-opt { font-size: 13px; padding: 7px 8px; }
+
+  /* 2. Hero mobile compacto: ações principais lado a lado + chips e TOP 3 em faixa horizontal */
+  html.rec-netflix body.layout-v2 .nf-hero {
+    padding: 14px 14px 12px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+  html.rec-netflix .nf-hero-main { gap: 7px; }
+  html.rec-netflix .nf-hero-title { font-size: 24px; line-height: 1.08; }
+  html.rec-netflix .nf-hero-sub { font-size: 12.5px; }
+  html.rec-netflix .nf-hero-meta { gap: 6px; }
+  html.rec-netflix .nf-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  html.rec-netflix .nf-hero-primary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
   html.rec-netflix .nf-btn-play,
   html.rec-netflix .nf-btn-info {
     min-height: 44px;
-    flex: 1 1 auto;
+    width: 100%;
+    padding: 0 12px;
+    font-size: 13.5px;
   }
+  html.rec-netflix .nf-hero-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    margin: 0 -2px;
+    padding: 2px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.rec-netflix .nf-hero-chips::-webkit-scrollbar { display: none; }
   html.rec-netflix .nf-chip {
+    flex: none;
     min-height: 44px;
-    font-size: 12.5px;
+    padding: 0 13px;
+    font-size: 12px;
+    border-radius: 999px;
+  }
+
+  /* TOP 3 "Em alta agora" em carrossel horizontal compacto (ocupa 1 linha só) */
+  html.rec-netflix .nf-hero-top {
+    min-width: 0;
+    padding: 10px 10px 8px;
+    gap: 6px;
+  }
+  html.rec-netflix .nf-top-list {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.rec-netflix .nf-top-list::-webkit-scrollbar { display: none; }
+  html.rec-netflix .nf-top-item {
+    flex: 0 0 auto;
+    min-width: 162px;
+    max-width: 200px;
+    min-height: 44px;
+    scroll-snap-align: start;
+  }
+
+  /* 3. Totais (KPIs): card principal em largura total + 3 colunas equilibradas (RAL | REC | QUAL) */
+  html.rec-netflix body.layout-v2 .v2-kpis {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpis::-webkit-scrollbar { display: none; }
+  html.rec-netflix body.layout-v2 .v2-kpis > .v2-kpi {
+    flex: 0 0 84%;
+    min-width: 248px;
+    scroll-snap-align: start;
+    padding: 10px 10px 11px;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpis.v2-kpis-mine > .v2-kpi {
+    flex: 1 0 100%;
+    min-width: 0;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpi-vals {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpi-btn {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    padding: 6px 4px !important;
+    text-align: center;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpi-btn > .animate-num {
+    font-size: 24px !important;
+    line-height: 1.05;
+  }
+
+  /* 4. Regiões e Cards de CF: 2 cards por linha com RAL | REC | QUAL sempre alinhados em 1 linha */
+  html.rec-netflix body.layout-v2 .v2-regions { gap: 14px; }
+  html.rec-netflix body.layout-v2 .v2-region { gap: 8px; }
+  html.rec-netflix body.layout-v2 .v2-region-name { font-size: 16px; }
+  html.rec-netflix body.layout-v2 .v2-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  html.rec-netflix body.layout-v2 .v2-tile {
+    padding: 8px 7px 8px !important;
+    gap: 6px !important;
+  }
+  html.rec-netflix body.layout-v2 .v2-tile-cf { font-size: 15px !important; }
+  html.rec-netflix body.layout-v2 .v2-tile-cells {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+  html.rec-netflix body.layout-v2 .v2-cell {
+    height: 46px;
+    padding: 2px 1px;
+  }
+  html.rec-netflix body.layout-v2 .v2-cell-lbl {
+    font-size: 11px;
+    letter-spacing: 0.2px;
+  }
+  html.rec-netflix body.layout-v2 .v2-cell-val {
+    font-size: 20px !important;
+  }
+
+  /* 5. Novas Entradas, Modais e Rodapé */
+  html.rec-netflix body.layout-v2 .inbox-section {
+    max-height: none;
   }
   html.rec-netflix .modal-close-btn {
     width: 44px;
     height: 44px;
   }
-  html.rec-netflix body.layout-v2 .v2-tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-  html.rec-netflix body.layout-v2 .v2-cell {
-    height: 46px;
-  }
-  html.rec-netflix body.layout-v2 .v2-cell-val {
-    font-size: 21px !important;
+  html.rec-netflix .page-footer {
+    justify-content: space-between;
+    padding: 5px 12px;
+    gap: 6px;
   }
 }
 

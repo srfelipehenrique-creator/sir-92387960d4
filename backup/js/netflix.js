@@ -105,6 +105,13 @@
         else if (act === 'scripts' && typeof openScripts === 'function') openScripts();
         else if (act === 'siglas' && typeof openSiglas === 'function') openSiglas();
         else if (act === 'areas' && typeof openSettings === 'function') openSettings();
+        else if (act === 'inbox') {
+          const sec = document.getElementById('inbox-section');
+          if (sec) {
+            if (sec.classList.contains('inbox-collapsed') && typeof toggleInboxBody === 'function') toggleInboxBody(true);
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
         else if (act === 'buscar') {
           const cmdBtn = document.getElementById('btn-cmd');
           if (cmdBtn) cmdBtn.click();
@@ -184,20 +191,24 @@
           ${d.qual > 0 ? `<span class="nf-tag">${d.qual} QUAL</span>` : ''}
           ${d.vence30 > 0 ? `<span class="nf-tag warn">${d.vence30} vencem &lt; 30m</span>` : ''}
           ${d.fora > 0 ? `<span class="nf-tag crit">${d.fora} fora do prazo</span>` : ''}
-          ${d.novas > 0 ? `<span class="nf-tag crit">${d.novas} nova${d.novas > 1 ? 's' : ''}</span>` : ''}
+          ${d.novas > 0 ? `<button type="button" class="nf-tag crit" data-nf-act="inbox" title="Abrir Novas Entradas">${d.novas} nova${d.novas > 1 ? 's' : ''}</button>` : ''}
         </div>
         <div class="nf-hero-actions">
-          <button type="button" class="nf-btn-play" data-nf-act="open-modal" data-nf-key="${esc(playKey)}" data-nf-ral="${playIsRal ? '1' : '0'}" data-nf-title="${esc(playTitle)}">
-            <span aria-hidden="true">▶</span> ${esc(playLabel)}
-          </button>
-          <button type="button" class="nf-btn-info" data-nf-act="torpedos">
-            <span aria-hidden="true">ⓘ</span> Torpedos
-          </button>
-          <button type="button" class="nf-chip" data-nf-act="mascaras">Máscaras</button>
-          <button type="button" class="nf-chip" data-nf-act="scripts">Textos Prontos</button>
-          <button type="button" class="nf-chip" data-nf-act="siglas">Siglas</button>
-          <button type="button" class="nf-chip" data-nf-act="areas">Minhas Áreas</button>
-          <button type="button" class="nf-chip" data-nf-act="buscar">Buscar</button>
+          <div class="nf-hero-primary">
+            <button type="button" class="nf-btn-play" data-nf-act="open-modal" data-nf-key="${esc(playKey)}" data-nf-ral="${playIsRal ? '1' : '0'}" data-nf-title="${esc(playTitle)}">
+              <span aria-hidden="true">▶</span> ${esc(playLabel)}
+            </button>
+            <button type="button" class="nf-btn-info" data-nf-act="torpedos">
+              <span aria-hidden="true">ⓘ</span> Torpedos
+            </button>
+          </div>
+          <div class="nf-hero-chips" aria-label="Atalhos rápidos">
+            <button type="button" class="nf-chip" data-nf-act="mascaras">Máscaras</button>
+            <button type="button" class="nf-chip" data-nf-act="scripts">Textos Prontos</button>
+            <button type="button" class="nf-chip" data-nf-act="siglas">Siglas</button>
+            <button type="button" class="nf-chip" data-nf-act="areas">Minhas Áreas</button>
+            <button type="button" class="nf-chip" data-nf-act="buscar">Buscar</button>
+          </div>
         </div>
       </div>
       <div class="nf-hero-top" aria-label="Áreas com mais chamados agora">

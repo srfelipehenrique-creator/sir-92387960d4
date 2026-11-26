@@ -20,11 +20,11 @@
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
   :root {
-    --accent: #6366f1;
-    --accent-glow: rgba(99,102,241,0.3);
-    --bg: #141416;
-    --panel: #1c1c1f;
-    --elevated: #28282c;
+    --accent: #E50914;
+    --accent-glow: rgba(229,9,20,0.32);
+    --bg: #141414;
+    --panel: #181818;
+    --elevated: #242424;
     --line: rgba(255,255,255,0.08);
     --line-strong: rgba(255,255,255,0.14);
     --text: #e2e2e2;
@@ -248,14 +248,15 @@
   }
   @media (pointer: coarse) { .lock-input { font-size: 16px; } }
 
-  /* Modo claro (segue a escolha feita no painel ou o tema do aparelho) */
+  /* Modo claro suave (v94) */
   :root[data-mode="light"] {
-    --bg: #f3f4f6; --panel: #ffffff; --elevated: #f5f6f8;
-    --line: rgba(15,23,42,0.10); --line-strong: rgba(15,23,42,0.18);
-    --text: #17191d; --text-soft: rgba(23,25,29,0.76); --text-muted: rgba(23,25,29,0.54); --text-dim: rgba(23,25,29,0.34);
+    --accent: #B8252E; --accent-glow: rgba(184,37,46,0.22);
+    --bg: #ECE8E1; --panel: #F6F3EE; --elevated: #E9E4DC;
+    --line: rgba(54,46,38,0.11); --line-strong: rgba(54,46,38,0.22);
+    --text: #242220; --text-soft: #46423E; --text-muted: #66605A; --text-dim: rgba(36,34,32,0.46);
   }
-  :root[data-mode="light"] .lock-brand { background: linear-gradient(135deg, #17191d 0%, rgba(23,25,29,0.55) 100%); -webkit-background-clip: text; background-clip: text; }
-  :root[data-mode="light"] .lock-card { box-shadow: 0 24px 60px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.05); }
+  :root[data-mode="light"] .lock-brand { background: linear-gradient(135deg, #242220 0%, rgba(36,34,32,0.62) 100%); -webkit-background-clip: text; background-clip: text; }
+  :root[data-mode="light"] .lock-card { box-shadow: 0 20px 50px rgba(45,38,30,0.12), 0 0 0 1px rgba(54,46,38,0.08); }
 
   /* ── Entrada (v90): fibras de luz convergem num núcleo, pulso em anéis, cartão surge ── */
   #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }

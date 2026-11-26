@@ -14,9 +14,9 @@
   try { if (sessionStorage.getItem('sir_intro_skip') === '1') { sessionStorage.removeItem('sir_intro_skip'); return; } } catch (e) {}
 
   const claro = document.documentElement.getAttribute('data-mode') === 'light';
-  const FUNDO = claro ? '#f3f4f6' : '#141416';
-  const CORES = claro ? ['79,70,229', '14,116,144'] : ['129,140,248', '56,189,248'];
-  const ANEL = claro ? '15,23,42' : '255,255,255';
+  const FUNDO = claro ? '#ECE8E1' : '#141414';
+  const CORES = claro ? ['184,37,46', '120,104,90'] : ['229,9,20', '255,107,114'];
+  const ANEL = claro ? '54,46,38' : '255,255,255';
   const DUR = 2000;
 
   const st = document.createElement('style');
