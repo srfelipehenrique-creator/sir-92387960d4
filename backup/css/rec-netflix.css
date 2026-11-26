@@ -1168,3 +1168,18 @@ html.rec-netflix body.high-contrast .nf-chip {
   html.rec-netflix body.layout-v2 .nf-rail-btn { transition: none !important; }
   html.rec-netflix body.layout-v2 .v2-tiles { scroll-behavior: auto !important; }
 }
+/* FIX responsivo: grade adaptativa dos tiles, sem sobrepor a barra lateral */
+body.layout-v2 .v2-dash-col, body.layout-v2 main#main-grid{min-width:0;max-width:100%}
+html body.layout-v2 .v2-regions{align-items:stretch!important;min-width:0;max-width:100%}
+html body.layout-v2 .v2-regions .v2-region, html body.layout-v2 .v2-regions .v2-region-body{width:auto!important;min-width:0!important;max-width:100%}
+html[class] body.layout-v2 .v2-regions .v2-tiles{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))!important;overflow-x:visible!important;max-width:100%}
+html[class] body.layout-v2 .v2-regions .v2-tiles>.v2-tile{width:auto!important;min-width:0!important;max-width:none!important;flex:none!important}
+html[class] body.layout-v2 .v2-regions .v2-tiles>.v2-tile.v2-open{grid-column:span 2}
+@media (max-width:1100px){
+     html body.layout-v2 .page-shell{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"bar" "dash" "inbox"!important;grid-template-rows:auto!important}
+     html body.layout-v2 .v2-side{position:static!important;width:auto!important;max-width:100%}
+}
+@media (max-width:640px){
+     html[class] body.layout-v2 .v2-regions .v2-tiles{grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr))!important}
+     html[class] body.layout-v2 .v2-regions .v2-tiles>.v2-tile.v2-open{grid-column:1/-1}
+}
