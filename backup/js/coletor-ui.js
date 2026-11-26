@@ -22,7 +22,7 @@ function _colModal() {
   ov.id = 'coletor-modal';
   ov.addEventListener('click', closeColetor);
   const passos = `
-        <div class="col-intro">Para o painel receber dados, um <b>computador com Windows na rede da Claro (cabo da intranet ou VPN)</b> precisa ficar com o coletor aberto. Ele lê as RAL e REC do SIR com o seu login e envia para o painel a cada 5 minutos. Com ele ligado, o painel funciona no computador e no celular, em qualquer rede.</div>
+        <div class="col-intro">Para o painel receber dados, um <b>computador com Windows na rede da Claro (cabo da intranet ou VPN)</b> precisa ficar com o coletor aberto. Ele lê as RAL e REC do SIR com o seu login e envia para o painel a cada 2 minutos. Com ele ligado, o painel funciona no computador e no celular, em qualquer rede.</div>
         <div class="col-step" id="col-step-1">
           <div class="col-num">1</div>
           <div class="col-step-bd">

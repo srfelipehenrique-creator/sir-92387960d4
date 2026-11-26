@@ -11,7 +11,7 @@
 #    das suas áreas e envia a lista dessas RECs junto (coluna "RECs Assoc.").
 #  - Dois cliques no arquivo "Coletor SIR.cmd" e pronto.
 #  - Entra no SIR com o SEU usuário e senha, lê as listas de RAL e REC
-#    e envia ao seu servidor a cada 5 minutos, enquanto a janela estiver aberta.
+#    e envia ao seu servidor a cada 2 minutos, enquanto a janela estiver aberta.
 #  - Não precisa instalar nada, nem favorito, nem deixar o navegador aberto.
 #  - O login fica guardado criptografado pelo Windows
 #    (só a sua conta, neste computador, consegue abrir).
@@ -20,14 +20,14 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w6'
+$VERSAO   = 'w7'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $BASES    = @('http://10.53.224.155', 'http://172.30.130.133')   # o 1º que responder é usado
 if ($env:SIR_BASE) { $BASES = @($env:SIR_BASE) }       # só para testes
 $BASE     = $BASES[0]
 $ENTRADA  = '/index.cfm?nofoc=yes'
-$INTERVALO = 300
+$INTERVALO = 120
 $REC_PATH = '/generico/NOVAlistaDeTarefasItensRecebidos.cfm'
 $RAL_PATH = '/navegacao/NOVAframesetNivel2ListaDeTarefas.cfm'
 $F_FILTRO = 'frameFiltro'
@@ -270,7 +270,7 @@ function Achar-Lista([string]$html, [string]$url, [int]$prof) {
 # ─────────── RECs associadas às RAL (link do número na coluna "Ass.") ───────────
 # Só as RAL das áreas do painel (RJ/ES). Cada RAL com Ass. > 0 tem o número como
 # link; o coletor abre esse link e lê as RECs listadas. Para não pesar no SIR,
-# relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 3 coletas (15 min).
+# relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 7 coletas (~14 min).
 $CFS_PAINEL = @('RT/VTA /MTN/FFA/FO','RT/VTA /MTS/FFA/FO','RT/VTA /NOR/FFA/FO','RT/VTA /SUL/FFA/FO',
   'RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO','RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO','RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO',
   'RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO','RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO','RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO',
@@ -350,7 +350,7 @@ function Anexar-Associadas($lista) {
     if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $CFS_PAINEL -contains $r[7] -and $ralNum -match '^RAL') {
       $nRal++
       $c = $script:CacheAss[$ralNum]
-      if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 3) { $val = $c.Val }
+      if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 7) { $val = $c.Val }
       else {
         $link = Link-Da-Celula $lista.Brutas[$i][8]
         if (-not $link) {
