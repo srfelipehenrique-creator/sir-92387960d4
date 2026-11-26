@@ -6,7 +6,9 @@
    No celular, tablet e layout Grafana a coluna "some" (display: contents)
    e cada parte segue a ordem que a página já usa. */
 .v2-side { display: contents; }
+/* v85 — isolation: os tiles e pinos do Leaflet não passam por cima do rodapé fixo */
 .mapa-calor {
+  isolation: isolate;
   background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r-lg, 12px);
   display: flex; flex-direction: column; min-width: 0; overflow: hidden;
 }
