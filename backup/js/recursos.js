@@ -15,7 +15,7 @@ const SirRecursos = (function () {
     { id: 'mini',      nome: 'Gráfico dentro dos cards',   desc: 'Linhas de RAL e REC abertas nas últimas 24h em cada área.' },
     { id: 'comando',   nome: 'Busca rápida (Ctrl K)',      desc: 'Buscar área, ticket ou comando e ver os tickets mais perto do prazo.' },
     { id: 'navcel',    nome: 'Barra inferior no celular',  desc: 'Painel, Entradas, Buscar e Torpedos ao alcance do polegar.' },
-    { id: 'fhd',       nome: 'Layout Full HD',             desc: 'Em telas de 1920×1080, as três regiões lado a lado ocupando a tela inteira.' },
+    { id: 'fhd',       nome: 'Layout que se ajusta à tela', desc: 'No computador, regiões e cards se reorganizam sozinhos conforme o tamanho da tela (em Full HD, as três regiões lado a lado).' },
     { id: 'contraste', nome: 'Textos com mais contraste',  desc: 'Textos secundários e rótulos pequenos mais legíveis em todos os temas.' }
   ];
   let estado = {};

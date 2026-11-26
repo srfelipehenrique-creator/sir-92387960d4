@@ -1,16 +1,27 @@
-/* ══ Gráfico dentro dos cards (v83) — js/mini-grafico.js ══ */
-:root { --mini-ral: var(--text-main); --mini-rec: var(--text-muted); }   /* neutras: ciano/laranja já significam ≤24h/>24h no painel */
-.mini-graf {
-  display: block; width: 100%; height: 34px; margin: 2px 0 1px; overflow: visible;
-  animation: miniIn .9s cubic-bezier(.2,.8,.2,1) both;
-}
-.mini-graf .mini-area { fill: var(--mini-ral); fill-opacity: .08; stroke: none; }
-.mini-graf .mini-ral { fill: none; stroke: var(--mini-ral); stroke-width: 1.8; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.mini-graf .mini-rec { fill: none; stroke: var(--mini-rec); stroke-width: 1.6; stroke-dasharray: 4 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+/* ══ Gráfico dentro dos cards (v85) — js/mini-grafico.js ══
+   RAL vermelho / REC azul: as MESMAS cores do mapa de calor (mp-pin-ral / mp-pin-rec),
+   então a cor quer dizer a mesma coisa no painel inteiro. RAL também é mais grosso. */
+:root { --mini-ral: #F87171; --mini-rec: #60A5FA; }
+:root[data-mode="light"] { --mini-ral: #B91C1C; --mini-rec: #1D4ED8; }
+.mini-box { position: relative; }
+.mini-tot { display: flex; align-items: baseline; gap: 8px; font-size: 11px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.mini-tot .mt-ral { color: var(--mini-ral); font-weight: 700; }
+.mini-tot .mt-rec { color: var(--mini-rec); font-weight: 700; }
+.mini-tot .mt-lbl { color: var(--text-soft, var(--text-main)); margin-left: auto; }
+.mini-graf { display: block; width: 100%; height: 46px; margin-top: 2px; overflow: visible; }
+.mini-graf .mini-base { stroke: var(--line-strong, rgba(255,255,255,.15)); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.mini-graf .mini-ral { fill: none; stroke: var(--mini-ral); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.mini-graf .mini-rec { fill: none; stroke: var(--mini-rec); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.mini-graf .mg-ral-s1 { stop-color: var(--mini-ral); stop-opacity: .40; }
+.mini-graf .mg-ral-s2 { stop-color: var(--mini-ral); stop-opacity: 0; }
+.mini-graf .mg-rec-s1 { stop-color: var(--mini-rec); stop-opacity: .28; }
+.mini-graf .mg-rec-s2 { stop-color: var(--mini-rec); stop-opacity: 0; }
+/* entrada: as curvas "se desenham" da esquerda para a direita — só ao abrir o painel
+   (js/mini-grafico.js põe .mini-intro no <html> no primeiro desenho e tira depois) */
+html.mini-intro .mini-graf { animation: miniIn 1s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes miniIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .mini-legenda { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-soft, var(--text-muted)); white-space: nowrap; }
-.mini-legenda i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; margin-left: 4px; }
-.mini-legenda .ml-ral { border-color: var(--mini-ral); }
-.mini-legenda .ml-rec { border-top-style: dashed; border-color: var(--mini-rec); }
-
+.mini-legenda i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; margin-left: 4px; border-radius: 2px; }
+.mini-legenda .ml-ral { border-color: var(--mini-ral); border-top-width: 3px; }
+.mini-legenda .ml-rec { border-color: var(--mini-rec); }
 @media (prefers-reduced-motion: reduce) { .mini-graf { animation: none; } }

@@ -24,8 +24,23 @@ html.rec-hud:not([data-mode="light"]) body {
 }
 
 /* Cantos em colchete nos painéis */
-html.rec-hud body.layout-v2 :is(.v2-tile, .v2-kpi, .v2-timeline, .v2-chart, .inbox-section) { position: relative; border-color: var(--hud-line); }
-html.rec-hud body.layout-v2 :is(.v2-tile, .v2-kpi, .v2-timeline, .v2-chart, .inbox-section)::before {
+html.rec-hud body.layout-v2 :is(.v2-tile, .v2-kpi, .v2-timeline, .v2-chart) { position: relative; border-color: var(--hud-line); }
+/* v85: a caixa de Novas Entradas mantém a posição própria (sticky/static); "relative" herdava top:64px e
+   empurrava a caixa para cima do mapa. Na coluna da direita do computador ela fica relative SEM deslocamento. */
+/* Novas Entradas: cantos desenhados no próprio fundo (sem ::before), porque a caixa é sticky/static
+   conforme a tela — assim ela nunca sai do lugar nem "espalha" os cantos pela página. */
+html.rec-hud body.layout-v2 .inbox-section {
+  border-color: var(--hud-line);
+  background-image:
+    linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+    linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+    linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+    linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud));
+  background-repeat: no-repeat;
+  background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+}
+html.rec-hud body.layout-v2 :is(.v2-tile, .v2-kpi, .v2-timeline, .v2-chart)::before {
   content: ''; position: absolute; inset: -1px; pointer-events: none; z-index: 1; border-radius: inherit;
   background:
     linear-gradient(var(--hud), var(--hud)) 0 0 / 12px 1px no-repeat,
@@ -98,7 +113,32 @@ html.rec-hud .hud-prazo {
 .hud-gauge .hg-t { font-size: 12px; line-height: 1.35; color: var(--text-soft, var(--text-main)); }
 .hud-gauge .hg-t b { display: block; font-size: 13px; color: var(--text-main); }
 
+/* ── Animações da tela HUD 1 (v85) ── */
+.hud-logo { display: none; }
+html.rec-hud .hud-logo { display: inline-block; width: 26px; height: 26px; margin-right: 6px; vertical-align: middle; flex: none; }
+.hud-logo .hl-ring { fill: none; stroke: var(--hud-line); stroke-width: 1; }
+.hud-logo .hl-arc { fill: none; stroke: var(--hud); stroke-width: 2.2; stroke-linecap: round; }
+.hud-logo .hl-arc2 { fill: none; stroke: var(--hud); stroke-width: 1.4; stroke-linecap: round; opacity: .6; }
+/* gira 1 volta e para — só quando chegam dados (js/hud.js põe .ativo por 2 s) */
+.hud-logo .hl-dot { fill: var(--hud); }
+.hud-logo .hl-spin, .hud-logo .hl-spin2 { transform-origin: 19px 19px; }
+.hud-logo.ativo .hl-spin { animation: hudSpin 1.6s cubic-bezier(.4,0,.2,1) 1; }
+.hud-logo.ativo .hl-spin2 { animation: hudSpin 1.6s cubic-bezier(.4,0,.2,1) 1 reverse; }
+.hud-logo.ativo .hl-dot { animation: hudDot .8s ease-in-out 2; }
+@keyframes hudSpin { to { transform: rotate(360deg); } }
+@keyframes hudDot { 50% { opacity: .45; } }
+/* varredura de luz quando os dados chegam (uma passada) */
+.hud-scan { display: none; }
+html.rec-hud .hud-scan.on {
+  display: block; position: fixed; left: 0; right: 0; top: -140px; height: 140px; z-index: 900; pointer-events: none;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--hud) 6%, transparent) 70%, color-mix(in srgb, var(--hud) 30%, transparent) 99%, var(--hud) 100%);
+  animation: hudScan 1.8s cubic-bezier(.45,0,.2,1) forwards;
+}
+@keyframes hudScan { 0% { transform: translateY(0); opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(calc(100vh + 140px)); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
+  .hud-logo .hl-spin, .hud-logo .hl-spin2, .hud-logo .hl-dot, html.rec-hud .hud-scan.on { animation: none; }
+  html.rec-hud .hud-scan.on { display: none; }
   html.rec-hud body.layout-v2 .v2-tile.hud-crit-novo, html.rec-hud .hud-status .hud-caret { animation: none; }
   .hud-gauge .hg-arc { transition: none; }
 }

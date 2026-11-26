@@ -115,9 +115,43 @@
     else { arcs.forEach(a => a.style.transition = 'none'); fim(); }
   }
 
+  /* ── Animações da tela HUD 1 ── */
+  /* arco girando ao lado do "SIR" (o "radar" do assistente) */
+  function logo() {
+    const t = document.querySelector('.app-bar-title');
+    if (!t || document.getElementById('hud-logo')) return;
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.id = 'hud-logo'; s.setAttribute('class', 'hud-logo'); s.setAttribute('viewBox', '0 0 38 38'); s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = '<circle cx="19" cy="19" r="15" class="hl-ring"/><g class="hl-spin"><path d="M19 4 A15 15 0 0 1 34 19" class="hl-arc"/></g><g class="hl-spin2"><path d="M19 30 A11 11 0 0 1 8 19" class="hl-arc2"/></g><circle cx="19" cy="19" r="3.5" class="hl-dot"/>';
+    t.parentNode.insertBefore(s, t);
+  }
+  /* logo gira 1 volta quando chegam dados */
+  function giraLogo() {
+    const l = document.getElementById('hud-logo'); if (!l || reduz()) return;
+    l.classList.remove('ativo'); void l.getBoundingClientRect(); l.classList.add('ativo');
+    clearTimeout(l._t); l._t = setTimeout(() => l.classList.remove('ativo'), 2000);
+  }
+  /* varredura de luz: ao abrir o painel e quando ENTRA ticket novo (total em aberto sobe ou chega
+     entrada nova) — nunca em troca de filtro nem em atualização sem novidade */
+  let ultimoTotal = null, ultimasNovas = 0;
+  function talvezVarrer(c) {
+    const tot = c.ral.tot + c.rec.tot;
+    const novas = parseInt((document.getElementById('inbox-count') || {}).textContent, 10) || 0;
+    const primeira = ultimoTotal === null, subiu = !primeira && (tot > ultimoTotal || novas > ultimasNovas);
+    ultimoTotal = tot; ultimasNovas = novas;
+    if (primeira || subiu) { varredura(); giraLogo(); }
+  }
+  function varredura() {
+    if (reduz()) return;
+    let v = document.getElementById('hud-scan');
+    if (!v) { v = document.createElement('div'); v.id = 'hud-scan'; v.className = 'hud-scan'; v.setAttribute('aria-hidden', 'true'); document.body.appendChild(v); }
+    v.classList.remove('on'); void v.offsetWidth; v.classList.add('on');
+  }
+
   function atualiza() {
     if (!ligado()) return;
-    try { const c = contas(); status(c); prazo(c); } catch (e) { console.warn('hud', e); }
+    try { logo(); } catch (e) {}
+    try { const c = contas(); status(c); prazo(c); talvezVarrer(c); } catch (e) { console.warn('hud', e); }
     try { pulsoCriticas(); } catch (e) {}
   }
 
