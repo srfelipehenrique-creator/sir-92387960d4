@@ -125,6 +125,12 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
   return { counts, details, total, qualidadeDetails };
 }
 
+/* v82: fetch com limite de tempo */
+function fetchLimite(url, opt, ms = 30000) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  return fetch(url, Object.assign({}, opt || {}, { signal: ac.signal })).finally(() => clearTimeout(t));
+}
+
 self.onmessage = async function(e) {
   const { type } = e.data;
 
@@ -135,10 +141,10 @@ self.onmessage = async function(e) {
       /* 1º: o seu servidor (dados guardados lá, protegidos pela chave) */
       if (own && own.url && own.key) {
         try {
-          const r = await fetch(own.url + '/data', {
+          const r = await fetchLimite(own.url + '/data', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: own.key }), cache: 'no-store'
-          });
+          }, 12000);
           if (r.ok) {
             const d = await r.json();
             if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; }
@@ -149,8 +155,8 @@ self.onmessage = async function(e) {
       if (ralText === null) {
         const ts = Date.now();
         const [ralResp, recResp] = await Promise.all([
-          fetch(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
-          fetch(`${recUrl}?_=${ts}`, { cache: 'no-store' })
+          fetchLimite(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
+          fetchLimite(`${recUrl}?_=${ts}`, { cache: 'no-store' })
         ]);
         if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
         [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);

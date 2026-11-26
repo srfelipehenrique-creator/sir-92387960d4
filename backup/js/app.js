@@ -84,9 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(dismissToast, 5000);
 
   /* Init IndexedDB historico (migrates from localStorage), then load data */
-  initHistorico().then(() => {
+  /* v82: se o banco local falhar (navegação privada, espaço cheio), o painel carrega mesmo assim */
+  Promise.resolve().then(() => initHistorico()).catch(e => console.warn('histórico indisponível', e)).finally(() => {
     loadAll(getUserSavedAreas());
     /* Restaura módulos fixados após o DB estar pronto */
-    if (typeof restorePinnedModules === 'function') restorePinnedModules();
+    try { if (typeof restorePinnedModules === 'function') restorePinnedModules(); } catch (e) { console.warn(e); }
   });
 });

@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '81';
+const CACHE_NAME   = CACHE_PREFIX + '82';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -79,7 +79,7 @@ const SHELL_ASSETS = [
   'js/backup.js',
   'js/pressable.js',
   'js/app.js',
-  'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js',
+  'https://unpkg.com/lucide@1.81.0/dist/umd/lucide.min.js',
   'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js',
 ];
 
@@ -132,7 +132,8 @@ self.addEventListener('fetch', e => {
           return resp;
         })
         .catch(() => caches.match(req, { ignoreSearch: true })
-          .then(r => r || caches.match('index.html'))
+          /* v82: a página inicial só substitui navegação; arquivo que falhou devolve erro de verdade */
+          .then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : null))
           .then(r => r || Response.error()))
     );
     return;

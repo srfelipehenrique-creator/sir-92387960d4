@@ -156,20 +156,30 @@ function setDataSource(src, at) {
   el.setAttribute('role', 'button'); el.tabIndex = 0;
 }
 
+/* v82: fetch com limite de tempo (rede travada não prende o painel) */
+function _fetchLimite(url, opt, ms = 30000) {
+  /* o limite cobre também a leitura do conteúdo (.text/.json) */
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  return fetch(url, { ...(opt || {}), signal: ac.signal }).then(r => {
+    const ler = f => r[f]().finally(() => clearTimeout(t));
+    return { ok: r.ok, status: r.status, text: () => ler('text'), json: () => ler('json') };
+  }, e => { clearTimeout(t); throw e; });
+}
+
 async function fetchAndParseInline(userSavedAreas) {
   let ralText = null, recText = null, src = 'publica', srcAt = 0;
   const own = _ownSource();
   if (own) {
     try {
-      const r = await fetch(own.url + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: own.key }), cache: 'no-store' });
+      const r = await _fetchLimite(own.url + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: own.key }), cache: 'no-store' });
       if (r.ok) { const d = await r.json(); if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; } }
     } catch (e) {}
   }
   if (ralText === null) {
     const ts = Date.now();
     const [ralResp, recResp] = await Promise.all([
-      fetch(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
-      fetch(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
+      _fetchLimite(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
+      _fetchLimite(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
     ]);
     if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
     [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
@@ -190,15 +200,22 @@ async function fetchAndParseWorker(userSavedAreas) {
   const worker = getWorker();
   return new Promise((resolve, reject) => {
     worker.onmessage = msg => {
-      if (msg.data.type === 'ERROR') { reject(new Error(msg.data.message)); return; }
+      if (msg.data.type === 'ERROR') { clearTimeout(limite); reject(new Error(msg.data.message)); return; }
       if (msg.data.type === 'RESULT') {
+        clearTimeout(limite);
         const { ralRes, recRes, ralText, recText, src, srcAt } = msg.data;
-        onDataReady(ralRes, recRes, ralText, recText, userSavedAreas);
-        setDataSource(src, srcAt);
-        resolve();
+        /* v82: erro em qualquer módulo não pode deixar a atualização presa para sempre */
+        try { onDataReady(ralRes, recRes, ralText, recText, userSavedAreas); setDataSource(src, srcAt); resolve(); }
+        catch (e) { console.warn('onDataReady', e); reject(e); }
       }
     };
-    worker.onerror = err => reject(err);
+    worker.onerror = err => { clearTimeout(limite); if (csvWorker === worker) csvWorker = null; reject(err); };
+    /* v82: rede travada → desiste em 45 s e usa o último snapshot */
+    const limite = setTimeout(() => {
+      try { worker.terminate(); } catch (e) {}
+      if (csvWorker === worker) csvWorker = null;
+      reject(new Error('tempo esgotado ao buscar os dados'));
+    }, 45000);
     worker.postMessage({ type: 'FETCH_PARSE', ralUrl: URLS.ral, recUrl: URLS.rec, own: _ownSource() });
   });
 }
@@ -335,6 +352,7 @@ async function loadAll(userSavedAreas) {
   }
 
   try {
+  try {
     if (IS_FILE) {
       await fetchAndParseInline(userSavedAreas);
     } else {
@@ -342,24 +360,31 @@ async function loadAll(userSavedAreas) {
     }
   } catch(err) {
     document.getElementById('status-dot').style.background = '#c62828';
-    const fallback = await loadFromSnapshot(userSavedAreas);
+    let fallback = false;
+    try { fallback = await loadFromSnapshot(userSavedAreas); } catch (e) {}
     if (!fallback) {
       document.getElementById('main-grid').innerHTML =
         `<div style="text-align:center;grid-column:1/-1;color:#c62828;font-size:22px;padding-top:40px;">
-          Falha de comunicação: ${String(err.message || err)}
+          Falha de comunicação: ${escapeHtml(String(err.message || err))}
         </div>`;
     }
   }
 
-  isLoading = false;
-  resetCountdown(userSavedAreas);
+  } finally {
+    isLoading = false;   /* v82: sempre libera a próxima atualização */
+    resetCountdown(userSavedAreas);
+  }
 }
 
+/* v82: a contagem usa o relógio (não o número de "tiques"): em segundo plano o navegador
+   atrasa os timers, então ao voltar para o app ele atualiza na hora se o prazo já passou */
+let nextLoadAt = 0, _lastAreas = null;
 function resetCountdown(userSavedAreas) {
   countdownVal = INTERVAL / 1000;
+  nextLoadAt = Date.now() + INTERVAL; _lastAreas = userSavedAreas;
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
-    countdownVal--;
+    countdownVal = Math.max(0, Math.round((nextLoadAt - Date.now()) / 1000));
     document.getElementById('countdown').textContent =
       `Atualiza em ${Math.floor(countdownVal / 60)}:${String(countdownVal % 60).padStart(2,'0')}`;
     if (countdownVal <= 0) {
@@ -394,3 +419,8 @@ function searchTicket(userSavedAreas) {
   openModal(found.dataKey, found.isRal, found.title, found.item.ticket);
   input.select();
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || isLoading || !nextLoadAt) return;
+  if (Date.now() >= nextLoadAt) { if (countdownTimer) clearInterval(countdownTimer); loadAll(_lastAreas || getUserSavedAreas()); }
+});
