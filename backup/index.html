@@ -34,7 +34,15 @@
 <link rel="stylesheet" href="css/pressable.css">
 <link rel="stylesheet" href="css/acessibilidade.css">
 <link rel="stylesheet" href="css/mapa-calor.css">
+<!-- v83: novidades com chave (Configurações → Novidades) -->
+<link rel="stylesheet" href="css/rec-contraste.css">
+<link rel="stylesheet" href="css/rec-hud.css">
+<link rel="stylesheet" href="css/rec-mini.css">
+<link rel="stylesheet" href="css/rec-comando.css">
+<link rel="stylesheet" href="css/rec-navcel.css">
+<link rel="stylesheet" href="css/rec-fhd.css">
 <script src="js/theme-mode.js"></script>
+<script src="js/recursos.js"></script>
 <script src="https://unpkg.com/lucide@1.81.0/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 <title>SIR · Dashboard</title>
@@ -596,10 +604,10 @@
 
       <!-- APARÊNCIA -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Aparência</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-row">
             <div class="cfg-row-label">Tema de cor</div>
@@ -638,29 +646,41 @@
 
       <!-- BARRA DE FERRAMENTAS -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Barra de Ferramentas</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="toolbar-editor-list" id="toolbar-editor-list"></div>
           <p class="tbar-hint">✓ mostrar / ocultar botões por categoria</p>
         </div>
       </div>
 
+      <!-- NOVIDADES (v83): cada recurso novo pode ser desligado aqui -->
+      <div class="cfg-section">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Novidades — ligar/desligar</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </button>
+        <div class="cfg-section-bd">
+          <p class="cfg-section-note" style="margin-top:0">Desligue qualquer novidade para voltar ao jeito anterior. Vale só para este aparelho.</p>
+          <div id="cfg-recursos"></div>
+        </div>
+      </div>
+
       <!-- ACESSIBILIDADE -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Acessibilidade</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-toggle-row">
             <div class="cfg-toggle-info">
               <span class="cfg-toggle-label">Alerta sonoro</span>
               <span class="cfg-toggle-desc">Notificação ao receber novas entradas no inbox</span>
             </div>
-            <button class="cfg-toggle-btn" onclick="toggleSound(); syncCfgToggles();" aria-label="Alerta sonoro">
+            <button type="button" class="cfg-toggle-btn" role="switch" aria-checked="false" id="cfg-sound-btn" onclick="toggleSound(); syncCfgToggles();" aria-label="Alerta sonoro">
               <span class="cfg-toggle-track" id="cfg-sound-track"><span class="cfg-toggle-thumb"></span></span>
             </button>
           </div>
@@ -669,7 +689,7 @@
               <span class="cfg-toggle-label">Alto Contraste</span>
               <span class="cfg-toggle-desc">Aumenta o contraste para melhor legibilidade</span>
             </div>
-            <button class="cfg-toggle-btn" onclick="toggleContrast(); syncCfgToggles();" aria-label="Alto Contraste">
+            <button type="button" class="cfg-toggle-btn" role="switch" aria-checked="false" id="cfg-contrast-btn" onclick="toggleContrast(); syncCfgToggles();" aria-label="Alto Contraste">
               <span class="cfg-toggle-track" id="cfg-contrast-track"><span class="cfg-toggle-thumb"></span></span>
             </button>
           </div>
@@ -678,10 +698,10 @@
 
       <!-- SISTEMA -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Aplicativo</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-action-row">
             <button class="cfg-action-btn" id="cfg-pwa-btn" onclick="triggerPWAInstall()">
@@ -695,10 +715,10 @@
 
       <!-- DADOS -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Dados</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-action-row">
             <button class="cfg-action-btn" onclick="cancelPersonalizacao(); openColetor();">
@@ -793,6 +813,11 @@
 <script src="js/charts-v2.js"></script>
 <script src="js/timeline.js"></script>
 <script src="js/animacoes.js"></script>
+<script src="js/mini-grafico.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/comando.js"></script>
+<script src="js/nav-celular.js"></script>
+<script src="js/janelas.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/siglas.js"></script>
 <script src="js/siglas-busca.js"></script>

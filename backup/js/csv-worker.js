@@ -127,8 +127,13 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
 
 /* v82: fetch com limite de tempo */
 function fetchLimite(url, opt, ms = 30000) {
+  /* v83: o limite cobre também a leitura do conteúdo (.text/.json) */
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
-  return fetch(url, Object.assign({}, opt || {}, { signal: ac.signal })).finally(() => clearTimeout(t));
+  return fetch(url, Object.assign({}, opt || {}, { signal: ac.signal })).then(r => {
+    if (!r.ok) clearTimeout(t);
+    const ler = f => r[f]().finally(() => clearTimeout(t));
+    return { ok: r.ok, status: r.status, text: () => ler('text'), json: () => ler('json') };
+  }, e => { clearTimeout(t); throw e; });
 }
 
 self.onmessage = async function(e) {

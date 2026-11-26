@@ -202,12 +202,16 @@ function syncCfgToggles() {
   const contrastTrack = document.getElementById('cfg-contrast-track');
   if (soundTrack)    soundTrack.classList.toggle('on', !!soundEnabled);
   if (contrastTrack) contrastTrack.classList.toggle('on', document.body.classList.contains('high-contrast'));
+  const sb = document.getElementById('cfg-sound-btn'), cb = document.getElementById('cfg-contrast-btn');
+  if (sb) sb.setAttribute('aria-checked', String(!!soundEnabled));
+  if (cb) cb.setAttribute('aria-checked', String(document.body.classList.contains('high-contrast')));
 }
 
 function toggleCfgSection(hd) {
   const section = hd.closest('.cfg-section');
   if (!section) return;
   section.classList.toggle('cfg-open');
+  hd.setAttribute('aria-expanded', String(section.classList.contains('cfg-open')));
   /* Re-renderiza ícones Lucide dentro do body expandido na primeira abertura */
   if (section.classList.contains('cfg-open') && typeof lucide !== 'undefined') {
     lucide.createIcons({ nodes: Array.from(section.querySelectorAll('[data-lucide]')) });

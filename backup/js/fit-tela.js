@@ -18,7 +18,8 @@
     const grid = document.getElementById('main-grid');
     if (!grid) return true;
     if (grid.querySelector('.v2-open')) return true;                              /* card de CF / Minhas áreas aberto */
-    if (grid.querySelector('.v2-reg-charts:not([hidden])')) return true;          /* gráfico de grupo aberto */
+    const fhd = document.documentElement.classList.contains('rec-fhd') && window.innerWidth >= 1600;   /* v83: no Full HD os gráficos de grupo ficam escondidos */
+    if (!fhd && grid.querySelector('.v2-reg-charts:not([hidden])')) return true;          /* gráfico de grupo aberto */
     if (grid.querySelector('.v2-timeline:not(.tl-closed)')) return true;          /* Linha do Tempo aberta */
     const pin = document.getElementById('pinned-modules-area');
     if (pin && pin.children.length) return true;                                  /* módulo fixado na tela */

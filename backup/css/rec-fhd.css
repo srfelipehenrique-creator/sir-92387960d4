@@ -1,0 +1,25 @@
+/* ══ Layout Full HD (v83) — chave "Layout Full HD" ══
+   Em telas de 1600px ou mais (ex.: 1920×1080), as três regiões ficam
+   lado a lado e cada área vira um card maior (com o minigráfico),
+   aproveitando a tela inteira. O ajuste de altura (js/fit-tela.js)
+   continua valendo: com tudo recolhido, cabe sem rolagem. */
+@media (min-width: 1600px) {
+  html.rec-fhd body.layout-v2 .page-shell { --v2-sidebar: 400px; padding: 14px 24px 44px; gap: 12px 20px; }
+  html.rec-fhd body.layout-v2 .v2-regions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  html.rec-fhd body.layout-v2 .v2-region { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  html.rec-fhd body.layout-v2 .v2-region-head { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 2px 0 2px 10px; }
+  html.rec-fhd body.layout-v2 .v2-region-name { font-size: 16px; }
+  html.rec-fhd body.layout-v2 .v2-region-head .mini-legenda { margin-left: auto; }
+  html.rec-fhd body.layout-v2 .v2-tiles,
+  html.rec-fhd body.fit-tela .v2-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  html.rec-fhd body.layout-v2 .v2-tile { padding: 8px 10px 10px; gap: 6px; }
+  html.rec-fhd body.layout-v2 .v2-tile-cf { font-size: 15px; }
+  html.rec-fhd body.layout-v2 .mini-graf { height: 42px; }
+  html.rec-fhd body.layout-v2 .v2-cell { height: 54px; }
+  html.rec-fhd body.layout-v2 .v2-cell-val { font-size: 26px; }
+  html.rec-fhd body.layout-v2 .v2-kpis { gap: 14px; }
+  /* Os gráficos de barras de cada região ficam escondidos no Full HD: o minigráfico de cada
+     card e os números já mostram isso, e assim as três regiões cabem na primeira tela.
+     (Desligar "Layout Full HD" traz os gráficos de volta.) */
+  html.rec-fhd body.layout-v2 :is(.v2-reg-charts, .v2-region-head .v2-charts-toggle, .v2-region-head [data-v2chart]) { display: none !important; }
+}

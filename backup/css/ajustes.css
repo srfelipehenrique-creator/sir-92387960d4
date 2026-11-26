@@ -312,3 +312,6 @@ body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: au
 @media (prefers-reduced-motion: reduce) {
   .sir-in, .sir-tick-up, .sir-tick-down, .sir-glow-up::after, .sir-glow-down::after, #status-dot.sir-ping::after { animation: none !important; }
 }
+
+/* v83: cabeçalhos das Configurações viraram <button> (teclado/leitor de tela) */
+button.cfg-section-hd { width: 100%; background: transparent; border: 0; color: inherit; font: inherit; text-align: left; }

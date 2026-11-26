@@ -161,6 +161,7 @@ function _fetchLimite(url, opt, ms = 30000) {
   /* o limite cobre também a leitura do conteúdo (.text/.json) */
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
   return fetch(url, { ...(opt || {}), signal: ac.signal }).then(r => {
+    if (!r.ok) clearTimeout(t);
     const ler = f => r[f]().finally(() => clearTimeout(t));
     return { ok: r.ok, status: r.status, text: () => ler('text'), json: () => ler('json') };
   }, e => { clearTimeout(t); throw e; });

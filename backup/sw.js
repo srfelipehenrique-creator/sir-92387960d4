@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '82';
+const CACHE_NAME   = CACHE_PREFIX + '83';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -23,6 +23,14 @@ const SHELL_ASSETS = [
   'css/pressable.css',
   'css/acessibilidade.css',
   'css/mapa-calor.css',
+  'css/rec-contraste.css',
+  'assets/fonts/barlow-condensed-latin-600-normal.woff2',
+  'assets/fonts/barlow-condensed-latin-700-normal.woff2',
+  'css/rec-hud.css',
+  'css/rec-mini.css',
+  'css/rec-comando.css',
+  'css/rec-navcel.css',
+  'css/rec-fhd.css',
   'js/theme-mode.js',
   'assets/icon.svg',
   'css/styles.css',
@@ -58,6 +66,12 @@ const SHELL_ASSETS = [
   'js/charts-v2.js',
   'js/timeline.js',
   'js/animacoes.js',
+  'js/recursos.js',
+  'js/mini-grafico.js',
+  'js/hud.js',
+  'js/comando.js',
+  'js/nav-celular.js',
+  'js/janelas.js',
   'js/events.js',
   'js/rec-assoc.js',
   'js/offline-feed.js',

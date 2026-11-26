@@ -1,0 +1,16 @@
+/* ══ Gráfico dentro dos cards (v83) — js/mini-grafico.js ══ */
+:root { --mini-ral: var(--text-main); --mini-rec: var(--text-muted); }   /* neutras: ciano/laranja já significam ≤24h/>24h no painel */
+.mini-graf {
+  display: block; width: 100%; height: 34px; margin: 2px 0 1px; overflow: visible;
+  animation: miniIn .9s cubic-bezier(.2,.8,.2,1) both;
+}
+.mini-graf .mini-area { fill: var(--mini-ral); fill-opacity: .08; stroke: none; }
+.mini-graf .mini-ral { fill: none; stroke: var(--mini-ral); stroke-width: 1.8; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.mini-graf .mini-rec { fill: none; stroke: var(--mini-rec); stroke-width: 1.6; stroke-dasharray: 4 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+@keyframes miniIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.mini-legenda { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-soft, var(--text-muted)); white-space: nowrap; }
+.mini-legenda i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; margin-left: 4px; }
+.mini-legenda .ml-ral { border-color: var(--mini-ral); }
+.mini-legenda .ml-rec { border-top-style: dashed; border-color: var(--mini-rec); }
+
+@media (prefers-reduced-motion: reduce) { .mini-graf { animation: none; } }
