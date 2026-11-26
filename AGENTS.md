@@ -27,3 +27,21 @@
 ## Outras regras do usuário
 - Não publicar na principal sem o pedido "publique na principal" (ou "publique").
 - Se o usuário não aprovar uma versão, oferecer voltar para até 5 versões anteriores (a imediatamente anterior primeiro).
+
+## Revisão automática por agentes (desde a v78)
+Depois de cada alteração em `backup/` e ANTES de enviar ao GitHub, rodar os agentes de revisão **sem esperar o usuário pedir**.
+As definições ficam em `.claude/agents/`. Rodar em paralelo os que se aplicam:
+
+| Quando | Agente | Skills que ele usa |
+|---|---|---|
+| Qualquer mudança de tela (layout, cor, texto, animação) | `sir-visual` | frontend-design, design:design-critique, design:design-system, design:ux-copy |
+| Mudança em gráfico, cartão de números, mapa de calor | `sir-graficos` | dataviz |
+| Qualquer mudança de tela | `sir-acessibilidade` | design:accessibility-review |
+| Toda mudança de código (sempre) | `sir-codigo` | engineering:code-review, engineering:debug, engineering:testing-strategy |
+| Pedido "publique na principal" / "publique" | `sir-publicacao` | engineering:deploy-checklist |
+
+Como agir com o resultado:
+- Itens **[corrigir agora]**: corrigir na hora e rodar de novo só o agente que apontou.
+- Itens **[sugestão]**: não aplicar sozinho; listar em 1–3 linhas no fim da resposta para o usuário escolher.
+- Na resposta ao usuário, dizer em uma linha que a revisão passou (ou o que foi corrigido), sem detalhar o processo.
+- Ferramenta sem agentes (ex.: Antigravity): seguir o "Checklist" de cada arquivo em `.claude/agents/` como roteiro de revisão.
