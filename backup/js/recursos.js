@@ -11,6 +11,7 @@
 const SirRecursos = (function () {
   const KEY = 'sir_recursos';
   const LISTA = [
+    { id: 'netflix',   nome: 'Visual Netflix',             desc: 'Interface cinematográfica escura com destaque ao vivo, prateleiras por região e acesso rápido às ferramentas.' },
     { id: 'hud',       nome: 'Visual HUD',                 desc: 'Fundo com grade, cantos em colchete, células planas, linha de status e medidores de prazo.' },
     { id: 'mini',      nome: 'Gráfico dentro dos cards',   desc: 'Linhas de RAL e REC abertas nas últimas 24h em cada área.' },
     { id: 'comando',   nome: 'Busca rápida (Ctrl K)',      desc: 'Buscar área, ticket ou comando e ver os tickets mais perto do prazo.' },
