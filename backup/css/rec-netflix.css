@@ -567,9 +567,28 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
   color: var(--text-muted);
 }
 
-/* ── 6. Prateleiras de Regiões (ES / INTERIOR / CAPITAL) estilo Catálogo Netflix ── */
-/* No modo Netflix, cada região fica em prateleira horizontal completa (como fileiras de catálogo) */
-@media (min-width: 1101px) {
+/* ── 6. Prateleiras de Regiões (ES / INTERIOR / CAPITAL) estilo Catálogo Netflix (v95) ── */
+/* No computador (≥ 641px): grupos empilhados em prateleiras largas e suas áreas (CFs)
+   em fileira HORIZONTAL única, com rolagem e setas ‹ › estilo Netflix quando não couberem todas */
+@media (min-width: 641px) {
+  html.rec-netflix body.layout-v2 .v2-kpis {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 10px !important;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpis > .v2-kpi {
+    flex: 1 0 212px;
+    min-width: 212px;
+    scroll-snap-align: start;
+  }
+  html.rec-netflix body.layout-v2 .v2-kpis.v2-kpis-mine > .v2-kpi {
+    flex: 0 1 440px;
+  }
+
   html.rec-netflix body.layout-v2 .v2-regions {
     display: flex !important;
     flex-direction: column !important;
@@ -578,7 +597,8 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
   html.rec-netflix body.layout-v2 .v2-region {
     display: flex !important;
     flex-direction: column !important;
-    gap: 9px !important;
+    gap: 8px !important;
+    min-width: 0;
     background: transparent !important;
     border: 0 !important;
     padding: 0 !important;
@@ -586,9 +606,13 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
   html.rec-netflix body.layout-v2 .v2-region-head {
     flex-direction: row !important;
     align-items: center !important;
+    flex-wrap: nowrap !important;
     gap: 10px !important;
     padding: 0 0 0 11px !important;
     border-left: 3px solid var(--nf-red) !important;
+  }
+  html.rec-netflix body.layout-v2 .v2-region-head .mini-legenda {
+    margin-left: auto;
   }
   html.rec-netflix body.layout-v2 .v2-region-name {
     font-family: var(--nf-font-disp);
@@ -602,10 +626,94 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
     font-weight: 600;
     color: var(--text-muted);
   }
+
+  /* Fileira horizontal estilo Netflix */
+  html.rec-netflix body.layout-v2 .v2-region-body {
+    position: relative;
+    min-width: 0;
+  }
   html.rec-netflix body.layout-v2 .v2-tiles,
   html.rec-netflix body.fit-tela .v2-tiles {
-    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
     gap: 12px !important;
+    overflow-x: auto !important;
+    overflow-y: visible;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    padding: 6px 2px 10px !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  html.rec-netflix[data-mode="light"] body.layout-v2 .v2-tiles,
+  html.rec-netflix[data-mode="light"] body.fit-tela .v2-tiles {
+    scrollbar-color: rgba(54, 46, 38, 0.22) transparent;
+  }
+  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar { height: 5px; }
+  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar-track { background: transparent; }
+  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 99px;
+  }
+  html.rec-netflix[data-mode="light"] body.layout-v2 .v2-tiles::-webkit-scrollbar-thumb {
+    background: rgba(54, 46, 38, 0.22);
+  }
+  html.rec-netflix body.layout-v2 .v2-tile {
+    flex: 0 0 232px !important;
+    width: 232px !important;
+    scroll-snap-align: start;
+  }
+  html.rec-netflix body.layout-v2 .v2-tile.v2-open {
+    flex: 0 0 320px !important;
+    width: 320px !important;
+  }
+}
+
+/* Setas laterais estilo Netflix (só no computador quando a fileira tem rolagem) */
+.nf-rail-btn { display: none; }
+@media (min-width: 641px) {
+  html.rec-netflix body.layout-v2 .nf-rail-btn {
+    position: absolute;
+    top: 6px;
+    bottom: 14px;
+    z-index: 6;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: #FFFFFF;
+    background: linear-gradient(90deg, rgba(20, 20, 20, 0.90) 0%, rgba(20, 20, 20, 0.45) 100%);
+    opacity: 0.85;
+    transition: opacity 0.18s ease, background-color 0.18s ease;
+  }
+  html.rec-netflix body.layout-v2 .nf-rail-btn[hidden] { display: none !important; }
+  html.rec-netflix body.layout-v2 .nf-rail-prev { left: 0; }
+  html.rec-netflix body.layout-v2 .nf-rail-next {
+    right: 0;
+    background: linear-gradient(270deg, rgba(20, 20, 20, 0.90) 0%, rgba(20, 20, 20, 0.45) 100%);
+  }
+  html.rec-netflix body.layout-v2 .nf-rail-btn:hover {
+    opacity: 1;
+    background: rgba(20, 20, 20, 0.95);
+    color: var(--nf-red);
+  }
+  html.rec-netflix[data-mode="light"] body.layout-v2 .nf-rail-btn {
+    color: #242220;
+    background: linear-gradient(90deg, rgba(236, 232, 225, 0.95) 0%, rgba(236, 232, 225, 0.55) 100%);
+  }
+  html.rec-netflix[data-mode="light"] body.layout-v2 .nf-rail-next {
+    background: linear-gradient(270deg, rgba(236, 232, 225, 0.95) 0%, rgba(236, 232, 225, 0.55) 100%);
+  }
+  html.rec-netflix[data-mode="light"] body.layout-v2 .nf-rail-btn:hover {
+    color: var(--nf-red);
+    background: rgba(246, 243, 238, 0.98);
   }
 }
 
@@ -988,7 +1096,7 @@ html.rec-netflix[data-mode="light"] .page-footer {
     font-size: 20px !important;
   }
 
-  /* 5. Novas Entradas, Modais e Rodapé */
+  /* 5. Novas Entradas, Modais e Rodapé estreito de 1 linha (só no celular — v95) */
   html.rec-netflix body.layout-v2 .inbox-section {
     max-height: none;
   }
@@ -996,15 +1104,54 @@ html.rec-netflix[data-mode="light"] .page-footer {
     width: 44px;
     height: 44px;
   }
-  html.rec-netflix .page-footer {
-    justify-content: space-between;
-    padding: 5px 12px;
-    gap: 6px;
+  .page-footer,
+  body.layout-v2 .page-footer {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    min-height: 24px !important;
+    padding: 3px 12px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+  }
+  .page-footer .footer-brand {
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .page-footer #app-version,
+  .page-footer #data-source,
+  .page-footer #data-age,
+  .page-footer #assoc-status,
+  .page-footer #offline-feed-status,
+  .page-footer .btn-settings,
+  .page-footer #status-dot,
+  .page-footer #last-update,
+  .page-footer .status-flash {
+    display: none !important;
+  }
+  .page-footer .footer-ctrls {
+    order: 0 !important;
+    flex: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    gap: 0 !important;
+  }
+  .page-footer #countdown {
+    margin: 0 !important;
+    font-size: 11px !important;
+  }
+  html.rec-navcel .page-shell {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
   }
 }
 
 /* ── 12. Alto Contraste, Foco e Movimento Reduzido ── */
-html.rec-netflix :is(.nf-btn-play, .nf-btn-info, .nf-chip, .nf-top-item):focus-visible {
+html.rec-netflix :is(.nf-btn-play, .nf-btn-info, .nf-chip, .nf-top-item, .nf-rail-btn):focus-visible {
   outline: 2px solid var(--nf-red);
   outline-offset: 2px;
 }
@@ -1017,5 +1164,7 @@ html.rec-netflix body.high-contrast .nf-chip {
   border-color: var(--text-main) !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  html.rec-netflix header { transition: none !important; }
+  html.rec-netflix header,
+  html.rec-netflix body.layout-v2 .nf-rail-btn { transition: none !important; }
+  html.rec-netflix body.layout-v2 .v2-tiles { scroll-behavior: auto !important; }
 }

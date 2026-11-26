@@ -217,6 +217,59 @@
       </div>`;
   }
 
+  /* ── Carrossel horizontal estilo Netflix no computador (v95) ── */
+  function atualizarSetas(body, tiles) {
+    const prev = body.querySelector(':scope > .nf-rail-prev');
+    const next = body.querySelector(':scope > .nf-rail-next');
+    if (!prev || !next) return;
+    if (!ligado() || window.innerWidth <= 640) {
+      prev.hidden = true; next.hidden = true;
+      return;
+    }
+    const max = tiles.scrollWidth - tiles.clientWidth;
+    prev.hidden = !(max > 4 && tiles.scrollLeft > 4);
+    next.hidden = !(max > 4 && tiles.scrollLeft < max - 4);
+  }
+
+  function setupRails() {
+    const bodies = document.querySelectorAll('#main-grid .v2-region-body');
+    bodies.forEach(body => {
+      const tiles = body.querySelector(':scope > .v2-tiles');
+      if (!tiles) return;
+      let prev = body.querySelector(':scope > .nf-rail-prev');
+      let next = body.querySelector(':scope > .nf-rail-next');
+      if (!prev) {
+        prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'nf-rail-btn nf-rail-prev';
+        prev.setAttribute('aria-label', 'Rolar áreas para a esquerda');
+        prev.textContent = '‹';
+        prev.addEventListener('click', () => {
+          const step = Math.max(244, Math.floor(tiles.clientWidth * 0.78));
+          tiles.scrollBy({ left: -step, behavior: 'smooth' });
+        });
+        body.appendChild(prev);
+      }
+      if (!next) {
+        next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'nf-rail-btn nf-rail-next';
+        next.setAttribute('aria-label', 'Rolar áreas para a direita');
+        next.textContent = '›';
+        next.addEventListener('click', () => {
+          const step = Math.max(244, Math.floor(tiles.clientWidth * 0.78));
+          tiles.scrollBy({ left: step, behavior: 'smooth' });
+        });
+        body.appendChild(next);
+      }
+      if (!tiles._nfRailBound) {
+        tiles._nfRailBound = true;
+        tiles.addEventListener('scroll', () => atualizarSetas(body, tiles), { passive: true });
+      }
+      atualizarSetas(body, tiles);
+    });
+  }
+
   /* Transição da barra superior ao rolar (estilo Netflix) */
   let _scrollTick = false;
   window.addEventListener('scroll', () => {
@@ -227,13 +280,30 @@
       document.body.classList.toggle('nf-scrolled', ligado() && window.scrollY > 12);
     });
   }, { passive: true });
+  let _resizeTick = false;
+  window.addEventListener('resize', () => {
+    if (_resizeTick) return;
+    _resizeTick = true;
+    requestAnimationFrame(() => {
+      _resizeTick = false;
+      try { setupRails(); } catch (e) {}
+    });
+  }, { passive: true });
 
   /* Engancha sem interferir na renderização original */
   if (typeof renderDashboardV2 === 'function') {
     const _orig = renderDashboardV2;
     renderDashboardV2 = function () {
       const r = _orig.apply(this, arguments);
-      try { renderHero(); } catch (e) { console.warn('netflix hero', e); }
+      try { renderHero(); setupRails(); requestAnimationFrame(() => { try { setupRails(); } catch (e) {} }); } catch (e) { console.warn('netflix hero', e); }
+      return r;
+    };
+  }
+  if (typeof toggleV2Tile === 'function') {
+    const _tv = toggleV2Tile;
+    toggleV2Tile = function () {
+      const r = _tv.apply(this, arguments);
+      setTimeout(() => { try { setupRails(); } catch (e) {} }, 40);
       return r;
     };
   }
@@ -248,10 +318,10 @@
   document.addEventListener('sir-recursos', e => {
     if (!e.detail || e.detail.id === 'netflix') {
       document.body.classList.toggle('nf-scrolled', ligado() && window.scrollY > 12);
-      try { renderHero(); } catch (err) {}
+      try { renderHero(); setupRails(); } catch (err) {}
     }
   });
   document.addEventListener('DOMContentLoaded', () => {
-    try { renderHero(); } catch (e) {}
+    try { renderHero(); setupRails(); } catch (e) {}
   });
 })();
