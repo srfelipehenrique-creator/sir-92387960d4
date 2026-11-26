@@ -65,8 +65,12 @@
     const max = maxPainel(fim);
     const id = 'mg' + String(cf).replace(/[^A-Za-z0-9]/g, '');
     const dR = curva(r.s, max), dC = curva(c.s, max);
+    /* posição (em %) do último ponto de cada curva — a hora atual */
+    const yp = n => ((BASE - n / max * (BASE - TOPO)) / H * 100).toFixed(1);
+    const uR = r.s[r.s.length - 1], uC = c.s[c.s.length - 1];
     return `<div class="mini-box">
       <div class="mini-tot" aria-hidden="true"><span class="mt-ral">${r.total} RAL</span><span class="mt-rec">${c.total} REC</span><span class="mt-lbl">novas em 24h</span></div>
+      <div class="mini-plot">
       <svg class="mini-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
           aria-label="Aberturas nas últimas 24 horas em ${escapeHtml(cf)}: ${r.total} RAL e ${c.total} REC">
         <defs>
@@ -79,6 +83,10 @@
         <path class="mini-rec" d="${dC}"/>
         <path class="mini-ral" d="${dR}"/>
       </svg>
+      <span class="mini-agora" aria-hidden="true" title="Agora"></span>
+      <i class="mini-pt mp-rec" style="top:${yp(uC)}%" aria-hidden="true" title="Agora: ${uC} REC nas últimas 3h"></i>
+      <i class="mini-pt mp-ral" style="top:${yp(uR)}%" aria-hidden="true" title="Agora: ${uR} RAL nas últimas 3h"></i>
+      </div>
     </div>`;
   };
 
@@ -106,7 +114,7 @@
     const html = _grupo(p);
     if (!ligado()) return html;
     const leg = `<span class="mini-legenda" title="Aberturas nas últimas 24 horas (soma de 3 em 3 horas)">
-        <i class="ml-ral" aria-hidden="true"></i>RAL <i class="ml-rec" aria-hidden="true"></i>REC <span>· aberturas 24h</span></span>`;
+        <i class="ml-ral" aria-hidden="true"></i>RAL <i class="ml-rec" aria-hidden="true"></i>REC <span>· aberturas 24h ·</span> <b class="ml-agora" aria-hidden="true"></b>agora</span>`;
     return html.replace(/(<span class="v2-region-count">[^<]*<\/span>)/, m => m + leg);
   };
 })();

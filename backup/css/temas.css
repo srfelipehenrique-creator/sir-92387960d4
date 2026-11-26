@@ -210,3 +210,15 @@
 :root[data-skin="noturno"] body.layout-v2 .v2-kpi-vals > .v2-kpi-btn:nth-child(1) { color: #F4F5F7 !important; }
 :root[data-skin="noturno"] body.layout-v2 .v2-kpi-btn .v2-kpi-type { color: rgba(236,238,242,0.82); }
 :root[data-skin="noturno"] body.layout-v2 .v2-kpi-btn.v2-kpi-qual > .animate-num { color: #F4F5F7; }
+
+/* ══ Minigráfico dos cards (v86) — cores de RAL e REC por tema ══
+   Mesmo significado do mapa de calor (RAL vermelho, REC azul), com o tom ajustado ao
+   fundo de cada tema para o texto de 11px passar de 4,5:1. */
+:root[data-skin="chumbo"]:not(#_), :root[data-skin="noturno"]:not(#_) { --mini-ral: #F87171; --mini-rec: #60A5FA; }
+:root[data-skin="solarized"]:not(#_) { --mini-ral: #FF7B72; --mini-rec: #6CB6FF; }
+:root[data-skin="campo"]:not(#_)     { --mini-ral: #F28B7D; --mini-rec: #86B8EC; }
+:root[data-skin="cyber"]:not(#_)     { --mini-ral: #FF6B81; --mini-rec: #4FC3FF; }
+:root[data-skin="sepia"]:not(#_)     { --mini-ral: #9F1D1D; --mini-rec: #1E3A8A; }
+:root[data-skin="lavanda"]:not(#_)   { --mini-ral: #B91C1C; --mini-rec: #1D4ED8; }
+:root:not([data-mode="light"]) body.high-contrast { --mini-ral: #FF8A8A; --mini-rec: #8AB8FF; }
+:root[data-mode="light"] body.high-contrast { --mini-ral: #991B1B; --mini-rec: #1E40AF; }
