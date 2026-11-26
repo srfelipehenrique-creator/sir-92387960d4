@@ -111,27 +111,62 @@
 .v2-timeline .tl-pill b { color: var(--text-main); }
 .v2-timeline .tl-toggle { margin: 0; align-self: center; }
 .v2-timeline.tl-closed { padding-bottom: 14px; }
-.v2-timeline .tl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+.v2-timeline .tl-cards { display: grid; grid-template-columns: 1fr 1fr minmax(150px, .6fr); gap: 12px; margin: 14px 0 10px; }
 .v2-timeline .tl-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; background: var(--bg-panel-2); transition: opacity .15s; }
 .v2-timeline .tl-card.dim { opacity: .45; }
 .v2-timeline .tl-card-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
 .v2-timeline .tl-le .tl-card-top span { color: #22d3ee; }
 .v2-timeline .tl-gt .tl-card-top span { color: #fb923c; }
-.v2-timeline .tl-card-top b { color: var(--text-main); font-family: var(--font-mono); }
+.v2-timeline .tl-card-top b { color: var(--text-main); font-variant-numeric: tabular-nums; }
 .v2-timeline .tl-card-top small { color: var(--text-muted); font-weight: 600; }
 .v2-timeline .tl-track { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
-.v2-timeline .tl-track i { display: block; height: 100%; border-radius: inherit; transition: width .4s; }
+.v2-timeline .tl-track i { display: block; height: 100%; border-radius: inherit; transition: width 1s cubic-bezier(.2,.8,.2,1) .25s; }
 .v2-timeline .tl-le .tl-track i { background: #22d3ee; }
-.v2-timeline .tl-gt .tl-track i { background: linear-gradient(90deg, #f59e0b, var(--v2-crit)); }
+.v2-timeline .tl-gt .tl-track i { background: #fb923c; }
 .v2-timeline .tl-chart { min-height: 120px; }
 .v2-timeline .tl-div { stroke: var(--text-muted); stroke-opacity: .6; }
-.v2-timeline .tl-col:hover path { filter: brightness(1.15); }
 .v2-timeline .tl-note { font-size: 10.5px; color: var(--text-muted); text-align: right; min-height: 4px; }
 @media (max-width: 640px) {
   .v2-timeline { padding: 12px 10px 8px; }
   .v2-timeline .tl-cards { grid-template-columns: 1fr; gap: 8px; }
+  .v2-timeline .tl-peak { display: flex; justify-content: space-between; align-items: baseline; }
+  .v2-timeline .tl-peak .tl-card-top { margin: 0; }
   .v2-timeline .tl-area { margin-left: 0; max-width: 100%; flex: 1; }
   .v2-timeline .tl-toggle { margin-left: auto; }
+}
+
+/* ══ Linha do Tempo v78: barras planas, pico do dia, balão e animação de entrada ══ */
+.v2-timeline .tl-peak .tl-card-top span { color: var(--text-muted); }
+.v2-timeline .tl-peak-v { font-size: 18px; font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.v2-timeline .tl-peak-v small { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+.v2-timeline .tl-chart { position: relative; }
+.v2-timeline .tl-stack { transition: transform .2s ease, filter .2s ease; }
+.v2-timeline .tl-col { cursor: pointer; outline: none; }
+.v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { transform: translateY(-2px); filter: brightness(1.15); }
+.v2-timeline .tl-col:focus-visible .g-hit { stroke: #22d3ee; stroke-width: 1.5; rx: 6px; }
+.v2-timeline .tl-cur-bg { fill: #22d3ee; fill-opacity: .09; animation: tlPulse 2.4s ease-in-out infinite; }
+.v2-timeline .tl-x-cur { fill: #22d3ee !important; font-weight: 800; }
+@keyframes tlPulse { 50% { fill-opacity: .03; } }
+.v2-timeline .tl-tip {
+  position: absolute; top: 2px; transform: translateX(-50%); z-index: 5; pointer-events: none; white-space: nowrap;
+  background: var(--bg-panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px;
+  font-size: 11.5px; color: var(--text-main); box-shadow: 0 6px 18px rgba(0,0,0,.35); animation: tlTip .16s ease-out;
+}
+.v2-timeline .tl-tip b { display: block; font-size: 12.5px; margin-bottom: 2px; }
+.v2-timeline .tl-tip span, .v2-timeline .tl-tip em { display: block; }
+.v2-timeline .tl-tip em { font-style: normal; color: var(--text-muted); margin-top: 2px; }
+.v2-timeline .tl-tip .tl-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+@keyframes tlTip { from { opacity: 0; margin-top: 4px; } to { opacity: 1; margin-top: 0; } }
+/* entrada: colunas sobem da esquerda para a direita, o laranja empilha depois, números por último */
+.v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt {
+  transform-box: fill-box; transform-origin: 50% 100%; animation: tlGrow .75s cubic-bezier(.2,.8,.2,1) both;
+}
+.v2-timeline.tl-anim .tl-val { animation: tlFade .4s ease-out both; }
+@keyframes tlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes tlFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .v2-timeline .tl-cur-bg, .v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt, .v2-timeline.tl-anim .tl-val, .v2-timeline .tl-tip { animation: none; }
+  .v2-timeline .tl-track i, .v2-timeline .tl-stack { transition: none; }
 }
 
 /* ══ Novas Entradas: Cards ou Lista compacta (v51) ══ */

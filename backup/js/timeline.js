@@ -75,73 +75,70 @@ function _tlHourItems(d, h, win) {
   return win === 'le' ? c.le : win === 'gt' ? c.gt : c.le.concat(c.gt);
 }
 
+/* v78: barras planas empilhadas (sem 3D), laranja para "> 24h", coluna da hora atual
+   destacada e animação de entrada (só quando .tl-anim está na seção) */
+const TL_C_LE = '#22d3ee', TL_C_GT = '#fb923c';
+function _tlBarPath(x, w, top, bot, r) {
+  const h = bot - top; if (h <= 0) return '';
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x.toFixed(1)} ${bot.toFixed(1)}V${(top + r).toFixed(1)}Q${x.toFixed(1)} ${top.toFixed(1)} ${(x + r).toFixed(1)} ${top.toFixed(1)}` +
+    `H${(x + w - r).toFixed(1)}Q${(x + w).toFixed(1)} ${top.toFixed(1)} ${(x + w).toFixed(1)} ${(top + r).toFixed(1)}V${bot.toFixed(1)}Z`;
+}
 function _tlSVG(tk, d, win, width, uid) {
   const W = Math.max(300, Math.round(width));
-  const H = 230, padL = 32, padR = 16, padT = 30, padB = 46;
+  const H = 230, padL = 32, padR = 16, padT = 34, padB = 42;
   const iw = W - padL - padR, ih = H - padT - padB, band = iw / 24;
   const showLe = win !== 'gt', showGt = win !== 'le';
   const vLe = h => showLe ? d.b[h].le.length : 0, vGt = h => showGt ? d.b[h].gt.length : 0;
   const max = _niceMax(Math.max(1, ...TL_HOURS.map(h => vLe(h) + vGt(h))));
-  const xL = h => padL + band * h;                       /* início da hora h no eixo */
+  const xL = h => padL + band * h;
   const y = v => padT + ih - (v / max) * ih, y0 = y(0);
-  const dep = Math.max(2, Math.min(7, band * 0.16));
-  const bw = Math.max(4, Math.min(30, band * 0.62 - dep));
-  const cLe = '#22d3ee', cGt = 'var(--v2-crit)';
-  const step = band >= 30 ? 1 : band >= 15 ? 2 : band >= 10 ? 3 : 6;   /* rótulos de hora visíveis */
+  const bw = Math.max(4, Math.min(28, band * 0.66));
+  const step = band >= 30 ? 1 : band >= 15 ? 2 : band >= 10 ? 3 : 6;
+  const nd = new Date(), curH = nd.getHours(), nowH = curH + nd.getMinutes() / 60, xNow = padL + band * nowH;
 
-  let g = `<defs>${_vGradDef('tl-le' + uid, cLe, 1, .6)}${_vGradDef('tl-gt' + uid, cGt, 1, .62)}${_shineDef('tl-sh' + uid)}
-    <linearGradient id="tl-now${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/><stop offset="100%" stop-color="#22d3ee" stop-opacity=".10"/></linearGradient></defs>`;
-
-  /* "agora": posição do relógio no eixo das 24h */
-  const nd = new Date(), nowH = nd.getHours() + nd.getMinutes() / 60, xNow = padL + band * nowH;
-  /* faixa leve de "hoje até agora" */
+  let g = `<defs><linearGradient id="tl-now${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${TL_C_LE}" stop-opacity="0"/><stop offset="100%" stop-color="${TL_C_LE}" stop-opacity=".07"/></linearGradient></defs>`;
+  /* faixa leve de "hoje até agora" (as colunas depois dela são de ontem) */
   g += `<rect x="${padL}" y="${padT - 6}" width="${(xNow - padL).toFixed(1)}" height="${(ih + 6).toFixed(1)}" fill="url(#tl-now${uid})" pointer-events="none"/>`;
+  /* coluna da hora atual */
+  g += `<rect class="tl-cur-bg" x="${(xL(curH) + 1).toFixed(1)}" y="${padT - 8}" width="${(band - 2).toFixed(1)}" height="${(ih + 8).toFixed(1)}" rx="6" pointer-events="none"/>`;
 
-  /* grade + eixo Y (volume) */
+  /* grade + eixo Y */
   for (let k = 0; k <= 4; k++) {
     const v = (max / 4) * k, yy = y(v);
-    g += `<line class="g-grid" x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}" stroke-dasharray="${k ? '3 4' : ''}" opacity="${k ? .55 : .9}"/>`;
+    g += `<line class="g-grid" x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}" stroke-dasharray="${k ? '3 4' : ''}" opacity="${k ? .4 : .9}"/>`;
     g += `<text class="g-axis" x="${padL - 6}" y="${yy + 3.5}" text-anchor="end">${Math.round(v * 10) / 10}</text>`;
   }
-  g += `<text class="g-axis tl-ax-t" x="${padL - 26}" y="${padT - 14}" text-anchor="start">tickets</text>`;
-
-  /* eixo X (tempo): marcas de cada hora + rótulos 00h … 23h + 23:59 no fim */
+  /* eixo X */
   TL_HOURS.forEach(h => {
-    const xx = xL(h);
-    g += `<line class="tl-tick" x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${y0}" y2="${y0 + (h % step ? 3 : 6)}"/>`;
-    if (h % step === 0) g += `<text class="g-x" x="${(xx + band / 2).toFixed(1)}" y="${y0 + 18}" text-anchor="middle">${_tlHH(h)}h</text>`;
+    if (h % step) return;
+    g += `<text class="g-x${h === curH ? ' tl-x-cur' : ''}" x="${(xL(h) + band / 2).toFixed(1)}" y="${y0 + 17}" text-anchor="middle">${_tlHH(h)}h</text>`;
   });
-  g += `<line class="tl-tick" x1="${padL + iw}" x2="${padL + iw}" y1="${y0}" y2="${y0 + 6}"/>`;
-  g += `<text class="g-axis tl-ax-t" x="${padL + iw}" y="${H - 6}" text-anchor="end">23:59</text>`;
-  g += `<text class="g-axis tl-ax-t" x="${padL}" y="${H - 6}" text-anchor="start">00:00</text>`;
   g += `<text class="g-axis tl-ax-t" x="${padL + iw / 2}" y="${H - 6}" text-anchor="middle">hora de abertura</text>`;
 
-  /* colunas (empilhadas: ≤ 24h embaixo, > 24h em cima) */
+  /* colunas: ≤ 24h embaixo, > 24h em cima, 2px de respiro entre as duas */
   TL_HOURS.forEach(h => {
-    const a = vLe(h), bq = vGt(h), tot = a + bq, x0 = xL(h) + (band - bw - dep) / 2, cx = xL(h) + band / 2;
-    const tA = y(a), tT = y(tot);
+    const a = vLe(h), bq = vGt(h), tot = a + bq, cx = xL(h) + band / 2, x0 = cx - bw / 2;
+    const tA = y(a), tT = y(tot), gap = a && bq ? 2 : 0;
+    const dl = (h * 0.035).toFixed(3);
     let bar = '';
-    if (a) bar += _bar3D(x0, bw, tA, y0, 'tl-le' + uid, cLe, dep, { shineId: 'tl-sh' + uid, noCap: bq > 0 });
-    if (bq) bar += _bar3D(x0, bw, tT, tA, 'tl-gt' + uid, cGt, dep, { shineId: 'tl-sh' + uid });
+    if (a) bar += `<path class="tl-seg-le" style="animation-delay:${dl}s" fill="${TL_C_LE}" d="${_tlBarPath(x0, bw, tA, y0, bq ? 0 : 3.5)}"/>`;
+    if (bq) bar += `<path class="tl-seg-gt" style="animation-delay:${(+dl + .25).toFixed(3)}s" fill="${TL_C_GT}" d="${_tlBarPath(x0, bw, tT, tA - gap, 3.5)}"/>`;
     if (!tot) bar = `<line class="g-zero" x1="${(cx - bw / 2).toFixed(1)}" x2="${(cx + bw / 2).toFixed(1)}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke-width="2"/>`;
-    const col = bq ? cGt : cLe;
+    const col = bq > a ? TL_C_GT : TL_C_LE;
     const lbl = `${tk.toUpperCase()} ${_tlHH(h)}:00–${_tlHH(h)}:59`;
-    const det = [showLe ? `${a} nas últimas 24h` : '', showGt ? `${bq} há mais de 24h` : ''].filter(Boolean).join(' · ');
-    g += `<g class="g-col tl-col${h === nd.getHours() ? ' tl-cur' : ''}" data-tl-bucket="${h}" role="button" tabindex="0" aria-label="${lbl}: ${tot}">
-      <title>${lbl}: ${tot} (${det}) — toque para abrir a lista</title>
+    g += `<g class="g-col tl-col${h === curH ? ' tl-cur' : ''}" data-tl-bucket="${h}" data-le="${a}" data-gt="${bq}" role="button" tabindex="0" aria-label="${lbl}: ${tot} (${a} nas últimas 24h, ${bq} há mais de 24h)">
       <rect class="g-hit" x="${xL(h).toFixed(1)}" y="${padT - 8}" width="${band.toFixed(1)}" height="${ih + 8}"/>
-      ${bar}
-      ${tot ? `<text class="g-val" x="${(cx + dep / 2).toFixed(1)}" y="${(tT - dep - 5).toFixed(1)}" text-anchor="middle" style="fill:${col}">${tot}</text>` : ''}
+      <g class="tl-stack">${bar}</g>
+      ${tot ? `<text class="g-val tl-val" x="${cx.toFixed(1)}" y="${(tT - 6).toFixed(1)}" text-anchor="middle" style="fill:${col};animation-delay:${(+dl + .5).toFixed(3)}s">${tot}</text>` : ''}
     </g>`;
   });
 
-  /* linha do "agora" acompanhando o relógio */
-  const hm = `${_tlHH(nd.getHours())}:${_tlHH(nd.getMinutes())}`;
-  const lx = Math.min(Math.max(xNow, padL + 32), W - padR - 32);
-  g += `<line class="tl-now" x1="${xNow.toFixed(1)}" x2="${xNow.toFixed(1)}" y1="${padT - 10}" y2="${y0 + 6}"/>
-    <circle class="tl-now-dot" cx="${xNow.toFixed(1)}" cy="${y0}" r="3.5"/>
-    <g class="tl-now-tag"><rect x="${(lx - 32).toFixed(1)}" y="${padT - 26}" width="64" height="15" rx="7.5"/>
-    <text x="${lx.toFixed(1)}" y="${padT - 15}" text-anchor="middle">agora ${hm}</text></g>`;
+  /* etiqueta "agora" sobre a coluna da hora atual */
+  const hm = `${_tlHH(curH)}:${_tlHH(nd.getMinutes())}`;
+  const lx = Math.min(Math.max(xL(curH) + band / 2, padL + 30), W - padR - 30);
+  g += `<g class="tl-now-tag"><rect x="${(lx - 30).toFixed(1)}" y="${padT - 32}" width="60" height="16" rx="8"/>
+    <text x="${lx.toFixed(1)}" y="${padT - 20.5}" text-anchor="middle">agora ${hm}</text></g>`;
 
   return `<svg class="v2-chart-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Linha do tempo ${tk.toUpperCase()} por hora de abertura">${g}</svg>`;
 }
@@ -166,6 +163,7 @@ function _tlShellHTML(rn) {
       <div class="tl-cards">
         <div class="tl-card tl-le"><div class="tl-card-top"><span>Dentro de 24h (≤ 24h)</span><b></b></div><div class="tl-track"><i></i></div></div>
         <div class="tl-card tl-gt"><div class="tl-card-top"><span>Mais de 24h (&gt; 24h)</span><b></b></div><div class="tl-track"><i></i></div></div>
+        <div class="tl-card tl-peak"><div class="tl-card-top"><span>Pico do dia</span></div><b class="tl-peak-v"></b></div>
       </div>
       <div class="tl-chart"></div>
       <div class="tl-note"></div>
@@ -198,17 +196,75 @@ function _tlRenderOne(sec, uid) {
   sec.querySelector('.tl-pill').innerHTML = `<b>${d.total}</b> ${tk === 'ral' ? 'RALs de falha' : 'RECs'}`;
   const pct = v => d.total ? Math.round(v / d.total * 100) : 0;
   const le = sec.querySelector('.tl-le'), gt = sec.querySelector('.tl-gt');
-  le.querySelector('b').innerHTML = `${d.le} <small>(${pct(d.le)}%)</small>`;
-  gt.querySelector('b').innerHTML = `${d.gt} <small>(${pct(d.gt)}%)</small>`;
-  le.querySelector('.tl-track i').style.width = pct(d.le) + '%';
-  gt.querySelector('.tl-track i').style.width = pct(d.gt) + '%';
+  const anim = !o.closed && (_tlAnimNext || sec._tlAnim) && !_tlReduce();
+  if (!o.closed) { _tlAnimNext = false; sec._tlAnim = false; }
+  const tLe = le.querySelector('.tl-track i'), tGt = gt.querySelector('.tl-track i');
+  if (anim) { tLe.style.width = tGt.style.width = '0%'; void tLe.offsetWidth; }
+  tLe.style.width = pct(d.le) + '%';
+  tGt.style.width = pct(d.gt) + '%';
+  _tlCount(le.querySelector('b'), d.le, pct(d.le), anim);
+  _tlCount(gt.querySelector('b'), d.gt, pct(d.gt), anim);
   le.classList.toggle('dim', o.win === 'gt'); gt.classList.toggle('dim', o.win === 'le');
+  let ph = -1, pv = 0;
+  TL_HOURS.forEach(h => { const n = _tlHourItems(d, h, o.win).length; if (n > pv) { pv = n; ph = h; } });
+  sec.querySelector('.tl-peak-v').innerHTML = ph < 0 ? '—' : `${_tlHH(ph)}h <small>${pv} ${pv > 1 ? T + 's' : T}</small>`;
 
   if (o.closed) return;
   const holder = sec.querySelector('.tl-chart');
-  holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600, uid);
+  holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600, uid) + '<div class="tl-tip" hidden></div>';
+  if (anim) {
+    sec.classList.add('tl-anim');
+    clearTimeout(sec._tlAt);
+    sec._tlAt = setTimeout(() => sec.classList.remove('tl-anim'), 2200);
+  }
   sec.querySelector('.tl-note').textContent = d.semData ? `${d.semData} ${T} sem data de abertura não entra${d.semData > 1 ? 'm' : ''} no gráfico.` : '';
 }
+
+/* v78: animação só ao abrir o painel, trocar filtro/área ou expandir — não nas atualizações automáticas */
+let _tlAnimNext = true;
+const _tlReduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function _tlCount(el, val, p, anim) {
+  const put = v => { el.innerHTML = `${v} <small>(${p}%)</small>`; };
+  cancelAnimationFrame(el._tlRaf);
+  if (!anim || !val) return put(val);
+  const t0 = performance.now();
+  const step = now => {
+    const k = Math.min((now - t0) / 1100, 1);
+    put(Math.round(val * (1 - Math.pow(1 - k, 3))));
+    if (k < 1) el._tlRaf = requestAnimationFrame(step);
+  };
+  el._tlRaf = requestAnimationFrame(step);
+}
+
+/* Balão ao passar o mouse / focar uma coluna */
+function _tlShowTip(col) {
+  const holder = col.closest('.tl-chart'), tip = holder && holder.querySelector('.tl-tip');
+  if (!tip) return;
+  const sec = col.closest('.v2-timeline'), T = _tlOpts(sec.dataset.tlReg).tk.toUpperCase();
+  const h = +col.dataset.tlBucket, a = +col.dataset.le, b = +col.dataset.gt;
+  tip.innerHTML = `<b>${_tlHH(h)}h · ${a + b} ${T}</b><span><i class="tl-key tl-key-le"></i>${a} até 24h · <i class="tl-key tl-key-gt"></i>${b} mais de 24h</span><em>Toque para ver a lista</em>`;
+  tip.hidden = false;
+  const hr = holder.getBoundingClientRect(), cr = col.getBoundingClientRect();
+  const x = Math.min(Math.max(cr.left - hr.left + cr.width / 2, tip.offsetWidth / 2 + 4), hr.width - tip.offsetWidth / 2 - 4);
+  tip.style.left = x + 'px';
+}
+function _tlHideTip(holder) { const t = holder && holder.querySelector('.tl-tip'); if (t) t.hidden = true; }
+document.addEventListener('mouseover', e => {
+  const col = e.target.closest && e.target.closest('.v2-timeline [data-tl-bucket]');
+  if (col) _tlShowTip(col);
+});
+document.addEventListener('mouseout', e => {
+  const col = e.target.closest && e.target.closest('.v2-timeline [data-tl-bucket]');
+  if (col && !col.contains(e.relatedTarget)) _tlHideTip(col.closest('.tl-chart'));
+});
+document.addEventListener('focusin', e => {
+  const col = e.target.closest && e.target.closest('.v2-timeline [data-tl-bucket]');
+  if (col) _tlShowTip(col);
+});
+document.addEventListener('focusout', e => {
+  const col = e.target.closest && e.target.closest('.v2-timeline [data-tl-bucket]');
+  if (col) _tlHideTip(col.closest('.tl-chart'));
+});
 
 /* Abre a lista de uma hora (as duas abas, RAL e REC, mostram a mesma hora) */
 function _tlOpenBucket(rn, k) {
@@ -225,7 +281,7 @@ document.addEventListener('click', e => {
   if (!sec) return;
   const rn = sec.dataset.tlReg;
   const segBtn = e.target.closest('.tl-seg button');
-  if (segBtn) { _tlSave(rn, { [segBtn.parentElement.dataset.tlSet]: segBtn.dataset.v }); _tlRenderOne(sec, rn); return; }
+  if (segBtn) { _tlSave(rn, { [segBtn.parentElement.dataset.tlSet]: segBtn.dataset.v }); sec._tlAnim = true; _tlRenderOne(sec, rn); return; }
   if (e.target.closest('.tl-toggle')) {
     const o = _tlSave(rn, { closed: !_tlOpts(rn).closed });
     sec.classList.toggle('tl-closed', o.closed);
@@ -233,6 +289,7 @@ document.addEventListener('click', e => {
     const b = sec.querySelector('.tl-toggle');
     b.textContent = o.closed ? '▸ Expandir' : '▾ Recolher';
     b.setAttribute('aria-expanded', String(!o.closed));
+    sec._tlAnim = !o.closed;
     _tlRenderOne(sec, rn);
     return;
   }
@@ -248,7 +305,7 @@ document.addEventListener('change', e => {
   const sel = e.target.matches && e.target.matches('.v2-timeline .tl-area') ? e.target : null;
   if (!sel) return;
   const sec = sel.closest('.v2-timeline');
-  _tlSave(sec.dataset.tlReg, { area: sel.value }); _tlRenderOne(sec, sec.dataset.tlReg);
+  _tlSave(sec.dataset.tlReg, { area: sel.value }); sec._tlAnim = true; _tlRenderOne(sec, sec.dataset.tlReg);
 });
 
 /* Entra no fim do painel, abaixo de todos os grupos, sempre que o painel é redesenhado */
