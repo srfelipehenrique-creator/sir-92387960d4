@@ -289,8 +289,12 @@ function _mpIcone(tk, n) {
 function _mpPainelHTML() {
   return `<div class="mp-head">
       <div class="mp-tit"><span class="mp-dot" aria-hidden="true"></span>Mapa de calor <small class="mp-qtd"></small></div>
-      <button type="button" class="mp-ico" onclick="mapaTelaCheia()" title="Ver em tela cheia" aria-label="Ver mapa em tela cheia">⤢</button>
+      <div class="mp-head-btns">
+        <button type="button" class="v2-charts-toggle mp-toggle" aria-expanded="true" aria-controls="mp-corpo" title="Recolher ou expandir o Mapa de calor">▾ Recolher</button>
+        <button type="button" class="mp-ico" onclick="mapaTelaCheia()" title="Ver em tela cheia" aria-label="Ver mapa em tela cheia">⤢</button>
+      </div>
     </div>
+    <div class="mp-corpo" id="mp-corpo">
     <div class="mp-filtros">
       <div class="mp-seg" data-mp="periodo" role="group" aria-label="Período">
         <button type="button" data-v="1">Hoje</button><button type="button" data-v="7">7 dias</button><button type="button" data-v="30">30 dias</button><button type="button" data-v="60">60 dias</button>
@@ -301,7 +305,16 @@ function _mpPainelHTML() {
       <span class="mp-leg"><i class="mp-pin mp-pin-ral"></i>RAL <i class="mp-pin mp-pin-rec"></i>REC <i class="mp-pin mp-pin-mix"></i>RAL+REC</span>
       <span class="mp-escala" title="Cor do calor pela quantidade de eventos no mesmo local">1<i></i>${MAPA_CALOR_MAX}+</span>
       <span class="mp-info"></span>
+    </div>
     </div>`;
+}
+/* v84 — celular: recolher / expandir o card (igual aos outros). Fica salvo neste aparelho. */
+function _mpAplicarFechado(sec) {
+  const fechado = SirStore.get('mapaFechado') === '1';
+  sec.classList.toggle('mp-closed', fechado);
+  const b = sec.querySelector('.mp-toggle');
+  if (b) { b.textContent = fechado ? '▸ Expandir' : '▾ Recolher'; b.setAttribute('aria-expanded', String(!fechado)); }
+  if (!fechado && _mp.mapa) setTimeout(() => _mp.mapa && _mp.mapa.invalidateSize(), 60);
 }
 function _mpPainel() {
   let sec = document.getElementById('mapa-calor');
@@ -320,7 +333,9 @@ function _mpPainel() {
   sec.className = 'mapa-calor'; sec.id = 'mapa-calor'; sec.setAttribute('aria-label', 'Mapa de calor de RAL e REC');
   sec.innerHTML = _mpPainelHTML();
   lado.appendChild(sec);
+  _mpAplicarFechado(sec);
   sec.addEventListener('click', e => {
+    if (e.target.closest('.mp-toggle')) { SirStore.set('mapaFechado', SirStore.get('mapaFechado') === '1' ? '0' : '1'); _mpAplicarFechado(sec); return; }
     const b = e.target.closest('.mp-seg button'); if (!b) return;
     const grupo = b.parentNode.dataset.mp;
     if (grupo === 'periodo') SirStore.set('mapaPeriodo', b.dataset.v);

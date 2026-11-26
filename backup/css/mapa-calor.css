@@ -13,8 +13,10 @@
 .mapa-calor .mp-map { height: 340px; }
 body:not(.layout-v2) .mapa-calor { order: -2; }   /* Grafana: logo abaixo de Novas Entradas */
 @media (max-width: 640px) {
-  /* v76 — celular: o mapa sobe para logo abaixo do TOTAL (antes ficava no fim, depois de todas as áreas) */
-  body.layout-v2 .mapa-calor { order: 2; margin-bottom: 4px; }
+  /* v84 — celular: o mapa fica por último (depois dos módulos fixados), com Recolher / Expandir */
+  body.layout-v2 .mapa-calor { order: 6; margin-top: 4px; }
+  .mapa-calor.mp-closed .mp-corpo { display: none; }
+  .mapa-calor .mp-toggle { margin: 0; align-self: center; }
   .mapa-calor .mp-map { height: 320px; }
 }
 
@@ -29,6 +31,13 @@ body:not(.layout-v2) .mapa-calor { order: -2; }   /* Grafana: logo abaixo de Nov
   body.layout-v2 .v2-side .mapa-calor { flex: 1 1 260px; min-height: 260px; }
   body.layout-v2 .v2-side .mapa-calor .mp-map { height: auto; flex: 1 1 auto; min-height: 180px; }
 }
+
+/* v84 — o botão Recolher / Expandir só existe no celular */
+.mp-head-btns { display: flex; align-items: center; gap: 8px; }
+.mapa-calor .mp-toggle { display: none; }
+@media (max-width: 640px) { .mapa-calor .mp-toggle { display: inline-block; } }
+.mp-corpo { display: flex; flex-direction: column; min-width: 0; }
+@media (min-width: 1101px) { body.layout-v2 .v2-side .mapa-calor .mp-corpo { flex: 1 1 auto; min-height: 0; } }
 
 /* ── Cabeçalho e filtros ── */
 .mp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 4px 12px; }
@@ -60,6 +69,7 @@ body:not(.layout-v2) .mapa-calor { order: -2; }   /* Grafana: logo abaixo de Nov
   position: fixed !important; inset: 12px; z-index: 1150; max-height: none !important; height: auto !important;
   box-shadow: 0 20px 60px rgba(0,0,0,.55);
 }
+.mapa-calor.mp-full .mp-corpo { flex: 1 1 auto; min-height: 0; display: flex !important; }
 .mapa-calor.mp-full .mp-map { flex: 1 1 auto; height: auto; }
 body.mp-full-on::after { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1149; }
 

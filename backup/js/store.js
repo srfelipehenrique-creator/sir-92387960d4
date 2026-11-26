@@ -22,6 +22,7 @@ const SirStore = (function () {
     chartGroups:    { ls: 'sir_charts_groups',     def: {},     json: true  },   /* { ES: true } → gráfico encolhido */
     chartsAllClosed:{ ls: 'sir_charts_collapsed',  def: '',     json: false },   /* escolha antiga ('1') */
     timeline:       { ls: 'sir_timeline_v3',       def: {},     json: true  },   /* { PAINEL: { tk, win, area, closed } } */
+    mapaFechado:    { ls: 'sir_mapa_fechado',      def: '0',    json: false },   /* v84: celular — '1' = mapa recolhido */
     mapaPeriodo:    { ls: 'sir_mapa_periodo',      def: '60',   json: false },   /* v71: '1' | '7' | '30' | '60' dias */
     mapaTipo:       { ls: 'sir_mapa_tipo',         def: 'ambos',json: false },   /* 'ral' | 'rec' | 'ambos' */
     mapaCache:      { ls: 'sir_mapa_cache',        def: {},     json: true  },   /* última lista do servidor (abre sem internet) */
