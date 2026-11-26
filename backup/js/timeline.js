@@ -5,8 +5,8 @@
    - Eixo Y: volume de tickets abertos naquela hora.
    - Cada coluna empilha: ciano = aberto nas últimas 24h ·
      laranja = aberto há mais de 24h (dias anteriores).
-   - Linha "agora" anda pelo eixo X acompanhando o relógio; as horas
-     depois dela (nas últimas 24h) são de ontem.
+   - A coluna da hora atual fica destacada (etiqueta "agora"); a faixa
+     leve vai até o relógio — as colunas depois dela (≤ 24h) são de ontem.
    - Dois cartões no topo: dentro de 24h e mais de 24h (quantidade e %).
    - Escolhas: RAL ou REC · Todas, ≤ 24h ou > 24h · área: todas (completo),
      minhas áreas, um grupo (ES / Interior / Capital) ou um CF só.
@@ -77,7 +77,7 @@ function _tlHourItems(d, h, win) {
 
 /* v78: barras planas empilhadas (sem 3D), laranja para "> 24h", coluna da hora atual
    destacada e animação de entrada (só quando .tl-anim está na seção) */
-const TL_C_LE = '#22d3ee', TL_C_GT = '#fb923c';
+/* v79: cores da Linha do Tempo vêm de --tl-le / --tl-gt (ajustes.css), mais escuras nos temas claros */
 function _tlBarPath(x, w, top, bot, r) {
   const h = bot - top; if (h <= 0) return '';
   r = Math.max(0, Math.min(r, w / 2, h));
@@ -86,7 +86,7 @@ function _tlBarPath(x, w, top, bot, r) {
 }
 function _tlSVG(tk, d, win, width, uid) {
   const W = Math.max(300, Math.round(width));
-  const H = 230, padL = 32, padR = 16, padT = 34, padB = 42;
+  const H = 236, padL = 32, padR = 16, padT = 40, padB = 42;
   const iw = W - padL - padR, ih = H - padT - padB, band = iw / 24;
   const showLe = win !== 'gt', showGt = win !== 'le';
   const vLe = h => showLe ? d.b[h].le.length : 0, vGt = h => showGt ? d.b[h].gt.length : 0;
@@ -97,7 +97,7 @@ function _tlSVG(tk, d, win, width, uid) {
   const step = band >= 30 ? 1 : band >= 15 ? 2 : band >= 10 ? 3 : 6;
   const nd = new Date(), curH = nd.getHours(), nowH = curH + nd.getMinutes() / 60, xNow = padL + band * nowH;
 
-  let g = `<defs><linearGradient id="tl-now${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${TL_C_LE}" stop-opacity="0"/><stop offset="100%" stop-color="${TL_C_LE}" stop-opacity=".07"/></linearGradient></defs>`;
+  let g = `<defs><linearGradient id="tl-now${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" style="stop-color:var(--tl-le)" stop-opacity="0"/><stop offset="100%" style="stop-color:var(--tl-le)" stop-opacity=".07"/></linearGradient></defs>`;
   /* faixa leve de "hoje até agora" (as colunas depois dela são de ontem) */
   g += `<rect x="${padL}" y="${padT - 6}" width="${(xNow - padL).toFixed(1)}" height="${(ih + 6).toFixed(1)}" fill="url(#tl-now${uid})" pointer-events="none"/>`;
   /* coluna da hora atual */
@@ -119,26 +119,28 @@ function _tlSVG(tk, d, win, width, uid) {
   /* colunas: ≤ 24h embaixo, > 24h em cima, 2px de respiro entre as duas */
   TL_HOURS.forEach(h => {
     const a = vLe(h), bq = vGt(h), tot = a + bq, cx = xL(h) + band / 2, x0 = cx - bw / 2;
-    const tA = y(a), tT = y(tot), gap = a && bq ? 2 : 0;
+    const tA = y(a), gap = a && bq ? 2 : 0;
+    const tT = bq ? Math.min(y(tot), tA - gap - 2) : y(tot);   /* v79: laranja nunca some (mín. 2px) */
     const dl = (h * 0.035).toFixed(3);
     let bar = '';
-    if (a) bar += `<path class="tl-seg-le" style="animation-delay:${dl}s" fill="${TL_C_LE}" d="${_tlBarPath(x0, bw, tA, y0, bq ? 0 : 3.5)}"/>`;
-    if (bq) bar += `<path class="tl-seg-gt" style="animation-delay:${(+dl + .25).toFixed(3)}s" fill="${TL_C_GT}" d="${_tlBarPath(x0, bw, tT, tA - gap, 3.5)}"/>`;
+    if (a) bar += `<path class="tl-seg-le" style="animation-delay:${dl}s" d="${_tlBarPath(x0, bw, tA, y0, bq ? 0 : 3.5)}"/>`;
+    if (bq) bar += `<path class="tl-seg-gt" style="animation-delay:${(+dl + .25).toFixed(3)}s" d="${_tlBarPath(x0, bw, tT, tA - gap, 3.5)}"/>`;
     if (!tot) bar = `<line class="g-zero" x1="${(cx - bw / 2).toFixed(1)}" x2="${(cx + bw / 2).toFixed(1)}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke-width="2"/>`;
-    const col = bq > a ? TL_C_GT : TL_C_LE;
+    const vc = bq > a ? 'tl-val-gt' : 'tl-val-le';
     const lbl = `${tk.toUpperCase()} ${_tlHH(h)}:00–${_tlHH(h)}:59`;
-    g += `<g class="g-col tl-col${h === curH ? ' tl-cur' : ''}" data-tl-bucket="${h}" data-le="${a}" data-gt="${bq}" role="button" tabindex="0" aria-label="${lbl}: ${tot} (${a} nas últimas 24h, ${bq} há mais de 24h)">
+    const det = [showLe ? `${a} nas últimas 24h` : '', showGt ? `${bq} há mais de 24h` : ''].filter(Boolean).join(', ');
+    g += `<g class="g-col tl-col${h === curH ? ' tl-cur' : ''}" data-tl-bucket="${h}" data-le="${a}" data-gt="${bq}" data-win="${win}" role="button" tabindex="0" aria-label="${lbl}: ${tot} (${det})">
       <rect class="g-hit" x="${xL(h).toFixed(1)}" y="${padT - 8}" width="${band.toFixed(1)}" height="${ih + 8}"/>
       <g class="tl-stack">${bar}</g>
-      ${tot ? `<text class="g-val tl-val" x="${cx.toFixed(1)}" y="${(tT - 6).toFixed(1)}" text-anchor="middle" style="fill:${col};animation-delay:${(+dl + .5).toFixed(3)}s">${tot}</text>` : ''}
+      ${tot ? `<text class="g-val tl-val ${vc}" x="${cx.toFixed(1)}" y="${(tT - 6).toFixed(1)}" text-anchor="middle" style="animation-delay:${(+dl + .5).toFixed(3)}s">${tot}</text>` : ''}
     </g>`;
   });
 
   /* etiqueta "agora" sobre a coluna da hora atual */
   const hm = `${_tlHH(curH)}:${_tlHH(nd.getMinutes())}`;
   const lx = Math.min(Math.max(xL(curH) + band / 2, padL + 30), W - padR - 30);
-  g += `<g class="tl-now-tag"><rect x="${(lx - 30).toFixed(1)}" y="${padT - 32}" width="60" height="16" rx="8"/>
-    <text x="${lx.toFixed(1)}" y="${padT - 20.5}" text-anchor="middle">agora ${hm}</text></g>`;
+  g += `<g class="tl-now-tag"><rect x="${(lx - 34).toFixed(1)}" y="${padT - 38}" width="68" height="18" rx="9"/>
+    <text x="${lx.toFixed(1)}" y="${padT - 25}" text-anchor="middle">agora ${hm}</text></g>`;
 
   return `<svg class="v2-chart-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Linha do tempo ${tk.toUpperCase()} por hora de abertura">${g}</svg>`;
 }
@@ -163,7 +165,7 @@ function _tlShellHTML(rn) {
       <div class="tl-cards">
         <div class="tl-card tl-le"><div class="tl-card-top"><span>Dentro de 24h (≤ 24h)</span><b></b></div><div class="tl-track"><i></i></div></div>
         <div class="tl-card tl-gt"><div class="tl-card-top"><span>Mais de 24h (&gt; 24h)</span><b></b></div><div class="tl-track"><i></i></div></div>
-        <div class="tl-card tl-peak"><div class="tl-card-top"><span>Pico do dia</span></div><b class="tl-peak-v"></b></div>
+        <div class="tl-card tl-peak"><div class="tl-card-top"><span>Hora de pico</span></div><b class="tl-peak-v"></b></div>
       </div>
       <div class="tl-chart"></div>
       <div class="tl-note"></div>
@@ -211,12 +213,20 @@ function _tlRenderOne(sec, uid) {
 
   if (o.closed) return;
   const holder = sec.querySelector('.tl-chart');
+  /* v79: guarda a coluna com foco / mouse para devolver depois do redesenho automático */
+  const ae = document.activeElement;
+  const fH = ae && holder.contains(ae) && ae.dataset ? ae.dataset.tlBucket : null;
+  const hv = holder.querySelector('[data-tl-bucket]:hover'), hH = hv ? hv.dataset.tlBucket : null;
+  clearTimeout(sec._tlAt);
+  sec.classList.remove('tl-anim');
   holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600, uid) + '<div class="tl-tip" hidden></div>';
   if (anim) {
     sec.classList.add('tl-anim');
-    clearTimeout(sec._tlAt);
     sec._tlAt = setTimeout(() => sec.classList.remove('tl-anim'), 2200);
   }
+  const back = fH ?? hH;
+  const el = back != null && holder.querySelector(`[data-tl-bucket="${back}"]`);
+  if (el) { if (fH != null) el.focus({ preventScroll: true }); else _tlShowTip(el); }
   sec.querySelector('.tl-note').textContent = d.semData ? `${d.semData} ${T} sem data de abertura não entra${d.semData > 1 ? 'm' : ''} no gráfico.` : '';
 }
 
@@ -242,7 +252,10 @@ function _tlShowTip(col) {
   if (!tip) return;
   const sec = col.closest('.v2-timeline'), T = _tlOpts(sec.dataset.tlReg).tk.toUpperCase();
   const h = +col.dataset.tlBucket, a = +col.dataset.le, b = +col.dataset.gt;
-  tip.innerHTML = `<b>${_tlHH(h)}h · ${a + b} ${T}</b><span><i class="tl-key tl-key-le"></i>${a} até 24h · <i class="tl-key tl-key-gt"></i>${b} mais de 24h</span><em>Toque para ver a lista</em>`;
+  const win = col.dataset.win;
+  const pLe = `<i class="tl-key tl-key-le"></i>${a} até 24h`, pGt = `<i class="tl-key tl-key-gt"></i>${b} mais de 24h`;
+  const det = win === 'le' ? pLe : win === 'gt' ? pGt : `${pLe} · ${pGt}`;
+  tip.innerHTML = `<b>${_tlHH(h)}h · ${a + b} ${T}</b><span>${det}</span><em>Toque para ver a lista</em>`;
   tip.hidden = false;
   const hr = holder.getBoundingClientRect(), cr = col.getBoundingClientRect();
   const x = Math.min(Math.max(cr.left - hr.left + cr.width / 2, tip.offsetWidth / 2 + 4), hr.width - tip.offsetWidth / 2 - 4);
@@ -297,6 +310,7 @@ document.addEventListener('click', e => {
   if (col) _tlOpenBucket(rn, col.dataset.tlBucket);
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { document.querySelectorAll('.v2-timeline .tl-chart').forEach(_tlHideTip); return; }
   if (e.key !== 'Enter') return;
   const col = e.target.closest && e.target.closest('[data-tl-bucket]');
   if (col) _tlOpenBucket(col.closest('.v2-timeline').dataset.tlReg, col.dataset.tlBucket);

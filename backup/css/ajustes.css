@@ -94,12 +94,13 @@
 
 /* ══ Linha do Tempo (RAL/REC por tempo decorrido) — abaixo das áreas (v51) ══ */
 .v2-timeline {
+  --tl-le: #22d3ee; --tl-gt: #fb923c; --tl-le-txt: #22d3ee; --tl-gt-txt: #fb923c;
   margin-top: 18px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r);
   padding: 14px 16px 10px;
 }
 .v2-timeline .tl-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .v2-timeline .tl-title-wrap { display: flex; align-items: flex-start; gap: 8px; margin-right: 4px; }
-.v2-timeline .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; margin-top: 6px; flex: none; }
+.v2-timeline .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tl-le); box-shadow: 0 0 8px var(--tl-le); margin-top: 6px; flex: none; }
 .v2-timeline .tl-title { font-size: 14px; font-weight: 800; color: var(--text-main); }
 .v2-timeline .tl-sub { font-size: 11px; color: var(--text-muted); }
 .v2-timeline .tl-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
@@ -115,14 +116,14 @@
 .v2-timeline .tl-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; background: var(--bg-panel-2); transition: opacity .15s; }
 .v2-timeline .tl-card.dim { opacity: .45; }
 .v2-timeline .tl-card-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
-.v2-timeline .tl-le .tl-card-top span { color: #22d3ee; }
-.v2-timeline .tl-gt .tl-card-top span { color: #fb923c; }
+.v2-timeline .tl-le .tl-card-top span { color: var(--tl-le-txt); }
+.v2-timeline .tl-gt .tl-card-top span { color: var(--tl-gt-txt); }
 .v2-timeline .tl-card-top b { color: var(--text-main); font-variant-numeric: tabular-nums; }
 .v2-timeline .tl-card-top small { color: var(--text-muted); font-weight: 600; }
 .v2-timeline .tl-track { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .v2-timeline .tl-track i { display: block; height: 100%; border-radius: inherit; transition: width 1s cubic-bezier(.2,.8,.2,1) .25s; }
-.v2-timeline .tl-le .tl-track i { background: #22d3ee; }
-.v2-timeline .tl-gt .tl-track i { background: #fb923c; }
+.v2-timeline .tl-le .tl-track i { background: var(--tl-le); }
+.v2-timeline .tl-gt .tl-track i { background: var(--tl-gt); }
 .v2-timeline .tl-chart { min-height: 120px; }
 .v2-timeline .tl-div { stroke: var(--text-muted); stroke-opacity: .6; }
 .v2-timeline .tl-note { font-size: 10.5px; color: var(--text-muted); text-align: right; min-height: 4px; }
@@ -136,17 +137,23 @@
 }
 
 /* ══ Linha do Tempo v78: barras planas, pico do dia, balão e animação de entrada ══ */
-.v2-timeline .tl-peak .tl-card-top span { color: var(--text-muted); }
+.v2-timeline .tl-peak .tl-card-top span { color: var(--text-soft, var(--text-main)); }
 .v2-timeline .tl-peak-v { font-size: 18px; font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; }
-.v2-timeline .tl-peak-v small { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+.v2-timeline .tl-peak-v small { font-size: 12px; font-weight: 600; color: var(--text-soft, var(--text-main)); margin-left: 4px; }
 .v2-timeline .tl-chart { position: relative; }
 .v2-timeline .tl-stack { transition: transform .2s ease, filter .2s ease; }
 .v2-timeline .tl-col { cursor: pointer; outline: none; }
 .v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { transform: translateY(-2px); filter: brightness(1.15); }
-.v2-timeline .tl-col:focus-visible .g-hit { stroke: #22d3ee; stroke-width: 1.5; rx: 6px; }
-.v2-timeline .tl-cur-bg { fill: #22d3ee; fill-opacity: .09; animation: tlPulse 2.4s ease-in-out infinite; }
-.v2-timeline .tl-x-cur { fill: #22d3ee !important; font-weight: 800; }
-@keyframes tlPulse { 50% { fill-opacity: .03; } }
+.v2-timeline .tl-col:focus-visible .g-hit { stroke: var(--tl-le-txt); stroke-width: 2; }
+.v2-timeline .tl-cur-bg { fill: var(--tl-le); fill-opacity: .08; }
+.v2-timeline .tl-x-cur { fill: var(--tl-le-txt) !important; font-weight: 800; }
+.v2-timeline .tl-seg-le { fill: var(--tl-le); }
+.v2-timeline .tl-seg-gt { fill: var(--tl-gt); }
+.v2-timeline .tl-val-le { fill: var(--tl-le-txt); }
+.v2-timeline .tl-val-gt { fill: var(--tl-gt-txt); }
+.v2-timeline .v2-chart-svg .g-x, .v2-timeline .v2-chart-svg .g-val, .v2-timeline .tl-ax-t { font-size: 11px; font-family: inherit; font-variant-numeric: tabular-nums; }
+/* temas claros: tons mais escuros para manter o contraste (barras ≥ 3:1, textos ≥ 4,5:1) */
+[data-mode="light"] .v2-timeline { --tl-le: #0891b2; --tl-gt: #ea580c; --tl-le-txt: #0e7490; --tl-gt-txt: #c2410c; }
 .v2-timeline .tl-tip {
   position: absolute; top: 2px; transform: translateX(-50%); z-index: 5; pointer-events: none; white-space: nowrap;
   background: var(--bg-panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px;
@@ -154,7 +161,7 @@
 }
 .v2-timeline .tl-tip b { display: block; font-size: 12.5px; margin-bottom: 2px; }
 .v2-timeline .tl-tip span, .v2-timeline .tl-tip em { display: block; }
-.v2-timeline .tl-tip em { font-style: normal; color: var(--text-muted); margin-top: 2px; }
+.v2-timeline .tl-tip em { font-style: normal; color: var(--text-soft, var(--text-main)); margin-top: 2px; }
 .v2-timeline .tl-tip .tl-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
 @keyframes tlTip { from { opacity: 0; margin-top: 4px; } to { opacity: 1; margin-top: 0; } }
 /* entrada: colunas sobem da esquerda para a direita, o laranja empilha depois, números por último */
@@ -165,7 +172,7 @@
 @keyframes tlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes tlFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .v2-timeline .tl-cur-bg, .v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt, .v2-timeline.tl-anim .tl-val, .v2-timeline .tl-tip { animation: none; }
+  .v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt, .v2-timeline.tl-anim .tl-val, .v2-timeline .tl-tip { animation: none; }
   .v2-timeline .tl-track i, .v2-timeline .tl-stack { transition: none; }
 }
 
