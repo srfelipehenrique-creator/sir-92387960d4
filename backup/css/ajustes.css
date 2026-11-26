@@ -144,14 +144,21 @@
 .v2-timeline .tl-chart.tl-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .v2-timeline .tl-chart.tl-scroll .v2-chart-svg { width: auto; max-width: none; }
 .v2-timeline .tl-chart.tl-scroll {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
-          mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
+  display: flex;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
 }
+.v2-timeline .tl-chart.tl-scroll > .v2-chart-svg { flex: none; }
+.v2-timeline .tl-yfix { position: sticky; left: 0; z-index: 2; flex: none; width: 32px; margin-right: -32px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #22d3ee) 9%, var(--bg-panel)) 0%, color-mix(in srgb, var(--accent, #22d3ee) 3%, var(--bg-panel)) 55%, var(--bg-panel) 100%);
+  box-shadow: 6px 0 8px -6px rgba(0,0,0,.35); }
+.v2-timeline .tl-yfix .v2-chart-svg { width: 32px; }
 .v2-timeline .tl-stack { transition: filter .2s ease; }
 .v2-timeline .g-hit { transition: fill .2s ease; }
 .v2-timeline .tl-col { cursor: pointer; outline: none; }
 .v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { filter: brightness(1.15); }
-.v2-timeline .tl-col:hover .g-hit, .v2-timeline .tl-col:focus-visible .g-hit { fill: var(--bg-hover); }
+.v2-timeline .tl-col:focus-visible .g-hit { fill: color-mix(in srgb, var(--text-main) 10%, transparent); }
+@media (hover: hover) { .v2-timeline .tl-col:hover .g-hit { fill: color-mix(in srgb, var(--text-main) 10%, transparent); } }
 .v2-timeline .tl-col:focus-visible .g-hit { stroke: var(--tl-le-txt); stroke-width: 2; }
 .v2-timeline .tl-cur-bg { fill: var(--tl-le); fill-opacity: .08; }
 .v2-timeline .tl-x-cur { fill: var(--tl-le-txt) !important; font-weight: 800; }
@@ -180,7 +187,7 @@
 @keyframes tlFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt, .v2-timeline.tl-anim .tl-val, .v2-timeline .tl-tip { animation: none; }
-  .v2-timeline .tl-track i, .v2-timeline .tl-stack { transition: none; }
+  .v2-timeline .tl-track i, .v2-timeline .tl-stack, .v2-timeline .g-hit { transition: none; }
 }
 
 /* ══ Novas Entradas: Cards ou Lista compacta (v51) ══ */
@@ -275,4 +282,33 @@ body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: au
 .sir-backup-tag {
   display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px;
   background: #f59e0b; color: #1a1000; font-size: 9px; font-weight: 800; letter-spacing: 1px; line-height: 15px;
+}
+
+/* ══ Animações sutis (v81) — js/animacoes.js ══ */
+/* 1. entrada do painel, em sequência rápida, uma vez por abertura */
+.sir-in { animation: sirIn .42s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--sir-i, 0) * 28ms); }
+@keyframes sirIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* 2. número que mudou: desliza na direção da mudança + brilho curto na célula
+      (o brilho fica num ::after — o box-shadow da célula é !important em visual-3d.css) */
+.sir-tick-up   { display: inline-block; animation: sirTickUp .45s cubic-bezier(.2,.8,.2,1); }
+.sir-tick-down { display: inline-block; animation: sirTickDown .45s cubic-bezier(.2,.8,.2,1); }
+@keyframes sirTickUp   { from { opacity: .2; transform: translateY(45%); } }
+@keyframes sirTickDown { from { opacity: .2; transform: translateY(-45%); } }
+.sir-glow-up, .sir-glow-down { position: relative; }
+.sir-glow-up::after, .sir-glow-down::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; z-index: 1;
+  animation: sirGlow 1.2s ease-out both;
+}
+.sir-glow-up::after   { --sir-gc: var(--v2-warn, #f5b941); }
+.sir-glow-down::after { --sir-gc: var(--v2-ok, #34d399); }
+@keyframes sirGlow {
+  0%   { box-shadow: 0 0 0 2px var(--sir-gc), 0 0 16px color-mix(in srgb, var(--sir-gc) 55%, transparent); opacity: 1; }
+  100% { box-shadow: 0 0 0 2px var(--sir-gc), 0 0 16px color-mix(in srgb, var(--sir-gc) 55%, transparent); opacity: 0; }
+}
+/* 3. pulso do ponto de status quando chegam dados novos (num ::after, sem parar o pulso normal) */
+#status-dot { position: relative; }
+#status-dot.sir-ping::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; animation: sirPing .9s ease-out both; }
+@keyframes sirPing { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--v2-ok, #34d399) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .sir-in, .sir-tick-up, .sir-tick-down, .sir-glow-up::after, .sir-glow-down::after, #status-dot.sir-ping::after { animation: none !important; }
 }

@@ -16,6 +16,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 const TL_KEY = 'PAINEL';
+const TL_PAD_L = 32, TL_PAD_R = 16;   /* margens do gráfico (usadas também na rolagem) */
 const TL_HOURS = Array.from({ length: 24 }, (_, h) => h);
 const _tlHH = h => String(h).padStart(2, '0');
 
@@ -84,13 +85,14 @@ function _tlBarPath(x, w, top, bot, r) {
   return `M${x.toFixed(1)} ${bot.toFixed(1)}V${(top + r).toFixed(1)}Q${x.toFixed(1)} ${top.toFixed(1)} ${(x + r).toFixed(1)} ${top.toFixed(1)}` +
     `H${(x + w - r).toFixed(1)}Q${(x + w).toFixed(1)} ${top.toFixed(1)} ${(x + w).toFixed(1)} ${(top + r).toFixed(1)}V${bot.toFixed(1)}Z`;
 }
-function _tlSVG(tk, d, win, width, uid) {
+function _tlSVG(tk, d, win, width, uid, geo) {
   const W = Math.max(300, Math.round(width));
-  const H = 236, padL = 32, padR = 16, padT = 40, padB = 42;
+  const H = 236, padL = TL_PAD_L, padR = TL_PAD_R, padT = 40, padB = 42;
   const iw = W - padL - padR, ih = H - padT - padB, band = iw / 24;
   const showLe = win !== 'gt', showGt = win !== 'le';
   const vLe = h => showLe ? d.b[h].le.length : 0, vGt = h => showGt ? d.b[h].gt.length : 0;
   const max = _niceMax(Math.max(1, ...TL_HOURS.map(h => vLe(h) + vGt(h))));
+  if (geo) Object.assign(geo, { max, H, padT, ih });
   const xL = h => padL + band * h;
   const y = v => padT + ih - (v / max) * ih, y0 = y(0);
   const bw = Math.max(4, Math.min(28, band * 0.66));
@@ -197,7 +199,7 @@ function _tlRenderOne(sec, uid) {
   sec.querySelector('.tl-pill').innerHTML = `<b>${d.total}</b> ${tk === 'ral' ? 'RALs de falha' : 'RECs'}`;
   const pct = v => d.total ? Math.round(v / d.total * 100) : 0;
   const le = sec.querySelector('.tl-le'), gt = sec.querySelector('.tl-gt');
-  const anim = !o.closed && (_tlAnimNext || sec._tlAnim) && !_tlReduce();
+  const fresh = !o.closed && (_tlAnimNext || sec._tlAnim), anim = fresh && !_tlReduce();
   if (!o.closed) { _tlAnimNext = false; sec._tlAnim = false; }
   const tLe = le.querySelector('.tl-track i'), tGt = gt.querySelector('.tl-track i');
   if (anim) { tLe.style.width = tGt.style.width = '0%'; void tLe.offsetWidth; }
@@ -221,11 +223,12 @@ function _tlRenderOne(sec, uid) {
   /* v80: no celular o gráfico fica mais largo que a tela e rola para o lado (colunas maiores para tocar) */
   const cw = holder.clientWidth || 600, scroll = cw < TL_MIN_W && _tlPhone(), sl = holder.scrollLeft;
   holder.classList.toggle('tl-scroll', scroll);
-  holder.innerHTML = _tlSVG(tk, d, o.win, scroll ? TL_MIN_W : cw, uid) + '<div class="tl-tip" hidden></div>';
+  const geo = {}, svg = _tlSVG(tk, d, o.win, scroll ? TL_MIN_W : cw, uid, geo);
+  holder.innerHTML = (scroll ? _tlYAxis(geo) : '') + svg + '<div class="tl-tip" hidden></div>';
   if (scroll) {
-    if (anim || !holder._tlScrolled) {   /* 1ª vez: centraliza a hora atual */
-      const band = (TL_MIN_W - 48) / 24;
-      holder.scrollLeft = Math.max(0, 32 + band * (new Date().getHours() + .5) - cw / 2);
+    if (fresh || !holder._tlScrolled) {   /* 1ª vez: centraliza a hora atual */
+      const band = (TL_MIN_W - TL_PAD_L - TL_PAD_R) / 24;
+      holder.scrollLeft = Math.max(0, TL_PAD_L + band * (new Date().getHours() + .5) - cw / 2);
       holder._tlScrolled = true;
     } else holder.scrollLeft = sl;
   }
@@ -244,7 +247,7 @@ function _tlRenderOne(sec, uid) {
 
 /* v78: animação só ao abrir o painel, trocar filtro/área ou expandir — não nas atualizações automáticas */
 let _tlAnimNext = true;
-const TL_MIN_W = 24 * 34 + 48;   /* largura mínima: 34px por hora */
+const TL_MIN_W = 24 * 44 + TL_PAD_L + TL_PAD_R;   /* v81: largura mínima no celular — 44px por hora (alvo de toque) */
 const _tlPhone = () => window.matchMedia && matchMedia('(max-width: 640px), (pointer: coarse)').matches;   /* rolagem só no celular/tablet de toque */
 const _tlReduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function _tlCount(el, val, p, anim) {
@@ -258,6 +261,15 @@ function _tlCount(el, val, p, anim) {
     if (k < 1) el._tlRaf = requestAnimationFrame(step);
   };
   el._tlRaf = requestAnimationFrame(step);
+}
+
+/* v81: eixo dos números fixo à esquerda enquanto o gráfico rola (celular) */
+function _tlYAxis(L) {
+  if (!L || !L.max) return '';
+  const y = v => L.padT + L.ih - (v / L.max) * L.ih;
+  let t = '';
+  for (let k = 0; k <= 4; k++) { const v = (L.max / 4) * k; t += `<text class="g-axis" x="${TL_PAD_L - 6}" y="${y(v) + 3.5}" text-anchor="end">${Math.round(v * 10) / 10}</text>`; }
+  return `<div class="tl-yfix" aria-hidden="true"><svg class="v2-chart-svg" viewBox="0 0 ${TL_PAD_L} ${L.H}" width="${TL_PAD_L}" height="${L.H}">${t}</svg></div>`;
 }
 
 /* Balão ao passar o mouse / focar uma coluna */
