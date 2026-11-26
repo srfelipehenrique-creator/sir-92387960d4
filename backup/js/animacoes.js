@@ -14,18 +14,48 @@
   const grid = document.getElementById('main-grid');
   if (!grid) return;
 
-  /* ── 1. Entrada (uma vez) ── */
-  let entrou = false;
-  function entrada() {
-    if (entrou || reduz()) return;
+  /* ── 1. Entrada (uma vez) e troca manual de escopo/layout (v92) ── */
+  const ehGrav = () => document.documentElement.classList.contains('rec-gravidade');
+  let entrou = false, trocaManual = false;
+  function marcarSeq(cls, dur) {
+    if (reduz()) return;
     const itens = grid.querySelectorAll(':scope > .v2-kpis > *, .v2-regions .v2-region-head, .v2-regions [data-v2card]');
-    if (!itens.length) return;
-    entrou = true;
+    if (!itens.length) return false;
     itens.forEach((el, i) => {
       el.style.setProperty('--sir-i', Math.min(i, 24));
-      el.classList.add('sir-in');
+      el.classList.add(cls);
     });
-    setTimeout(() => itens.forEach(el => { el.classList.remove('sir-in'); el.style.removeProperty('--sir-i'); }), 1600);
+    setTimeout(() => itens.forEach(el => { el.classList.remove(cls); el.style.removeProperty('--sir-i'); }), dur);
+    return true;
+  }
+  function entrada() {
+    if (entrou || reduz()) return;
+    if (marcarSeq('sir-in', ehGrav() ? 2100 : 1600)) entrou = true;
+  }
+  if (typeof SirStore !== 'undefined' && typeof SirStore.on === 'function') {
+    ['scope', 'layout'].forEach(k => SirStore.on(k, () => { trocaManual = true; }));
+  }
+
+  /* Expansão das Novas Entradas: queda leve dos itens (só quando abre) */
+  const inboxWrap = document.getElementById('inbox-body-wrap');
+  if (inboxWrap) {
+    let eraFechado = inboxWrap.classList.contains('collapsed');
+    new MutationObserver(() => {
+      const fechado = inboxWrap.classList.contains('collapsed');
+      if (eraFechado && !fechado && ehGrav() && !reduz()) {
+        const cards = inboxWrap.querySelectorAll('.inbox-card, .inbox-row');
+        cards.forEach((el, i) => el.style.setProperty('--sir-i', Math.min(i, 12)));
+        inboxWrap.classList.remove('sir-grav-inbox');
+        void inboxWrap.offsetWidth;
+        inboxWrap.classList.add('sir-grav-inbox');
+        clearTimeout(inboxWrap._sirT);
+        inboxWrap._sirT = setTimeout(() => {
+          inboxWrap.classList.remove('sir-grav-inbox');
+          cards.forEach(el => el.style.removeProperty('--sir-i'));
+        }, 900);
+      }
+      eraFechado = fechado;
+    }).observe(inboxWrap, { attributes: true, attributeFilter: ['class'] });
   }
 
   /* ── 2. Número que mudou ── */
@@ -77,7 +107,10 @@
       const r = _orig.apply(this, arguments);
       try {
         if (!entrou) entrada();
-        else setTimeout(pulsoAtualizado, 400);   /* depois que o ponto volta a ficar verde */
+        else if (trocaManual) {
+          trocaManual = false;
+          if (ehGrav()) marcarSeq('sir-grav-swap', 1100);
+        } else setTimeout(pulsoAtualizado, 400);   /* depois que o ponto volta a ficar verde */
         /* a contagem 0 → valor da 1ª carga dura ~700 ms; depois disso, mudança = atualização real */
         if (!pronto) setTimeout(() => { pronto = true; }, 1200);
       } catch (e) { console.warn('animações', e); }

@@ -16,7 +16,8 @@ const SirRecursos = (function () {
     { id: 'comando',   nome: 'Busca rápida (Ctrl K)',      desc: 'Buscar área, ticket ou comando e ver os tickets mais perto do prazo.' },
     { id: 'navcel',    nome: 'Barra inferior no celular',  desc: 'Painel, Entradas, Buscar e Torpedos ao alcance do polegar.' },
     { id: 'fhd',       nome: 'Layout que se ajusta à tela', desc: 'No computador, regiões e cards se reorganizam sozinhos conforme o tamanho da tela (em Full HD, as três regiões lado a lado).' },
-    { id: 'contraste', nome: 'Textos com mais contraste',  desc: 'Textos secundários e rótulos pequenos mais legíveis em todos os temas.' }
+    { id: 'contraste', nome: 'Textos com mais contraste',  desc: 'Textos secundários e rótulos pequenos mais legíveis em todos os temas.' },
+    { id: 'gravidade', nome: 'Animações gravitacionais',   desc: 'Queda leve, peso e acomodação elástica nos cards, janelas, números e botões (PC e celular).' }
   ];
   let estado = {};
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') estado = s; } catch (e) {}
