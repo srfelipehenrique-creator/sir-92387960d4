@@ -370,6 +370,7 @@
   ].join('');
 
   const _s  = 'sir_auth_v1';
+  const _semEntrada = () => { try { sessionStorage.setItem('sir_intro_skip', '1'); } catch (e) {} };
   const _r  = '../index.html';
 
   let deferredInstall = null;
@@ -447,7 +448,7 @@
       } catch(e) {}
     }
 
-    location.replace(_r);
+    _semEntrada(); location.replace(_r);
   }
 
   async function installPWA() {
@@ -459,20 +460,19 @@
     if (outcome === 'accepted') {
       btn.textContent = '✓ Instalado!';
     } else {
-      location.replace(_r);
+      _semEntrada(); location.replace(_r);
     }
   }
 </script>
 <script>
 /* ── Entrada animada (v90) ──
-   Toca uma vez por sessão; quem prefere menos movimento vê o cartão direto.
+   Toca a cada carregamento da página; quem prefere menos movimento vê o cartão direto.
    Clique, toque, tecla ou "Pular" encerram na hora. Depois fica um fundo leve. */
 (function () {
   const cv = document.getElementById('fx'), cx = cv.getContext('2d');
   const card = document.getElementById('lock-card');
   const skipBtn = document.getElementById('fx-skip');
   const calmo = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let jaViu = false; try { jaViu = sessionStorage.getItem('sir_intro_v1') === '1'; } catch (e) {}
   const claro = () => document.documentElement.getAttribute('data-mode') === 'light';
   const DUR = 2300;              /* duração da entrada (ms) */
   let W = 0, H = 0, R = 0, dpr = 1, t0 = 0, fim = false, fibras = [], raf = 0;
@@ -570,7 +570,6 @@
   function encerrar() {
     if (fim) return; fim = true;
     cancelAnimationFrame(raf);
-    try { sessionStorage.setItem('sir_intro_v1', '1'); } catch (e) {}
     if (!card.classList.contains('surge')) revelar();
     if (skipBtn.isConnected) skipBtn.remove();
     ['pointerdown', 'keydown'].forEach(ev => removeEventListener(ev, pular, true));
@@ -581,7 +580,6 @@
   medir();
   addEventListener('resize', medir);
   if (calmo) { cv.style.display = 'none'; skipBtn.remove(); return; }   /* sem animação: cartão aparece normal */
-  if (jaViu) { skipBtn.remove(); fim = true; raf = requestAnimationFrame(quadroCalmo); return; }
   document.body.classList.add('intro-on');
   skipBtn.addEventListener('click', encerrar);
   ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, pular, true));
