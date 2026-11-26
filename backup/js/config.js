@@ -3,7 +3,7 @@ const URLS = {
   rec: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_rec.csv'
 };
 
-const INTERVAL   = 300000;
+const INTERVAL   = 120000; /* 2 min */
 const CF_COL     = 'CF Exec.';
 
 const STORAGE_TABLE  = 'sir_table_state_v5';
