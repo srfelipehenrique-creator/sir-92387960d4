@@ -141,16 +141,23 @@
 .v2-timeline .tl-peak-v { font-size: 18px; font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; }
 .v2-timeline .tl-peak-v small { font-size: 12px; font-weight: 600; color: var(--text-soft, var(--text-main)); margin-left: 4px; }
 .v2-timeline .tl-chart { position: relative; }
-.v2-timeline .tl-stack { transition: transform .2s ease, filter .2s ease; }
+.v2-timeline .tl-chart.tl-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.v2-timeline .tl-chart.tl-scroll .v2-chart-svg { width: auto; max-width: none; }
+.v2-timeline .tl-chart.tl-scroll {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
+}
+.v2-timeline .tl-stack { transition: filter .2s ease; }
+.v2-timeline .g-hit { transition: fill .2s ease; }
 .v2-timeline .tl-col { cursor: pointer; outline: none; }
-.v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { transform: translateY(-2px); filter: brightness(1.15); }
+.v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { filter: brightness(1.15); }
+.v2-timeline .tl-col:hover .g-hit, .v2-timeline .tl-col:focus-visible .g-hit { fill: var(--bg-hover); }
 .v2-timeline .tl-col:focus-visible .g-hit { stroke: var(--tl-le-txt); stroke-width: 2; }
 .v2-timeline .tl-cur-bg { fill: var(--tl-le); fill-opacity: .08; }
 .v2-timeline .tl-x-cur { fill: var(--tl-le-txt) !important; font-weight: 800; }
 .v2-timeline .tl-seg-le { fill: var(--tl-le); }
 .v2-timeline .tl-seg-gt { fill: var(--tl-gt); }
-.v2-timeline .tl-val-le { fill: var(--tl-le-txt); }
-.v2-timeline .tl-val-gt { fill: var(--tl-gt-txt); }
+.v2-timeline .tl-val { fill: var(--text-main); }
 .v2-timeline .v2-chart-svg .g-x, .v2-timeline .v2-chart-svg .g-val, .v2-timeline .tl-ax-t { font-size: 11px; font-family: inherit; font-variant-numeric: tabular-nums; }
 /* temas claros: tons mais escuros para manter o contraste (barras ≥ 3:1, textos ≥ 4,5:1) */
 [data-mode="light"] .v2-timeline { --tl-le: #0891b2; --tl-gt: #ea580c; --tl-le-txt: #0e7490; --tl-gt-txt: #c2410c; }

@@ -126,13 +126,12 @@ function _tlSVG(tk, d, win, width, uid) {
     if (a) bar += `<path class="tl-seg-le" style="animation-delay:${dl}s" d="${_tlBarPath(x0, bw, tA, y0, bq ? 0 : 3.5)}"/>`;
     if (bq) bar += `<path class="tl-seg-gt" style="animation-delay:${(+dl + .25).toFixed(3)}s" d="${_tlBarPath(x0, bw, tT, tA - gap, 3.5)}"/>`;
     if (!tot) bar = `<line class="g-zero" x1="${(cx - bw / 2).toFixed(1)}" x2="${(cx + bw / 2).toFixed(1)}" y1="${y0 - 0.5}" y2="${y0 - 0.5}" stroke-width="2"/>`;
-    const vc = bq > a ? 'tl-val-gt' : 'tl-val-le';
     const lbl = `${tk.toUpperCase()} ${_tlHH(h)}:00–${_tlHH(h)}:59`;
     const det = [showLe ? `${a} nas últimas 24h` : '', showGt ? `${bq} há mais de 24h` : ''].filter(Boolean).join(', ');
     g += `<g class="g-col tl-col${h === curH ? ' tl-cur' : ''}" data-tl-bucket="${h}" data-le="${a}" data-gt="${bq}" data-win="${win}" role="button" tabindex="0" aria-label="${lbl}: ${tot} (${det})">
       <rect class="g-hit" x="${xL(h).toFixed(1)}" y="${padT - 8}" width="${band.toFixed(1)}" height="${ih + 8}"/>
       <g class="tl-stack">${bar}</g>
-      ${tot ? `<text class="g-val tl-val ${vc}" x="${cx.toFixed(1)}" y="${(tT - 6).toFixed(1)}" text-anchor="middle" style="animation-delay:${(+dl + .5).toFixed(3)}s">${tot}</text>` : ''}
+      ${tot ? `<text class="g-val tl-val" x="${cx.toFixed(1)}" y="${(tT - 6).toFixed(1)}" text-anchor="middle" style="animation-delay:${(+dl + .5).toFixed(3)}s">${tot}</text>` : ''}
     </g>`;
   });
 
@@ -219,7 +218,17 @@ function _tlRenderOne(sec, uid) {
   const hv = holder.querySelector('[data-tl-bucket]:hover'), hH = hv ? hv.dataset.tlBucket : null;
   clearTimeout(sec._tlAt);
   sec.classList.remove('tl-anim');
-  holder.innerHTML = _tlSVG(tk, d, o.win, holder.clientWidth || 600, uid) + '<div class="tl-tip" hidden></div>';
+  /* v80: no celular o gráfico fica mais largo que a tela e rola para o lado (colunas maiores para tocar) */
+  const cw = holder.clientWidth || 600, scroll = cw < TL_MIN_W && _tlPhone(), sl = holder.scrollLeft;
+  holder.classList.toggle('tl-scroll', scroll);
+  holder.innerHTML = _tlSVG(tk, d, o.win, scroll ? TL_MIN_W : cw, uid) + '<div class="tl-tip" hidden></div>';
+  if (scroll) {
+    if (anim || !holder._tlScrolled) {   /* 1ª vez: centraliza a hora atual */
+      const band = (TL_MIN_W - 48) / 24;
+      holder.scrollLeft = Math.max(0, 32 + band * (new Date().getHours() + .5) - cw / 2);
+      holder._tlScrolled = true;
+    } else holder.scrollLeft = sl;
+  }
   if (anim) {
     sec.classList.add('tl-anim');
     sec._tlAt = setTimeout(() => sec.classList.remove('tl-anim'), 2200);
@@ -227,11 +236,16 @@ function _tlRenderOne(sec, uid) {
   const back = fH ?? hH;
   const el = back != null && holder.querySelector(`[data-tl-bucket="${back}"]`);
   if (el) { if (fH != null) el.focus({ preventScroll: true }); else _tlShowTip(el); }
-  sec.querySelector('.tl-note').textContent = d.semData ? `${d.semData} ${T} sem data de abertura não entra${d.semData > 1 ? 'm' : ''} no gráfico.` : '';
+  const notas = [];
+  if (scroll) notas.push('Deslize o gráfico para o lado para ver as outras horas.');
+  if (d.semData) notas.push(`${d.semData} ${T} sem data de abertura não entra${d.semData > 1 ? 'm' : ''} no gráfico.`);
+  sec.querySelector('.tl-note').textContent = notas.join(' ');
 }
 
 /* v78: animação só ao abrir o painel, trocar filtro/área ou expandir — não nas atualizações automáticas */
 let _tlAnimNext = true;
+const TL_MIN_W = 24 * 34 + 48;   /* largura mínima: 34px por hora */
+const _tlPhone = () => window.matchMedia && matchMedia('(max-width: 640px), (pointer: coarse)').matches;   /* rolagem só no celular/tablet de toque */
 const _tlReduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function _tlCount(el, val, p, anim) {
   const put = v => { el.innerHTML = `${v} <small>(${p}%)</small>`; };
@@ -257,8 +271,8 @@ function _tlShowTip(col) {
   const det = win === 'le' ? pLe : win === 'gt' ? pGt : `${pLe} · ${pGt}`;
   tip.innerHTML = `<b>${_tlHH(h)}h · ${a + b} ${T}</b><span>${det}</span><em>Toque para ver a lista</em>`;
   tip.hidden = false;
-  const hr = holder.getBoundingClientRect(), cr = col.getBoundingClientRect();
-  const x = Math.min(Math.max(cr.left - hr.left + cr.width / 2, tip.offsetWidth / 2 + 4), hr.width - tip.offsetWidth / 2 - 4);
+  const hr = holder.getBoundingClientRect(), cr = col.getBoundingClientRect(), sx = holder.scrollLeft;
+  const x = Math.min(Math.max(cr.left - hr.left + sx + cr.width / 2, sx + tip.offsetWidth / 2 + 4), sx + hr.width - tip.offsetWidth / 2 - 4);
   tip.style.left = x + 'px';
 }
 function _tlHideTip(holder) { const t = holder && holder.querySelector('.tl-tip'); if (t) t.hidden = true; }
