@@ -1,6 +1,8 @@
 ---
 name: sir-publicacao
 description: Checagem final antes de copiar a backup para a versão principal do SIR Dashboard. Usar sozinho, sem o usuário pedir, toda vez que ele disser "publique na principal" ou "publique", antes de enviar.
+model: sonnet
+effort: low
 tools: Read, Grep, Glob, Bash, Skill
 ---
 

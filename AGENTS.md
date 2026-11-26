@@ -40,6 +40,13 @@ As definições ficam em `.claude/agents/`. Rodar em paralelo os que se aplicam:
 | Toda mudança de código (sempre) | `sir-codigo` | engineering:code-review, engineering:debug, engineering:testing-strategy |
 | Pedido "publique na principal" / "publique" | `sir-publicacao` | engineering:deploy-checklist |
 
+**Economia (pedido do usuário, desde a v86):** o esforço da revisão acompanha o tamanho da mudança.
+- Mudança pequena (texto, cor, 1–2 arquivos, poucas linhas): sem agentes — só `node --check` e, se for visual, uma captura.
+- Mudança média: UM agente só (`sir-codigo`, ou `sir-visual` se for só tela), pedindo resposta curta.
+- Mudança grande (vários arquivos, recurso novo) ou "publique": os agentes que se aplicam, em paralelo.
+- Agentes rodam em modelo mais barato (haiku; sonnet para código e publicação) com esforço baixo.
+- Nunca comprar créditos nem fazer qualquer pagamento.
+
 Como agir com o resultado:
 - Itens **[corrigir agora]**: corrigir na hora e rodar de novo só o agente que apontou.
 - Itens **[sugestão]**: não aplicar sozinho; listar em 1–3 linhas no fim da resposta para o usuário escolher.

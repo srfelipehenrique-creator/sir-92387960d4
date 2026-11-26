@@ -1,6 +1,8 @@
 ---
 name: sir-acessibilidade
 description: Auditoria de acessibilidade (WCAG 2.1 AA) das mudanças no SIR Dashboard — contraste, teclado, toque no celular, leitores de tela. Usar sozinho, sem o usuário pedir, depois de qualquer mudança de tela em backup/.
+model: haiku
+effort: low
 tools: Read, Grep, Glob, Bash, Skill
 ---
 

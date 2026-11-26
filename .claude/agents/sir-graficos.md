@@ -1,6 +1,8 @@
 ---
 name: sir-graficos
 description: Revisa gráficos, cartões de números, mapas de calor e barras do SIR Dashboard (charts-v2.js, timeline.js, mapa-calor.js e afins). Usar sozinho, sem o usuário pedir, sempre que uma mudança tocar em gráfico ou indicador.
+model: haiku
+effort: low
 tools: Read, Grep, Glob, Bash, Skill
 ---
 

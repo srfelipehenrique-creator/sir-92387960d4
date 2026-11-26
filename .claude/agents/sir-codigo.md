@@ -1,6 +1,8 @@
 ---
 name: sir-codigo
 description: Revisa o código de cada mudança no SIR Dashboard — erros, segurança, desempenho, dados salvos no aparelho e as regras do CLAUDE.md (só backup/, versão aumentada). Usar sozinho, sem o usuário pedir, antes de todo envio ao GitHub.
+model: sonnet
+effort: low
 tools: Read, Grep, Glob, Bash, Skill
 ---
 

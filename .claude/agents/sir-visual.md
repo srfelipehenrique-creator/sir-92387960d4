@@ -1,6 +1,8 @@
 ---
 name: sir-visual
 description: Revisa o visual de qualquer mudança no SIR Dashboard (layout, cores, tipografia, animações e textos da tela). Usar sozinho, sem o usuário pedir, depois de cada alteração visual em backup/.
+model: haiku
+effort: low
 tools: Read, Grep, Glob, Bash, Skill
 ---
 
