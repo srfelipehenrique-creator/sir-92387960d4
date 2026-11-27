@@ -249,7 +249,10 @@
       const durMs = parseDuracaoMs(raw.duracao);
       const cfDesde = durMs != null ? (agora - durMs) : ab;
       const status = classifStatus(stObj.note, stObj.obsStatus, stObj.eventColor);
-      const assoc = Array.isArray(raw.recs) ? raw.recs : [];
+      const normKey = typeof normTicket === 'function' ? normTicket(num) : num.replace(/\s+/g, '').toUpperCase();
+      const assocFromParent = (typeof appState !== 'undefined' && appState.assocByParent && appState.assocByParent.get(normKey)) || null;
+      const assoc = Array.isArray(raw.recs) && raw.recs.length ? raw.recs : (Array.isArray(assocFromParent) ? assocFromParent : []);
+      const assN = Math.max(Number(raw.ass || 0), assoc.length);
       return {
         num,
         chave: `${tipo}|${num}|${cod}`,
@@ -265,8 +268,9 @@
         cfDesde,
         tec: String(raw.tecnico || '').trim(),
         item: String(raw.item || '').trim(),
-        assN: Number(raw.ass || assoc.length || 0),
+        assN,
         assoc,
+        ralMae: raw.ralMae || raw.vide || '',
         q: !!isQual,
         cor: stObj.eventColor && stObj.eventColor !== 'none' ? stObj.eventColor : '',
         nota: stObj.note || '',
@@ -278,20 +282,14 @@
       };
     };
 
+    /* Lê direto de modalData (fonte única compartilhada com o 1º dashboard,
+       já incluindo ESRC e todos os tickets associados reais) → contagem 100% idêntica! */
     ['ral', 'rec'].forEach(tk => {
       const tipo = tk.toUpperCase();
       const list = (typeof modalData !== 'undefined' && modalData[tk] && modalData[tk]['ALL']) || [];
-      list.forEach(raw => {
+      list.forEach((raw, idx) => {
         const it = normalizar(raw, tipo, raw.cfOrigem, false);
-        if (seen[tipo].has(it.chave)) return;
-        seen[tipo].add(it.chave);
-        out[tipo].push(it);
-      });
-      /* ESRC capturado separadamente para Painel Geral e Visualização SIR */
-      const esrcList = (typeof appState !== 'undefined' && appState.sirExtra && appState.sirExtra.esrc && appState.sirExtra.esrc[tk]) || [];
-      esrcList.forEach(raw => {
-        const it = normalizar(raw, tipo, 'ESRC', false);
-        if (seen[tipo].has(it.chave)) return;
+        if (seen[tipo].has(it.chave)) it.chave = `${it.chave}#${raw.item || idx}`;
         seen[tipo].add(it.chave);
         out[tipo].push(it);
       });
@@ -310,6 +308,126 @@
     });
 
     return out;
+  }
+
+  /* Renderização padronizada da coluna ASS. (chips REC / RAL + dados para tooltip hover) */
+  function buildAssocCellHTML(it, escFn) {
+    const e = escFn || (s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])));
+    const lista = Array.isArray(it.assoc) ? it.assoc : [];
+    const total = Math.max(Number(it.assN || 0), lista.length);
+    if (!total) return '—';
+    const recs = lista.filter(a => String(a.kind || 'rec').toLowerCase() !== 'ral');
+    const rals = lista.filter(a => String(a.kind || '').toLowerCase() === 'ral');
+    const nums = lista.map(a => a.ticket).filter(Boolean);
+    const chips = [];
+    if (recs.length) chips.push(`<span class="sv-ass-chip rec"><i>REC</i> ${recs.length}</span>`);
+    if (rals.length) chips.push(`<span class="sv-ass-chip ral"><i>RAL</i> ${rals.length}</span>`);
+    if (!chips.length) chips.push(`<span class="sv-ass-chip rec"><i>REC</i> ${total}</span>`);
+    const dataNums = e(nums.join('|'));
+    const label = nums.length ? `Associadas: ${nums.join(', ')}` : `${total} ticket(s) associado(s)`;
+    return `<span class="sv-ass-trigger" tabindex="0" role="button" aria-label="${e(label)}" data-ass-nums="${dataNums}" data-ass-total="${total}">${chips.join('')}</span>`;
+  }
+
+  /* Tooltip flutuante único (position:fixed) — ao passar o mouse ou focar na coluna ASS.,
+     mostra uma pequena lista apenas com os números dos tickets associados */
+  let _assTipEl = null;
+  let _assTipTrigger = null;
+  function ensureAssTooltip() {
+    if (_assTipEl) return _assTipEl;
+    _assTipEl = document.createElement('div');
+    _assTipEl.id = 'sv-ass-float-tip';
+    _assTipEl.className = 'sv-ass-float-tip';
+    _assTipEl.setAttribute('role', 'tooltip');
+    _assTipEl.hidden = true;
+    document.body.appendChild(_assTipEl);
+    return _assTipEl;
+  }
+  function isAssTooltipVisible() {
+    return !!(_assTipEl && !_assTipEl.hidden);
+  }
+  function showAssTooltip(trigger) {
+    if (!trigger) return;
+    if (_assTipTrigger && _assTipTrigger !== trigger) _assTipTrigger.removeAttribute('aria-describedby');
+    _assTipTrigger = trigger;
+    const tip = ensureAssTooltip();
+    trigger.setAttribute('aria-describedby', 'sv-ass-float-tip');
+    const raw = trigger.getAttribute('data-ass-nums') || '';
+    const total = Number(trigger.getAttribute('data-ass-total') || 0);
+    const nums = raw ? raw.split('|').filter(Boolean) : [];
+    const e = s => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    if (nums.length) {
+      tip.innerHTML = `<ul class="sv-ass-num-list">${nums.map(n => `<li>${e(n)}</li>`).join('')}</ul>`;
+    } else {
+      tip.innerHTML = `<div class="sv-ass-empty">${total} associada(s)<small>Aguardando lista do coletor w9</small></div>`;
+    }
+    tip.hidden = false;
+    const r = trigger.getBoundingClientRect();
+    const tw = tip.offsetWidth || 160;
+    const th = tip.offsetHeight || 40;
+    const left = Math.max(8, Math.min(r.right - tw, window.innerWidth - tw - 8));
+    const top = Math.max(8, (r.top - th - 8 > 8) ? (r.top - th - 8) : Math.min(window.innerHeight - th - 8, r.bottom + 8));
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  function hideAssTooltip() {
+    if (_assTipTrigger) { _assTipTrigger.removeAttribute('aria-describedby'); _assTipTrigger = null; }
+    if (_assTipEl) _assTipEl.hidden = true;
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('mouseover', ev => {
+      const trg = ev.target && ev.target.closest ? ev.target.closest('.sv-ass-trigger') : null;
+      if (trg) showAssTooltip(trg);
+    });
+    document.addEventListener('mouseout', ev => {
+      const trg = ev.target && ev.target.closest ? ev.target.closest('.sv-ass-trigger') : null;
+      if (!trg) return;
+      if (!ev.relatedTarget || !trg.contains(ev.relatedTarget)) hideAssTooltip();
+    });
+    document.addEventListener('focusin', ev => {
+      const trg = ev.target && ev.target.closest ? ev.target.closest('.sv-ass-trigger') : null;
+      if (trg) showAssTooltip(trg);
+    });
+    document.addEventListener('focusout', ev => {
+      const trg = ev.target && ev.target.closest ? ev.target.closest('.sv-ass-trigger') : null;
+      if (trg) hideAssTooltip();
+    });
+    document.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape' && isAssTooltipVisible()) {
+        hideAssTooltip();
+        ev.stopPropagation();
+      }
+    }, true);
+    window.addEventListener('scroll', hideAssTooltip, true);
+  }
+
+  /* Publica snapshot atualizado para a nuvem (Cloudflare Worker /ingest) quando
+     algum usuário logado envia/recebe coleta ao vivo, atualizando os cards de todos */
+  async function publishLiveSnapshotToCloud(ralCsv, recCsv, usuario) {
+    if (!ralCsv || !recCsv) return { ok: false, motivo: 'vazio' };
+    const url = (typeof SIR_PUSH_URL === 'string' && SIR_PUSH_URL) ? SIR_PUSH_URL.replace(/\/+$/, '') : '';
+    const key = (() => { try { return localStorage.getItem('sir_push_key') || ''; } catch (e) { return ''; } })();
+    if (!url || !key) return { ok: false, motivo: 'sem_chave' };
+    const tr = await fetch(url + '/collector/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key })
+    });
+    if (!tr.ok) return { ok: false, motivo: 'chave_recusada' };
+    const tj = await tr.json();
+    if (!tj || !tj.token) return { ok: false, motivo: 'sem_token' };
+    const ir = await fetch(url + '/ingest', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: tj.token, ral: ralCsv, rec: recCsv, by: usuario ? `SIR Web (${usuario})` : 'SIR Web' })
+    });
+    if (!ir.ok) return { ok: false, motivo: 'ingest_' + ir.status };
+    const ij = await ir.json();
+    try {
+      if ('BroadcastChannel' in window) {
+        const ch = new BroadcastChannel('sir_live_sync');
+        ch.postMessage({ type: 'cloud-updated', at: Date.now(), by: usuario || '' });
+        ch.close();
+      }
+    } catch (e) {}
+    return { ok: true, res: ij };
   }
 
   /* Cor do total / célula igual ao Painel Geral (Auto Embratel) */
@@ -331,6 +449,7 @@
     semAcento, p2, parseAberturaMs, parseDuracaoMs, slaRestante, nivelSLA,
     tempoCurto, formatSlaPill, cfResumido, designacaoCritel, urlCritel,
     recuperacaoDe, urlDoTicket, textoParaFala, falar,
-    coletarItensAtivos, corVolumeCF, corVolumeTotal
+    coletarItensAtivos, buildAssocCellHTML, hideAssTooltip, publishLiveSnapshotToCloud,
+    corVolumeCF, corVolumeTotal
   };
 })(window);

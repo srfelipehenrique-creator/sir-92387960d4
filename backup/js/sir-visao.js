@@ -136,6 +136,7 @@
     st.open = false;
     st.mobLat = false;
     stopRingTimer();
+    if (typeof SirRegrasAE !== 'undefined' && SirRegrasAE.hideAssTooltip) SirRegrasAE.hideAssTooltip();
     const ov = document.getElementById('sir-visao-overlay');
     if (ov) ov.hidden = true;
     if (!isPainelGeralOpen()) {
@@ -158,7 +159,7 @@
     const prog = document.getElementById('sv-anel-prog');
     if (!sub || !prog) return;
     const cd = typeof countdownVal === 'number' ? countdownVal : 0;
-    const total = (typeof INTERVAL === 'number' ? INTERVAL : 120000) / 1000;
+    const total = (typeof getActivePollInterval === 'function' ? getActivePollInterval() : (typeof INTERVAL === 'number' ? INTERVAL : 120000)) / 1000;
     const m = Math.floor(cd / 60), s = String(cd % 60).padStart(2, '0');
     const last = document.getElementById('last-update')?.textContent?.replace(/^Última atualização:\s*/i, '') || '--:--';
     sub.textContent = `${last} · ${m}:${s}`;
@@ -273,11 +274,18 @@
       st.usuario = u;
       st.loggedIn = true;
       st.tab = 'lista';
-      toastMsg(`Conectado ao SIR (${rede.nome}) como ${u}`);
+      toastMsg(`Conectado ao SIR (${rede.nome}) como ${u} — sincronização em tempo real (60s)`);
       render('#sv-back-main');
-      if (typeof loadNow === 'function' && (!modalData.ral.ALL || !modalData.ral.ALL.length)) {
-        loadNow();
-      }
+      /* Usuário logado: força leitura imediata na nuvem, acelera ciclo para 60s e sincroniza notas */
+      if (typeof loadNow === 'function') loadNow();
+      if (typeof pullSharedNotes === 'function') pullSharedNotes(true);
+      try {
+        if ('BroadcastChannel' in window) {
+          const ch = new BroadcastChannel('sir_live_sync');
+          ch.postMessage({ type: 'user-logged', usuario: u, rede: st.rede, at: Date.now() });
+          ch.close();
+        }
+      } catch (err) {}
     });
     setTimeout(() => {
       const target = savedUser ? ov.querySelector('#sv-inp-pass') : ov.querySelector('#sv-inp-user');
@@ -626,6 +634,7 @@
   }
 
   function renderTableAndDrawer(ov, dados) {
+    if (typeof SirRegrasAE !== 'undefined' && SirRegrasAE.hideAssTooltip) SirRegrasAE.hideAssTooltip();
     const subbar = ov.querySelector('#sv-subbar');
     const scroll = ov.querySelector('#sv-table-scroll');
     const gaveta = ov.querySelector('#sv-gaveta');
@@ -703,6 +712,7 @@
           <td>
             ${misto ? `<span class="sv-tipo-tag ${esc(it.tipo)}">${esc(it.tipo)}</span>` : ''}
             <a class="sv-tk-link" href="${esc(urlTk)}" target="_blank" rel="noopener" title="Abrir ticket na ${esc(SirRegrasAE.SIR_REDES[st.rede].nome)}">${esc(it.num)}</a>
+            ${it.ralMae ? `<span class="sv-mae-badge" title="Ticket mãe associado no SIR">Mãe: ${esc(it.ralMae)}</span>` : ''}
           </td>
           <td title="${esc(it.desig)}">
             ${dCritel
@@ -714,7 +724,7 @@
           <td><span class="sv-sla ${niv != null ? 'n' + niv : ''}">${esc(slaTxt)}</span></td>
           <td title="${esc(it.sd)}"><span class="sv-st ${esc(it.st)}">${esc(it.sr)}</span></td>
           <td style="color:var(--sv-apagado);font-size:11.5px;">${esc(it.tec || '—')}</td>
-          <td>${it.assN > 0 ? `<span class="sv-ass-chip">REC ${it.assN}</span>` : '—'}</td>
+          <td>${SirRegrasAE.buildAssocCellHTML(it, esc)}</td>
         </tr>`;
       }).join('');
 
@@ -785,6 +795,7 @@
 
         <dl class="sv-gv-dl">
           <dt>CF</dt><dd><span class="sv-cf-pill ${it.cod === 'DP' ? 'dp' : ''}">${esc(it.cf)}</span> <small style="color:var(--sv-apagado);">${esc(it.cfRaw)}</small></dd>
+          ${it.ralMae ? `<dt>Ticket mãe</dt><dd><span class="sv-mae-badge" style="margin-left:0;">${esc(it.ralMae)}</span></dd>` : ''}
           <dt>Designação</dt><dd style="font-family:var(--sv-mono);">${esc(it.desig)}</dd>
           <dt>${it.tipo === 'RAL' ? 'Tipo RAL' : 'Cliente'}</dt><dd>${esc(it.ex)}</dd>
           <dt>Abertura</dt><dd style="font-family:var(--sv-mono);">${esc(it.abertura || '—')}</dd>
@@ -1141,6 +1152,32 @@
         updateLiveIndicator();
       }
     }
+  });
+
+  /* Ponte de atualização ao vivo entre abas e extensões/sessões logadas:
+     quando qualquer usuário logado publica um snapshot novo, todos os painéis atualizam na hora */
+  if ('BroadcastChannel' in window) {
+    try {
+      const bc = new BroadcastChannel('sir_live_sync');
+      bc.onmessage = ev => {
+        if (ev.data && (ev.data.type === 'cloud-updated' || ev.data.type === 'user-logged')) {
+          if (typeof loadNow === 'function') loadNow();
+          if (typeof pullSharedNotes === 'function') pullSharedNotes(true);
+        }
+      };
+    } catch (e) {}
+  }
+  window.addEventListener('message', ev => {
+    if (ev.origin !== location.origin) return;
+    const d = ev.data;
+    if (!d || d.type !== 'sir-live-snapshot' || typeof d.ralCsv !== 'string' || typeof d.recCsv !== 'string') return;
+    if (!st.loggedIn || !d.ralCsv.trim() || !d.recCsv.trim()) return;
+    SirRegrasAE.publishLiveSnapshotToCloud(d.ralCsv, d.recCsv, st.usuario).then(r => {
+      if (r.ok) {
+        toastMsg('Cards atualizados na nuvem para todos os usuários!');
+        if (typeof loadNow === 'function') loadNow();
+      }
+    }).catch(() => {});
   });
 
   window.openSirVisao = openSirVisao;

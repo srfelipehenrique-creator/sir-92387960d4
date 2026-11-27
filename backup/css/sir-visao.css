@@ -396,10 +396,53 @@ html[data-mode="light"] body.high-contrast .sv-overlay {
 .sv-st.so-st-acesso { color: var(--sv-acesso); }
 .sv-st.so-st-fora { color: var(--sv-fraco); font-style: italic; font-weight: 500; }
 
-.sv-ass-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 5px;
-  background: var(--sv-sup-2); border: 1px solid var(--sv-borda); font: 700 11px var(--sv-mono);
+.sv-ass-trigger {
+  display: inline-flex; align-items: center; gap: 4px; cursor: default;
+  border-radius: 6px; padding: 2px;
 }
+.sv-ass-trigger:focus-visible { outline: 2px solid var(--sv-acento, var(--pg-acento, #8ab4f8)); outline-offset: 2px; }
+.sv-ass-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 6px 0 0; overflow: hidden;
+  border-radius: 5px;
+  background: var(--sv-sup-2, var(--pg-sup-2, #313236));
+  border: 1px solid var(--sv-borda, var(--pg-borda, #3a3c40));
+  font: 700 11px/18px var(--sv-mono, var(--pg-mono, monospace));
+  color: var(--sv-txt, var(--pg-txt, #e8eaed));
+}
+.sv-ass-chip i {
+  font-style: normal; padding: 0 5px; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .02em;
+}
+.sv-ass-chip.rec i { background: var(--sv-rec, var(--pg-rec, #b02a5d)); }
+.sv-ass-chip.ral i { background: var(--sv-ral, var(--pg-ral, #2364c7)); }
+
+.sv-mae-badge {
+  display: inline-flex; align-items: center; margin-left: 6px; padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--sv-acento-bg, var(--pg-acento-bg, rgba(138, 180, 248, .16)));
+  border: 1px solid var(--sv-acento, var(--pg-acento, #8ab4f8));
+  color: var(--sv-acento, var(--pg-acento, #8ab4f8));
+  font: 700 11px/16px var(--sv-mono, var(--pg-mono, monospace)); white-space: nowrap;
+}
+
+/* Tooltip flutuante ao passar o mouse em ASS. — lista enxuta apenas com os números dos tickets */
+.sv-ass-float-tip {
+  position: fixed; z-index: 10095; pointer-events: none;
+  min-width: 148px; max-width: 240px; max-height: 260px; overflow-y: auto;
+  padding: 6px 10px; border-radius: 10px;
+  background: #1b1c1f; color: #e8eaed; border: 1px solid #5f6368;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+  font: 700 12px/1.6 var(--font-mono, 'Cascadia Mono', Consolas, monospace);
+}
+html[data-mode="light"] .sv-ass-float-tip {
+  background: #ffffff; color: #23201c; border-color: #a89f91;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .18);
+}
+.sv-ass-float-tip[hidden] { display: none !important; }
+.sv-ass-num-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sv-ass-num-list li { white-space: nowrap; }
+.sv-ass-empty { font-family: var(--font-sans, system-ui, sans-serif); font-size: 12px; font-weight: 600; }
+.sv-ass-empty small { display: block; font-size: 11px; font-weight: 500; opacity: .75; }
+
 .sv-vazio { padding: 56px 20px; text-align: center; color: var(--sv-apagado); }
 .sv-vazio b { display: block; color: var(--sv-txt); font-size: 15px; margin-bottom: 4px; }
 

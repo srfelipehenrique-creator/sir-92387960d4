@@ -1,5 +1,8 @@
-# ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w8)
+﻿# ══════════════════════════════════════════════════════════════
+#  Coletor SIR para Windows  (versão w9)
+#  - w9: intervalo de 60s (tempo real) e lê também o link de associadas (Ass.)
+#    de RALs em DP (além dos CFs do painel) para contabilizar todos os tickets
+#    reais com ticket mãe nos dois dashboards.
 #  - w8: suporta REDE 1 (http://10.13.54.150:20020/index.cfm?nofoc=yes) e
 #    REDE 2 (http://10.53.224.155/index.cfm?finalizada=sim) com troca automática
 #    ou escolha via SIR_REDE=1|2, e inclui ESRC na leitura de RECs associadas.
@@ -23,7 +26,7 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w8'
+$VERSAO   = 'w9'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
 $REDES    = @(
@@ -36,7 +39,7 @@ if ($env:SIR_REDE -eq '2') { $REDES = @($REDES[1], $REDES[2], $REDES[0], $REDES[
 if ($env:SIR_BASE) { $REDES = @(@{ Nome = 'Custom'; Base = $env:SIR_BASE; Entrada = '/index.cfm?nofoc=yes' }) }
 $BASE     = $REDES[0].Base
 $ENTRADA  = $REDES[0].Entrada
-$INTERVALO = 120
+$INTERVALO = 60
 $REC_PATH = '/generico/NOVAlistaDeTarefasItensRecebidos.cfm'
 $RAL_PATH = '/navegacao/NOVAframesetNivel2ListaDeTarefas.cfm'
 $F_FILTRO = 'frameFiltro'
@@ -358,7 +361,10 @@ function Anexar-Associadas($lista) {
   for ($i = 0; $i -lt $lista.Linhas.Count; $i++) {
     $r = $lista.Linhas[$i]; $val = ''
     $ralNum = $r[3]; $ass = 0
-    if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $CFS_PAINEL -contains $r[7] -and $ralNum -match '^RAL') {
+    $cfNorm = (($r[7] -replace '\s*/\s*', '/') -replace '\s+', ' ').Trim().ToUpper()
+    $cfsNorm = $CFS_PAINEL | ForEach-Object { (($_ -replace '\s*/\s*', '/') -replace '\s+', ' ').Trim().ToUpper() }
+    $cfEhAlvo = ($cfsNorm -contains $cfNorm) -or ($cfNorm -match '^DP/')
+    if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $cfEhAlvo -and $ralNum -match '^RAL') {
       $nRal++
       $c = $script:CacheAss[$ralNum]
       if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 7) { $val = $c.Val }

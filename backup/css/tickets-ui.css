@@ -82,6 +82,18 @@
 #modal-overlay .btn-copy-all.copied::before { color: #fff !important; }
 #modal-overlay .copy-btn { border-radius: var(--tk-r); text-transform: none; }
 
+/* Selo de ticket mãe em tickets associados (1º dashboard) */
+.ticket-mae-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 6px; padding: 1px 7px; border-radius: 6px;
+  background: rgba(59, 114, 240, .16); border: 1px solid rgba(59, 114, 240, .45);
+  color: #8ab4f8; font: 700 11px/17px var(--font-mono, monospace);
+  white-space: nowrap; vertical-align: middle;
+}
+html[data-mode="light"] .ticket-mae-badge {
+  background: rgba(24, 81, 173, .1); border-color: rgba(24, 81, 173, .35); color: #1851ad;
+}
+
 /* ── Abas e Cards/Lista ── */
 #modal-overlay .list-bar { gap: 10px 12px; }
 #modal-overlay .list-bar .v2-seg { border-radius: var(--tk-r); padding: 4px; gap: 4px; }

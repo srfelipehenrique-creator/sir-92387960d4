@@ -84,12 +84,14 @@
     document.body.style.overflow = 'hidden';
     render('#pg-btn-voltar-main');
     startTick();
+    if (typeof pullSharedNotes === 'function') pullSharedNotes();
   }
 
   function closePainelGeral(keepSirVisaoOpen) {
     st.open = false;
     st.activeModal = null;
     stopTick();
+    if (typeof SirRegrasAE !== 'undefined' && SirRegrasAE.hideAssTooltip) SirRegrasAE.hideAssTooltip();
     const ov = document.getElementById('painel-geral-overlay');
     if (ov) ov.hidden = true;
     if (!keepSirVisaoOpen) {
@@ -444,7 +446,8 @@
       } catch (e) {}
     });
     ov.querySelector('#pg-btn-atualizar')?.addEventListener('click', () => {
-      if (typeof loadNow === 'function') { loadNow(); toastMsg('Atualizando Painel Geral…'); }
+      if (typeof loadNow === 'function') { loadNow(); toastMsg('Atualizando 1º e 2º dashboards em tempo real…'); }
+      if (typeof pullSharedNotes === 'function') pullSharedNotes(true);
     });
     const scrollBehavior = () => prefersReducedMotion() ? 'auto' : 'smooth';
     ov.querySelector('#pg-kpi-dp')?.addEventListener('click', () => {
@@ -505,6 +508,7 @@
   }
 
   function renderActiveModal(dados, moveFocus) {
+    if (typeof SirRegrasAE !== 'undefined' && SirRegrasAE.hideAssTooltip) SirRegrasAE.hideAssTooltip();
     const bg = document.getElementById('pg-modal-bg');
     const spec = st.activeModal;
     if (!bg || !spec) return;
@@ -519,16 +523,20 @@
           const dCritel = SirRegrasAE.designacaoCritel(it.desig);
           return `<tr data-tipo="${esc(it.tipo)}">
             <td><span class="sv-cf-pill">${esc(it.cf)}</span></td>
-            <td><a class="sv-tk-link" href="${esc(urlTk)}" target="_blank" rel="noopener">${esc(it.num)}</a></td>
+            <td>
+              <a class="sv-tk-link" href="${esc(urlTk)}" target="_blank" rel="noopener">${esc(it.num)}</a>
+              ${it.ralMae ? `<span class="sv-mae-badge" title="Ticket mãe associado no SIR">Mãe: ${esc(it.ralMae)}</span>` : ''}
+            </td>
             <td>${dCritel ? `<a class="sv-desig-link" href="${esc(SirRegrasAE.urlCritel(dCritel))}" target="_blank" rel="noopener">${esc(it.desig)}</a>` : esc(it.desig)}</td>
             <td>${esc(it.ex)}</td>
             <td style="font-family:var(--pg-mono);font-size:11.5px;">${esc(it.abertura || '—')}</td>
             <td><span class="sv-sla ${niv != null ? 'n' + niv : ''}">${esc(SirRegrasAE.formatSlaPill(slaMin))}</span></td>
             <td><span class="sv-st ${esc(it.st)}">${esc(it.sr)}</span></td>
             <td>${esc(it.tec || '—')}</td>
+            <td>${SirRegrasAE.buildAssocCellHTML(it, esc)}</td>
           </tr>`;
         }).join('')
-      : `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--pg-apagado);">Nenhum ticket nesta seleção.</td></tr>`;
+      : `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--pg-apagado);">Nenhum ticket nesta seleção.</td></tr>`;
 
     bg.innerHTML = `
       <div class="pg-modal" role="dialog" aria-modal="true" aria-label="${esc(spec.titulo)}">
@@ -553,6 +561,7 @@
                 <th scope="col" style="padding:9px 10px;">SLA</th>
                 <th scope="col" style="padding:9px 10px;">Status</th>
                 <th scope="col" style="padding:9px 10px;">Técn.</th>
+                <th scope="col" style="padding:9px 10px;">Ass.</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -574,8 +583,8 @@
       navigator.clipboard?.writeText(ds.join('\n')).then(() => toastMsg(`${ds.length} designação(ões) copiada(s)`));
     });
     bg.querySelector('#pg-m-csv')?.addEventListener('click', () => {
-      const header = 'CF;Ticket;Designacao;Detalhe;Abertura;Status;Tecnico\n';
-      const body = itens.map(i => [i.cf, i.num, i.desig, i.ex, i.abertura, i.sr, i.tec].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(';')).join('\n');
+      const header = 'CF;Ticket;Ticket Mae;Designacao;Detalhe;Abertura;Status;Tecnico;Associadas\n';
+      const body = itens.map(i => [i.cf, i.num, i.ralMae || '', i.desig, i.ex, i.abertura, i.sr, i.tec, (i.assoc || []).map(a => a.ticket).join(' | ')].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(';')).join('\n');
       const blob = new Blob(['\uFEFF' + header + body], { type: 'text/csv;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);

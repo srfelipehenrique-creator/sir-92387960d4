@@ -5,15 +5,17 @@ const CF_COL = 'CF Exec.';
 const normalizeStr = s => String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 
 const REGIONS = {
-  'ES':    { 'MTN':['RT/VTA /MTN/FFA/FO'], 'MTS':['RT/VTA /MTS/FFA/FO'], 'NOR':['RT/VTA /NOR/FFA/FO'], 'SUL':['RT/VTA /SUL/FFA/FO'] },
+  'ES':    { 'MTN':['RT/VTA /MTN/FFA/FO'], 'MTS':['RT/VTA /MTS/FFA/FO'], 'NOR':['RT/VTA /NOR/FFA/FO'], 'SUL':['RT/VTA /SUL/FFA/FO'], 'ESRC':['RC/VTA /MTP/NET/FO','RC/VTA /SUL/NET/FO','RC/VTA /NOR/NET/FO','RC/VTA /JM/NET/FO'] },
   'INTERIOR': { 'SUF':['RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO'], 'SEF':['RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO'], 'NOF':['RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO'], 'LGS':['RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO'], 'BX1':['RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO'], 'MTP':['RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO'] },
   'CAPITAL': { 'NO1':['RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO'], 'NO2':['RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO'], 'NO3':['RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO'], 'OE1':['RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO'], 'SU2':['RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO'], 'CZS':['RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO'] }
 };
 
+const normCFKey = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
 const patternToCF = {};
+const normToPattern = {};
 for (const [, cfs] of Object.entries(REGIONS))
   for (const [cfKey, patterns] of Object.entries(cfs))
-    for (const p of patterns) patternToCF[p] = cfKey;
+    for (const p of patterns) { patternToCF[p] = cfKey; normToPattern[normCFKey(p)] = p; }
 
 /* "REC-1/2026 ^ Cliente ^ Designação ^ Abertura ^ Tipo ^ CF | RAL-2/2026 ^ ..." → lista
    (link da coluna Ass.). Pode trazer REC e RAL; sem prefixo = REC. Repetidas entram 1 vez. */
@@ -76,10 +78,8 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
   const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
-  const ESRC_SET = new Set(['RC/VTA/MTP/NET/FO', 'RC/VTA/SUL/NET/FO', 'RC/VTA/NOR/NET/FO', 'RC/VTA/JM/NET/FO']);
-  const normCF = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
   const counts = {}, details = {}, qualidadeDetails = {};
-  const dpDetails = [], esrcDetails = [];
+  const dpDetails = [];
   allP.forEach(p => { counts[p] = 0; details[p] = []; qualidadeDetails[p] = []; });
   let total = 0;
 
@@ -90,17 +90,14 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
       /* Captura RALs de Qualidade em estrutura separada em vez de descartar */
       const qCells = line.split(sep).map(clean);
       if (qCells.length > cfIdx) {
-        const qcf = qCells[cfIdx];
-        for (const p of allP) {
-          if (qcf === p) {
-            qualidadeDetails[p].push({
-              ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
-              designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
-              cfOrigem:   patternToCF[p],
-              abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
-            });
-            break;
-          }
+        const qp = normToPattern[normCFKey(qCells[cfIdx])];
+        if (qp) {
+          qualidadeDetails[qp].push({
+            ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
+            designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
+            cfOrigem:   patternToCF[qp],
+            abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
+          });
         }
       }
       continue;
@@ -128,24 +125,16 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
       return it;
     };
 
-    let matchedMain = false;
-    for (const p of allP) {
-      if (cf === p) {
-        counts[p]++; total++;
-        details[p].push(buildItem(patternToCF[p]));
-        matchedMain = true;
-      }
-    }
-    if (!matchedMain) {
-      const ncf = normCF(cf);
-      if (ncf.startsWith('DP/')) {
-        dpDetails.push(buildItem('DP'));
-      } else if (ESRC_SET.has(ncf)) {
-        esrcDetails.push(buildItem('ESRC'));
-      }
+    const ncf = normCFKey(cf);
+    const matchedP = normToPattern[ncf];
+    if (matchedP) {
+      counts[matchedP]++; total++;
+      details[matchedP].push(buildItem(patternToCF[matchedP]));
+    } else if (ncf.startsWith('DP/')) {
+      dpDetails.push(buildItem('DP'));
     }
   }
-  return { counts, details, total, qualidadeDetails, dpDetails, esrcDetails };
+  return { counts, details, total, qualidadeDetails, dpDetails };
 }
 
 /* v82: fetch com limite de tempo */

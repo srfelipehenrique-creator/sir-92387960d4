@@ -74,10 +74,11 @@ function parseRawInline(text, isRal) {
   const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
-  const ESRC_SET = new Set(['RC/VTA/MTP/NET/FO', 'RC/VTA/SUL/NET/FO', 'RC/VTA/NOR/NET/FO', 'RC/VTA/JM/NET/FO']);
   const normCF = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
+  const normToPattern = {};
+  allP.forEach(p => { normToPattern[normCF(p)] = p; });
   const counts = {}, details = {}, qualidadeDetails = {};
-  const dpDetails = [], esrcDetails = [];
+  const dpDetails = [];
   allP.forEach(p => { counts[p] = 0; details[p] = []; qualidadeDetails[p] = []; });
   let total = 0;
 
@@ -88,17 +89,14 @@ function parseRawInline(text, isRal) {
       /* Captura RALs de Qualidade em estrutura separada em vez de descartar */
       const qCells = line.split(sep).map(clean);
       if (qCells.length > cfIdx) {
-        const qcf = qCells[cfIdx];
-        for (const p of allP) {
-          if (qcf === p) {
-            qualidadeDetails[p].push({
-              ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
-              designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
-              cfOrigem:   patternToCF[p],
-              abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
-            });
-            break;
-          }
+        const qp = normToPattern[normCF(qCells[cfIdx])];
+        if (qp) {
+          qualidadeDetails[qp].push({
+            ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
+            designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
+            cfOrigem:   patternToCF[qp],
+            abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
+          });
         }
       }
       continue;
@@ -126,24 +124,16 @@ function parseRawInline(text, isRal) {
       return it;
     };
 
-    let matchedMain = false;
-    for (const p of allP) {
-      if (cf === p) {
-        counts[p]++; total++;
-        details[p].push(buildItem(patternToCF[p]));
-        matchedMain = true;
-      }
-    }
-    if (!matchedMain) {
-      const ncf = normCF(cf);
-      if (ncf.startsWith('DP/')) {
-        dpDetails.push(buildItem('DP'));
-      } else if (ESRC_SET.has(ncf)) {
-        esrcDetails.push(buildItem('ESRC'));
-      }
+    const ncf = normCF(cf);
+    const matchedP = normToPattern[ncf];
+    if (matchedP) {
+      counts[matchedP]++; total++;
+      details[matchedP].push(buildItem(patternToCF[matchedP]));
+    } else if (ncf.startsWith('DP/')) {
+      dpDetails.push(buildItem('DP'));
     }
   }
-  return { counts, details, total, qualidadeDetails, dpDetails, esrcDetails };
+  return { counts, details, total, qualidadeDetails, dpDetails };
 }
 
 /* ── Fonte dos dados ──
@@ -272,15 +262,14 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (typeof buildQualidadeData === 'function' && ralRes.qualidadeDetails)
     buildQualidadeData(ralRes.qualidadeDetails);
 
-  /* Captura não-destrutiva de DP e ESRC para a Visualização SIR e o Painel Geral */
+  /* RECs e RALs associadas (inclusive de RALs em DP) entram com ticket mãe */
+  if (typeof mergeAssociatedRecs === 'function') mergeAssociatedRecs(ralRes, recRes);
+
+  /* Captura de DP para a Visualização SIR e o Painel Geral (ESRC já integra REGIONS) */
   appState.sirExtra = {
-    dp:   { ral: Array.isArray(ralRes.dpDetails) ? ralRes.dpDetails : [], rec: Array.isArray(recRes.dpDetails) ? recRes.dpDetails : [] },
-    esrc: { ral: Array.isArray(ralRes.esrcDetails) ? ralRes.esrcDetails : [], rec: Array.isArray(recRes.esrcDetails) ? recRes.esrcDetails : [] },
+    dp: { ral: Array.isArray(ralRes.dpDetails) ? ralRes.dpDetails : [], rec: Array.isArray(recRes.dpDetails) ? recRes.dpDetails : [] },
     updatedAt: Date.now()
   };
-
-  /* RECs associadas às RAL entram na tela de REC (sem repetir tickets) */
-  if (typeof mergeAssociatedRecs === 'function') mergeAssociatedRecs(ralRes, recRes);
 
   const ralR = buildRegionData(ralRes.counts, ralRes.details, true);
   const recR = buildRegionData(recRes.counts, recRes.details, false);
@@ -332,6 +321,30 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (flashEl) { flashEl.classList.add('show'); setTimeout(() => flashEl.classList.remove('show'), 2200); }
 
   if (ralText && recText) dbSaveSnapshot(ralText, recText).catch(() => {});
+
+  /* Se o modal de tickets do 1º dashboard estiver aberto (e não for Lixeira, nem houver
+     popup aberto ou digitação em andamento), atualiza na hora para refletir entradas/saídas */
+  try {
+    const mOv = document.getElementById('modal-overlay');
+    const isTrash = typeof isTrashKey === 'function' && isTrashKey(appState.currentModalKey);
+    const hasPopup = !!document.querySelector('#tag-picker-popup, #obs-picker-popup, #color-picker-popup');
+    if (mOv && mOv.classList.contains('active') && appState.currentModalType && appState.currentModalKey && !isTrash && !hasPopup) {
+      const typing = mOv.querySelector('.obs-input:focus, .note-who-input:focus, #modal-filter-input:focus');
+      if (!typing && typeof openModal === 'function') {
+        const sc = document.getElementById('modal-body-scroll');
+        const prevY = sc ? sc.scrollTop : 0;
+        const prevFilter = document.getElementById('modal-filter-input')?.value || '';
+        const titleTxt = document.getElementById('modal-title')?.textContent || '';
+        openModal(appState.currentModalKey, appState.currentModalType === 'ral', titleTxt);
+        if (prevFilter) {
+          const inp = document.getElementById('modal-filter-input');
+          if (inp) { inp.value = prevFilter; if (typeof filterModalTable === 'function') filterModalTable(); }
+        }
+        if (sc && prevY) sc.scrollTop = prevY;
+      }
+    }
+  } catch (e) {}
+
   try { window.dispatchEvent(new CustomEvent('sir:data-ready', { detail: { at: now } })); } catch (e) {}
 }
 
@@ -410,11 +423,19 @@ async function loadAll(userSavedAreas) {
 }
 
 /* v82: a contagem usa o relógio (não o número de "tiques"): em segundo plano o navegador
-   atrasa os timers, então ao voltar para o app ele atualiza na hora se o prazo já passou */
+   atrasa os timers, então ao voltar para o app ele atualiza na hora se o prazo já passou.
+   Quando algum usuário está logado no 2º dashboard/Visualização SIR, acelera para 60s. */
+function getActivePollInterval() {
+  try {
+    if (typeof getSirVisaoState === 'function' && getSirVisaoState().loggedIn) return 60000;
+  } catch (e) {}
+  return INTERVAL;
+}
 let nextLoadAt = 0, _lastAreas = null;
 function resetCountdown(userSavedAreas) {
-  countdownVal = INTERVAL / 1000;
-  nextLoadAt = Date.now() + INTERVAL; _lastAreas = userSavedAreas;
+  const stepMs = getActivePollInterval();
+  countdownVal = stepMs / 1000;
+  nextLoadAt = Date.now() + stepMs; _lastAreas = userSavedAreas;
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
     countdownVal = Math.max(0, Math.round((nextLoadAt - Date.now()) / 1000));

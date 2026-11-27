@@ -1,101 +1,183 @@
 /* ══════════════════════════════════════════════════════════════
    RECs E RALs ASSOCIADAS ÀS RAL (link da coluna Ass.)
-   - v61: o link também pode trazer RAL; elas entram na tela de RAL, na área
-     certa, sem repetir (uma RAL que já está na lista não é somada de novo).
-   - O seu coletor abre o link do número da coluna "Ass." de cada RAL
-     e envia a lista dessas RECs (coluna "RECs Assoc." do CSV de RAL).
-   - Aqui elas entram na tela de REC, na mesma área (CF) da RAL, e ficam
-     agrupadas automaticamente como "VIDE RAL-xxxxx/aaaa".
-   - Sem tickets repetidos: uma REC que já está na lista de REC não é
-     somada de novo (só ganha o VIDE), e uma REC ligada a mais de uma RAL
-     conta uma vez só (fica no VIDE da primeira RAL).
-   - A cada atualização confere a quantidade da coluna "Ass." com as RECs
-     lidas e mostra o resultado no rodapé.
+   - v100: unifica associadas vindas tanto de RALs dos CFs quanto de
+     RALs em DP; cria cards reais com todas as informações e grava
+     sempre o ticket mãe (`ralMae` e `vide`) em ambos os dashboards.
+   - Sem duplicidade: ticket que já está na tela não é contado 2x
+     (apenas recebe o selo do ticket mãe e o VIDE).
+   - Se sair da tela/associação no 2º dashboard, sai imediatamente do
+     1º dashboard na próxima atualização.
    ══════════════════════════════════════════════════════════════ */
 
-appState.recVide   = new Map();   /* identidade da REC → RAL de onde veio */
-appState.assocInfo = null;
-let _assocPrev = null;            /* REC → RAL da atualização anterior (para avisar mudanças) */
+appState.recVide       = new Map();   /* identidade → ticket mãe */
+appState.assocInfo     = null;
+appState.assocByParent = new Map();   /* normTicket(ralMae) → lista de associadas */
+let _assocPrev = null;
+
+function _normCFPattern(s) {
+  return String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
+}
 
 function mergeAssociatedRecs(ralRes, recRes) {
   const info = { rals: 0, esperado: 0, lidas: 0, adicionadas: 0, jaNaLista: 0, ralAdicionadas: 0, ralJaNaLista: 0, temLista: false, divergentes: [] };
-  const existing = new Map();
+  const normToPattern = {};
+  for (const p of Object.keys(patternToCF)) normToPattern[_normCFPattern(p)] = p;
+
+  const existingRec = new Map();
   for (const p in (recRes.details || {}))
-    for (const it of recRes.details[p]) { delete it.vide; existing.set(normTicket(it.ticket), it); }
+    for (const it of recRes.details[p]) {
+      delete it.vide; delete it.ralMae;
+      existingRec.set(normTicket(it.ticket), it);
+    }
 
-  /* RAL que já estão na tela (inclusive as de Qualidade): não entram de novo */
-  const ralExist = new Set();
-  for (const p in (ralRes.details || {})) for (const it of ralRes.details[p]) ralExist.add(normTicket(it.ticket));
-  for (const p in (ralRes.qualidadeDetails || {})) for (const it of ralRes.qualidadeDetails[p]) ralExist.add(normTicket(it.ticket));
+  /* RALs que já estão na tela (inclusive Qualidade): não entram repetidas, mas ganham ticket mãe */
+  const existingRal = new Map();
+  for (const p in (ralRes.details || {}))
+    for (const it of ralRes.details[p]) {
+      delete it.vide; delete it.ralMae;
+      existingRal.set(normTicket(it.ticket), it);
+    }
+  const qualExist = new Set();
+  for (const p in (ralRes.qualidadeDetails || {}))
+    for (const it of ralRes.qualidadeDetails[p]) qualExist.add(normTicket(it.ticket));
 
-  /* Área de cada associada: a da própria linha no link (se a página mostrar o CF),
-     senão a mesma área da RAL de onde ela veio */
-  const alvo = (r, p) => (r.cf && patternToCF[r.cf]) ? r.cf : p;
+  const dpRecExist = new Map();
+  for (const it of (recRes.dpDetails || [])) { delete it.vide; delete it.ralMae; dpRecExist.set(normTicket(it.ticket), it); }
+  const dpRalExist = new Map();
+  for (const it of (ralRes.dpDetails || [])) { delete it.vide; delete it.ralMae; dpRalExist.set(normTicket(it.ticket), it); }
 
-  /* As RAL com associadas (lista fixa antes de somar as novas) */
+  /* Resolve CF de destino de uma associada (DP fica em DP; CF da própria linha → CF do pai se for do painel) */
+  const alvoPattern = (r, parentPattern) => {
+    if (r.cf) {
+      const norm = _normCFPattern(r.cf);
+      if (norm.startsWith('DP/')) return null;
+      if (patternToCF[r.cf]) return r.cf;
+      const byNorm = normToPattern[norm];
+      if (byNorm) return byNorm;
+    }
+    return (parentPattern && patternToCF[parentPattern]) ? parentPattern : null;
+  };
+
+  /* Lista fixa de RALs-mãe (CFs do painel + RALs em DP) antes de inserir as associadas */
   const pais = [];
   for (const p in (ralRes.details || {}))
     for (const ral of ralRes.details[p])
       if (ral.ass || (ral.recs && ral.recs.length)) pais.push([p, ral]);
+  for (const ral of (ralRes.dpDetails || []))
+    if (ral.ass || (ral.recs && ral.recs.length)) pais.push([null, ral]);
 
-  const via = new Map();   /* ticket associado → RAL (1ª RAL que o trouxe) */
+  const via = new Map();            /* ticket associado → ticket mãe */
+  const byParent = new Map();       /* normTicket(ralMae) → lista limpa de associadas */
+
   for (const [p, ral] of pais) {
+    const ralKey = normTicket(ral.ticket);
     info.rals++; info.esperado += ral.ass || 0;
     if (!Array.isArray(ral.recs)) continue;
     info.temLista = true;
-    const nLidas = ral.recs.filter(r => normTicket(r.ticket) !== normTicket(ral.ticket)).length;
+    const validas = ral.recs.filter(r => normTicket(r.ticket) !== ralKey);
+    byParent.set(ralKey, validas);
+    const nLidas = validas.length;
     info.lidas += nLidas;
     if (nLidas !== (ral.ass || 0))
       info.divergentes.push({ ral: ral.ticket, cf: ral.cfOrigem, ass: ral.ass || 0, lidas: nLidas });
-    for (const r of ral.recs) {
+
+    for (const r of validas) {
       const key = normTicket(r.ticket);
-      if (key === normTicket(ral.ticket) || via.has(key)) continue;   /* a própria RAL ou já veio por outra */
+      if (via.has(key)) continue;   /* já vinculada a outra RAL-mãe */
       via.set(key, ral.ticket);
-      const tp = alvo(r, p);
+      const tp = alvoPattern(r, p);
 
       if (r.kind === 'ral') {
-        /* RAL associada: vira cartão na tela de RAL, uma vez só */
-        if (ralExist.has(key)) { info.ralJaNaLista++; continue; }
-        if (/QUALIDADE/i.test(r.tipo || '')) continue;   /* Qualidade fica fora da contagem, como na lista principal */
-        if (!ralRes.details[tp]) ralRes.details[tp] = [];
-        ralRes.details[tp].push({
-          ticket: r.ticket,
-          designacao: r.designacao || 'N/D',
-          extra: r.tipo || 'N/D',
-          cfOrigem: patternToCF[tp],
-          abertura: r.abertura || '',
-          vide: ral.ticket,
-          assoc: true,
-        });
-        ralRes.counts[tp] = (ralRes.counts[tp] || 0) + 1;
-        ralRes.total = (ralRes.total || 0) + 1;
-        ralExist.add(key);
-        info.ralAdicionadas++;
+        if (qualExist.has(key) || /QUALIDADE/i.test(r.tipo || '')) continue;
+        const curRal = existingRal.get(key);
+        if (curRal) {
+          curRal.vide = ral.ticket; curRal.ralMae = ral.ticket;
+          info.ralJaNaLista++;
+          continue;
+        }
+        const curDpRal = dpRalExist.get(key);
+        if (curDpRal) {
+          curDpRal.vide = ral.ticket; curDpRal.ralMae = ral.ticket;
+          continue;
+        }
+        if (tp) {
+          if (!ralRes.details[tp]) ralRes.details[tp] = [];
+          const item = {
+            ticket: r.ticket,
+            designacao: r.designacao || 'N/D',
+            extra: r.tipo || 'N/D',
+            cfOrigem: patternToCF[tp],
+            cfRaw: r.cf || tp,
+            abertura: r.abertura || '',
+            vide: ral.ticket,
+            ralMae: ral.ticket,
+            assoc: true,
+          };
+          ralRes.details[tp].push(item);
+          ralRes.counts[tp] = (ralRes.counts[tp] || 0) + 1;
+          ralRes.total = (ralRes.total || 0) + 1;
+          existingRal.set(key, item);
+          info.ralAdicionadas++;
+        } else if (_normCFPattern(r.cf || ral.cfRaw).startsWith('DP/')) {
+          const item = {
+            ticket: r.ticket, designacao: r.designacao || 'N/D', extra: r.tipo || 'N/D',
+            cfOrigem: 'DP', cfRaw: r.cf || ral.cfRaw || 'DP/RJO', abertura: r.abertura || '',
+            vide: ral.ticket, ralMae: ral.ticket, assoc: true,
+          };
+          ralRes.dpDetails = ralRes.dpDetails || [];
+          ralRes.dpDetails.push(item);
+          dpRalExist.set(key, item);
+        }
         continue;
       }
 
-      const cur = existing.get(key);
-      if (cur) { cur.vide = ral.ticket; if (r.tipo && !cur.tipoRec) cur.tipoRec = r.tipo; info.jaNaLista++; continue; }
-      if (!recRes.details[tp]) recRes.details[tp] = [];
-      const item = {
-        ticket: r.ticket,
-        designacao: r.designacao || 'N/D',
-        extra: r.cliente || 'N/D',
-        cfOrigem: patternToCF[tp],
-        abertura: r.abertura || '',
-        vide: ral.ticket,
-        tipoRec: r.tipo || '',
-        assoc: true,
-      };
-      recRes.details[tp].push(item);
-      recRes.counts[tp] = (recRes.counts[tp] || 0) + 1;
-      recRes.total = (recRes.total || 0) + 1;
-      existing.set(key, item);
-      info.adicionadas++;
+      /* REC associada */
+      const curRec = existingRec.get(key);
+      if (curRec) {
+        curRec.vide = ral.ticket; curRec.ralMae = ral.ticket;
+        if (r.tipo && !curRec.tipoRec) curRec.tipoRec = r.tipo;
+        info.jaNaLista++;
+        continue;
+      }
+      const curDpRec = dpRecExist.get(key);
+      if (curDpRec) {
+        curDpRec.vide = ral.ticket; curDpRec.ralMae = ral.ticket;
+        if (r.tipo && !curDpRec.tipoRec) curDpRec.tipoRec = r.tipo;
+        continue;
+      }
+      if (tp) {
+        if (!recRes.details[tp]) recRes.details[tp] = [];
+        const item = {
+          ticket: r.ticket,
+          designacao: r.designacao || 'N/D',
+          extra: r.cliente || 'N/D',
+          cfOrigem: patternToCF[tp],
+          cfRaw: r.cf || tp,
+          abertura: r.abertura || '',
+          vide: ral.ticket,
+          ralMae: ral.ticket,
+          tipoRec: r.tipo || '',
+          assoc: true,
+        };
+        recRes.details[tp].push(item);
+        recRes.counts[tp] = (recRes.counts[tp] || 0) + 1;
+        recRes.total = (recRes.total || 0) + 1;
+        existingRec.set(key, item);
+        info.adicionadas++;
+      } else if (_normCFPattern(r.cf || ral.cfRaw).startsWith('DP/')) {
+        const item = {
+          ticket: r.ticket, designacao: r.designacao || 'N/D', extra: r.cliente || 'N/D',
+          cfOrigem: 'DP', cfRaw: r.cf || ral.cfRaw || 'DP/RJO', abertura: r.abertura || '',
+          vide: ral.ticket, ralMae: ral.ticket, tipoRec: r.tipo || '', assoc: true,
+        };
+        recRes.dpDetails = recRes.dpDetails || [];
+        recRes.dpDetails.push(item);
+        dpRecExist.set(key, item);
+      }
     }
   }
 
-  /* Mudanças desde a última atualização (quantidade e quais RECs) */
+  /* Mudanças desde a última atualização (entradas, saídas e trocas de RAL mãe) */
   if (_assocPrev && info.temLista) {
     let mais = 0, menos = 0, mudou = 0;
     via.forEach((ral, rec) => { if (!_assocPrev.has(rec)) mais++; else if (_assocPrev.get(rec) !== ral) mudou++; });
@@ -103,25 +185,26 @@ function mergeAssociatedRecs(ralRes, recRes) {
     info.mudancas = { mais, menos, mudou };
     if ((mais || menos || mudou) && typeof showActionToast === 'function') {
       const t = [mais ? `+${mais}` : '', menos ? `−${menos}` : '', mudou ? `${mudou} trocada${mudou > 1 ? 's' : ''} de RAL` : ''].filter(Boolean).join(' · ');
-      showActionToast(`RECs associadas às RAL atualizadas: ${t}`, 'success');
+      showActionToast(`Associadas atualizadas nos 2 painéis: ${t}`, 'success');
     }
   }
   if (info.temLista) _assocPrev = via;
+  appState.assocByParent = byParent;
   appState.assocInfo = info;
   return info;
 }
 
-/* Depois de montar as listas: marca o VIDE de cada REC pela identidade da linha */
+/* Depois de montar as listas: marca o VIDE / ticket mãe pela identidade da linha */
 function buildRecVideMap() {
   const m = new Map();
   for (const tk of ['rec', 'ral'])
     for (const it of ((modalData[tk] && modalData[tk]['ALL']) || []))
-      if (it.vide) m.set(makeIdentity(tk, it), it.vide);
+      if (it.vide || it.ralMae) m.set(makeIdentity(tk, it), it.ralMae || it.vide);
   appState.recVide = m;
   renderAssocStatus();
 }
 
-/* Rodapé: conferência da quantidade (coluna Ass.) com as RECs lidas */
+/* Rodapé: conferência da quantidade (coluna Ass.) com as associadas lidas */
 function renderAssocStatus() {
   const info = appState.assocInfo;
   let el = document.getElementById('assoc-status');
@@ -137,12 +220,12 @@ function renderAssocStatus() {
   if (!info.temLista) {
     txt = `Associadas em RAL: ${info.esperado} (sem lista)`;
     cls = 'warn';
-    tip = 'A fonte em uso só informa a quantidade (coluna Ass.), sem dizer quais são as RECs. Elas só viram cartões nas áreas quando os dados vêm do seu coletor (versão w4 ou mais nova, que também lê as RAL do link).';
+    tip = 'A fonte em uso só informa a quantidade (coluna Ass.), sem listar os números. Ligue o Coletor SIR (w9) para contabilizar os tickets reais com ticket mãe nos dois dashboards.';
   } else {
     const ok = !info.divergentes.length;
     txt = `Associadas em RAL: ${info.lidas}/${info.esperado}${ok ? ' ✓' : ' ⚠'}`;
     cls = ok ? 'ok' : 'warn';
-    tip = `${info.rals} RAL com RECs associadas · ${info.lidas} lidas de ${info.esperado} informadas na coluna Ass.\n` +
+    tip = `${info.rals} RAL com associadas · ${info.lidas} lidas de ${info.esperado} informadas na coluna Ass.\n` +
       `REC: ${info.adicionadas} somadas · ${info.jaNaLista} já estavam na lista (não repetidas)\n` +
       `RAL: ${info.ralAdicionadas} somadas · ${info.ralJaNaLista} já estavam na lista (não repetidas)` +
       (info.divergentes.length ? '\nQuantidade diferente em: ' + info.divergentes.slice(0, 8).map(d => `${d.ral} (${d.cf}) Ass. ${d.ass}, lidas ${d.lidas}`).join('; ') + (info.divergentes.length > 8 ? '…' : '') : '');
@@ -152,7 +235,6 @@ function renderAssocStatus() {
   el.title = tip;
 }
 
-/* A lista chegou com as associadas: o aviso de "ainda não contabiliza" não vale mais */
 function _assocToast() {
   if (appState.assocInfo && appState.assocInfo.temLista && typeof dismissToast === 'function') { try { dismissToast(); } catch (e) {} }
 }
