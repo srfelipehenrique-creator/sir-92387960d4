@@ -598,13 +598,17 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
   html.rec-netflix body.layout-v2 .v2-regions {
     display: flex !important;
     flex-direction: column !important;
+    align-items: stretch !important;   /* v96: o Full HD usava "start" e a faixa crescia por baixo da coluna da direita */
     gap: 18px !important;
+    min-width: 0;
+    max-width: 100%;
   }
   html.rec-netflix body.layout-v2 .v2-region {
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
     min-width: 0;
+    max-width: 100%;
     background: transparent !important;
     border: 0 !important;
     padding: 0 !important;
@@ -644,8 +648,10 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
     flex-wrap: nowrap !important;
     align-items: flex-start !important;
     gap: 12px !important;
+    min-width: 0;
+    max-width: 100%;
     overflow-x: auto !important;
-    overflow-y: visible;
+    overflow-y: hidden;
     scroll-behavior: smooth;
     scroll-snap-type: x proximity;
     padding: 6px 2px 10px !important;
@@ -656,12 +662,13 @@ html.rec-netflix body.layout-v2 .v2-kpi-type {
   html.rec-netflix[data-mode="light"] body.fit-tela .v2-tiles {
     scrollbar-color: rgba(54, 46, 38, 0.22) transparent;
   }
-  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar { height: 5px; }
+  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar { height: 8px; }
   html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar-track { background: transparent; }
   html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.22);
     border-radius: 99px;
   }
+  html.rec-netflix body.layout-v2 .v2-tiles::-webkit-scrollbar-thumb:hover { background: var(--nf-red); }
   html.rec-netflix[data-mode="light"] body.layout-v2 .v2-tiles::-webkit-scrollbar-thumb {
     background: rgba(54, 46, 38, 0.22);
   }

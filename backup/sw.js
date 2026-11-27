@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '96';
+const CACHE_NAME   = CACHE_PREFIX + '97';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -33,6 +33,8 @@ const SHELL_ASSETS = [
   'css/rec-fhd.css',
   'css/rec-gravidade.css',
   'css/rec-netflix.css',
+  'css/reconnect-video.css',
+  'assets/reconnect.mp4',
   'js/theme-mode.js',
   'assets/icon.svg',
   'css/styles.css',
@@ -85,6 +87,7 @@ const SHELL_ASSETS = [
   'js/fit-tela.js',
   'js/mapa-calor.js',
   'js/stale.js',
+  'js/reconnect-video.js',
   'js/intro-fx.js',
   'js/siglas.js',
   'js/siglas-busca.js',

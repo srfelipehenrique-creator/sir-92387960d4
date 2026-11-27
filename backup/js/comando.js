@@ -60,7 +60,8 @@ const SirComando = (function () {
     if (typeof loadNow === 'function') c.push({ t: 'Atualizar dados agora', s: 'Busca RAL e REC de novo', f: () => loadNow() });
     if (typeof openSettings === 'function') c.push({ t: 'Escolher minhas áreas', s: 'Abre Minhas Áreas', f: () => openSettings() });
     if (typeof openPersonalizacao === 'function') c.push({ t: 'Abrir configurações', s: 'Tema, densidade, novidades', f: () => openPersonalizacao() });
-    if (typeof cycleThemeMode === 'function') c.push({ t: 'Trocar tema', s: 'Claro, escuro e outros', f: () => cycleThemeMode() });
+    if (typeof cycleThemeMode === 'function') c.push({ t: 'Trocar tema', s: 'Escuro ou claro suave', f: () => cycleThemeMode() });
+    if (typeof playReconnectVideo === 'function') c.push({ t: 'Vídeo de reconexão (mingau)', s: 'Atalho Ctrl + mingau', f: () => playReconnectVideo('shortcut'), secreto: true });
     return c.map(x => ({ tipo: 'Comando', ...x }));
   }
 
@@ -85,7 +86,9 @@ const SirComando = (function () {
         }
       }
     }
-    const cmds = comandos().filter(c => !q || norm(c.t).includes(q) || norm(c.s).includes(q));
+    const cmds = comandos().filter(c => c.secreto
+      ? (q.length >= 3 && (norm(c.t).includes(q) || norm(c.s).includes(q)))
+      : (!q || norm(c.t).includes(q) || norm(c.s).includes(q)));
     itens = r.sort((a, b) => (a.peso || 1) - (b.peso || 1)).slice(0, q ? 12 : 8).concat(cmds.slice(0, q ? 6 : 4));
     if (sel >= itens.length) sel = 0;
     desenha();
