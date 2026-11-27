@@ -25,11 +25,24 @@ function toggleAppMenu() {
   document.body.classList.contains('app-menu-open') ? closeAppMenu() : openAppMenu();
 }
 
+function toggleSirSubmenu(btn) {
+  const sub = document.getElementById('menu-sir-sub');
+  if (!sub || !btn) return;
+  const open = sub.hidden;
+  sub.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  btn.classList.toggle('is-open', open);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const body = document.querySelector('#app-menu .app-menu-body');
-  /* Tocou numa ferramenta: ela abre e o menu fecha */
-  body?.addEventListener('click', e => { if (e.target.closest('button')) closeAppMenu(); });
+  /* Tocou numa ferramenta: ela abre e o menu fecha (exceto toggles de submenu) */
+  body?.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.hasAttribute('data-menu-keep-open')) return;
+    closeAppMenu();
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppMenu(); });
   if (typeof lucide !== 'undefined')
-    lucide.createIcons({ nodes: Array.from(document.querySelectorAll('header [data-lucide]')) });
+    lucide.createIcons({ nodes: Array.from(document.querySelectorAll('header [data-lucide], #app-menu [data-lucide]')) });
 });

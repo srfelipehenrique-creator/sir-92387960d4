@@ -443,7 +443,7 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
       const iden    = makeIdentity(tk, item);
       const mae     = item.ralMae || item.vide || '';
       const hlClass = highlightTicket && normTicket(item.ticket) === normTicket(highlightTicket) ? 'row-highlight' : '';
-      return `<tr class="ticket-row ${isNew ? 'is-new' : ''} ${mae ? 'is-assoc' : ''} ${hlClass}"
+      return `<tr class="ticket-row ${isNew ? 'is-new' : ''} ${mae ? 'is-assoc' : ''} ${item.manual ? 'is-manual' : ''} ${hlClass}"
           data-ticket="${escapeHtml(item.ticket)}"
           data-identity="${escapeHtml(iden)}"
           data-ral-mae="${escapeHtml(mae)}"
@@ -453,14 +453,14 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
           data-extra="${escapeHtml(item.extra || '')}">
         <td class="color-cycle-col"><span class="color-cycle-dot ev-none" onclick="cycleEventColor(this)" title="Clique para colorir"></span></td>
         <td><span class="cf-tag">${escapeHtml(item.cfOrigem)}</span></td>
-        <td>${makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}${mae ? `<span class="ticket-mae-badge" title="Ticket mãe (associado no SIR): ${escapeHtml(mae)}">Mãe: ${escapeHtml(mae)}</span>` : ''}</td>
+        <td>${makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}${typeof manualSeloHTML === 'function' ? manualSeloHTML(tk, item) : ''}${mae ? `<span class="ticket-mae-badge" title="Ticket mãe (associado no SIR): ${escapeHtml(mae)}">Mãe: ${escapeHtml(mae)}</span>` : ''}</td>
         <td>${makeDesigHTML(item.designacao, isRal)}</td>
         <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">${escapeHtml(item.abertura || '—')}</td>
         <td class="sla-col">${buildSlaCellHTML(item.abertura || '', isRal)}</td>
         <td>${escapeHtml(item.extra)}</td>
-        <td class="obs-cell">${buildObsHTML('')}</td>
+        <td class="obs-cell">${buildObsHTML('')}${typeof mapaBotaoHTML === 'function' ? mapaBotaoHTML(tk, item) : ''}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>
-        <td class="copy-col">${typeof mapaBotaoHTML === 'function' ? mapaBotaoHTML(tk, item) : ''}<button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
+        <td class="copy-col"><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
       </tr>`;
     };
 

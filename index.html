@@ -33,13 +33,27 @@
 <link rel="stylesheet" href="css/menu.css">
 <link rel="stylesheet" href="css/pressable.css">
 <link rel="stylesheet" href="css/acessibilidade.css">
+<link rel="stylesheet" href="css/mapa-calor.css">
+<!-- v83: novidades com chave (Configurações → Novidades) -->
+<link rel="stylesheet" href="css/rec-contraste.css">
+<link rel="stylesheet" href="css/rec-hud.css">
+<link rel="stylesheet" href="css/rec-mini.css">
+<link rel="stylesheet" href="css/rec-comando.css">
+<link rel="stylesheet" href="css/rec-navcel.css">
+<link rel="stylesheet" href="css/rec-fhd.css">
+<link rel="stylesheet" href="css/rec-gravidade.css">
+<link rel="stylesheet" href="css/rec-netflix.css">
 <link rel="stylesheet" href="css/reconnect-video.css">
+<link rel="stylesheet" href="css/sir-visao.css">
+<link rel="stylesheet" href="css/painel-geral.css">
 <script src="js/theme-mode.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="js/recursos.js"></script>
+<script src="https://unpkg.com/lucide@1.81.0/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 <title>SIR · Dashboard</title>
 </head>
 <body>
+<script src="js/intro-fx.js"></script>
 
 <header>
   <div class="app-bar">
@@ -87,8 +101,32 @@
           </button>
         </div>
       </div>
+      <!-- Visualização SIR (REDE 1 / REDE 2) -->
+      <div class="menu-sir-group" id="menu-sir-group">
+        <button type="button" class="menu-sir-toggle" id="btn-menu-sir" data-menu-keep-open="true"
+                aria-expanded="false" aria-controls="menu-sir-sub" onclick="toggleSirSubmenu(this)">
+          <i data-lucide="monitor"></i>
+          <span>Visualização SIR</span>
+          <i data-lucide="chevron-down" class="menu-sir-chev"></i>
+        </button>
+        <div class="menu-sir-sub" id="menu-sir-sub" hidden>
+          <button type="button" class="menu-sir-sub-opt" data-sir-rede="rede1" onclick="openSirVisao('rede1')">
+            <span class="sir-sub-head"><i class="sir-sub-dot"></i>REDE 1</span>
+            <small>10.13.54.150:20020 · nofoc</small>
+          </button>
+          <button type="button" class="menu-sir-sub-opt" data-sir-rede="rede2" onclick="openSirVisao('rede2')">
+            <span class="sir-sub-head"><i class="sir-sub-dot"></i>REDE 2</span>
+            <small>10.53.224.155 · finalizada</small>
+          </button>
+        </div>
+      </div>
       <!-- Layout do painel (Painel / Grafana) — preenchido por layout-v2.js -->
       <div class="menu-layout" id="menu-layout"></div>
+      <div class="menu-layout">
+        <button type="button" class="menu-layout-opt" onclick="closeAppMenu(); openPersonalizacao();">
+          <i data-lucide="settings"></i><span>Configurações</span>
+        </button>
+      </div>
   </div>
 </nav>
 
@@ -159,7 +197,7 @@
 </div>
 
 <div class="page-footer">
-  <span class="footer-brand">Desenvolvido para uso interno do COP REDE FIBRA RJ/ES.</span>
+  <span class="footer-brand">Desenvolvido por FH</span>
   <!-- Controles do painel (antes ficavam no topo) -->
   <div class="footer-ctrls" id="footer-ctrls">
     <span class="status-flash" id="status-flash">ATUALIZADO</span>
@@ -596,13 +634,13 @@
 
       <!-- APARÊNCIA -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Aparência</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-row">
-            <div class="cfg-row-label">Tema de cor</div>
+            <div class="cfg-row-label">Tema</div>
             <div class="theme-swatches" id="theme-swatches"></div>
           </div>
           <div class="cfg-row">
@@ -638,29 +676,41 @@
 
       <!-- BARRA DE FERRAMENTAS -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Barra de Ferramentas</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="toolbar-editor-list" id="toolbar-editor-list"></div>
           <p class="tbar-hint">✓ mostrar / ocultar botões por categoria</p>
         </div>
       </div>
 
+      <!-- NOVIDADES (v83): cada recurso novo pode ser desligado aqui -->
+      <div class="cfg-section">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
+          <span class="cfg-section-title">Novidades — ligar/desligar</span>
+          <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
+        </button>
+        <div class="cfg-section-bd">
+          <p class="cfg-section-note" style="margin-top:0">Desligue qualquer novidade para voltar ao jeito anterior. Vale só para este aparelho.</p>
+          <div id="cfg-recursos"></div>
+        </div>
+      </div>
+
       <!-- ACESSIBILIDADE -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Acessibilidade</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-toggle-row">
             <div class="cfg-toggle-info">
               <span class="cfg-toggle-label">Alerta sonoro</span>
               <span class="cfg-toggle-desc">Notificação ao receber novas entradas no inbox</span>
             </div>
-            <button class="cfg-toggle-btn" onclick="toggleSound(); syncCfgToggles();" aria-label="Alerta sonoro">
+            <button type="button" class="cfg-toggle-btn" role="switch" aria-checked="false" id="cfg-sound-btn" onclick="toggleSound(); syncCfgToggles();" aria-label="Alerta sonoro">
               <span class="cfg-toggle-track" id="cfg-sound-track"><span class="cfg-toggle-thumb"></span></span>
             </button>
           </div>
@@ -669,7 +719,7 @@
               <span class="cfg-toggle-label">Alto Contraste</span>
               <span class="cfg-toggle-desc">Aumenta o contraste para melhor legibilidade</span>
             </div>
-            <button class="cfg-toggle-btn" onclick="toggleContrast(); syncCfgToggles();" aria-label="Alto Contraste">
+            <button type="button" class="cfg-toggle-btn" role="switch" aria-checked="false" id="cfg-contrast-btn" onclick="toggleContrast(); syncCfgToggles();" aria-label="Alto Contraste">
               <span class="cfg-toggle-track" id="cfg-contrast-track"><span class="cfg-toggle-thumb"></span></span>
             </button>
           </div>
@@ -678,10 +728,10 @@
 
       <!-- SISTEMA -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Aplicativo</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-action-row">
             <button class="cfg-action-btn" id="cfg-pwa-btn" onclick="triggerPWAInstall()">
@@ -695,10 +745,10 @@
 
       <!-- DADOS -->
       <div class="cfg-section">
-        <div class="cfg-section-hd" onclick="toggleCfgSection(this)">
+        <button type="button" class="cfg-section-hd" aria-expanded="false" onclick="toggleCfgSection(this)">
           <span class="cfg-section-title">Dados</span>
           <i data-lucide="chevron-down" class="cfg-section-chevron"></i>
-        </div>
+        </button>
         <div class="cfg-section-bd">
           <div class="cfg-action-row">
             <button class="cfg-action-btn" onclick="cancelPersonalizacao(); openColetor();">
@@ -792,6 +842,13 @@
 <script src="js/layout-v2.js"></script>
 <script src="js/charts-v2.js"></script>
 <script src="js/timeline.js"></script>
+<script src="js/animacoes.js"></script>
+<script src="js/mini-grafico.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/netflix.js"></script>
+<script src="js/comando.js"></script>
+<script src="js/nav-celular.js"></script>
+<script src="js/janelas.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/siglas.js"></script>
 <script src="js/siglas-busca.js"></script>
@@ -803,13 +860,18 @@
 <script src="js/events.js"></script>
 <script src="js/rec-assoc.js"></script>
 <script src="js/offline-feed.js"></script>
+<script src="js/manual-tickets.js"></script>
 <script src="js/lista-abas.js"></script>
 <script src="js/tickets-ui.js"></script>
 <script src="js/lixeira.js"></script>
 <script src="js/stale.js"></script>
 <script src="js/reconnect-video.js"></script>
+<script src="js/sir-regras.js"></script>
+<script src="js/sir-visao.js"></script>
+<script src="js/painel-geral.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/fit-tela.js"></script>
+<script src="js/mapa-calor.js"></script>
 <script src="js/pressable.js"></script>
 <script src="js/app.js"></script>
 </body>

@@ -99,7 +99,10 @@ function renderNotesCell(row) {
           <button type="button" class="note-btn note-del" data-act="del" title="Excluir nota" aria-label="Excluir nota">✕</button>` : `<span class="note-lock" title="Só ${escapeHtml(n.by)} pode editar ou excluir esta nota" aria-label="Nota de outra pessoa">🔒</span>`}
         </div>
       </div>`).join('')}</div>` : '') +
-    `<button type="button" class="btn-add-obs${list.length ? ' btn-add-more' : ''}" onclick="startAddObs(this)" title="Adicionar nota">${list.length ? '+ Nota' : '+'}</button>`;
+    `<button type="button" class="btn-add-obs${list.length ? ' btn-add-more' : ''}" onclick="startAddObs(this)" title="Adicionar nota">${list.length ? '+ Nota' : '+'}</button>` +
+    /* v101: "Inserir evento" ao lado de adicionar nota */
+    (typeof mapaBotaoHTML === 'function' && row.dataset.ticket
+      ? mapaBotaoHTML(String(row.dataset.identity || '').startsWith('rec') ? 'rec' : 'ral', { ticket: row.dataset.ticket }) : '');
 }
 
 function _snInputHTML(value, withName) {

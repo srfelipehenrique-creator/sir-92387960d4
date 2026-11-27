@@ -22,7 +22,7 @@ function _colModal() {
   ov.id = 'coletor-modal';
   ov.addEventListener('click', closeColetor);
   const passos = `
-        <div class="col-intro">Para o painel receber dados, um <b>computador com Windows e a VPN da Claro ligada</b> precisa ficar com o coletor aberto. Ele lê as RAL e REC do SIR com o seu login e envia para o painel a cada 5 minutos. Com ele ligado, o painel funciona no computador e no celular, em qualquer rede.</div>
+        <div class="col-intro">Para o painel receber dados, um <b>computador com Windows na rede da Claro (cabo da intranet ou VPN)</b> precisa ficar com o coletor aberto. Ele lê as RAL e REC do SIR com o seu login e envia para o painel a cada 2 minutos. Com ele ligado, o painel funciona no computador e no celular, em qualquer rede.</div>
         <div class="col-step" id="col-step-1">
           <div class="col-num">1</div>
           <div class="col-step-bd">
@@ -49,9 +49,9 @@ function _colModal() {
           </div>
         </div>
         <div class="col-wait" id="col-wait" hidden></div>
-        <div class="col-after"><b>Nos próximos dias:</b> ligue a VPN e dê dois cliques no ícone <b>Coletor SIR</b> que foi criado na Área de Trabalho. Não precisa baixar nem digitar o login de novo. Com a janela fechada ou o computador desligado, o painel para de atualizar.</div>`;
+        <div class="col-after"><b>Nos próximos dias:</b> com o computador na rede da Claro (cabo ou VPN), dê dois cliques no ícone <b>Coletor SIR</b> que foi criado na Área de Trabalho. Não precisa baixar nem digitar o login de novo. Com a janela fechada ou o computador desligado, o painel para de atualizar.</div>`;
   const celular = `
-        <div class="col-intro">O coletor é ligado em um <b>computador com Windows e a VPN da Claro</b>. Abra este painel nesse computador, toque em <b>Configurações → Dados → Meu coletor</b> e siga os 3 passos. Depois disso, o celular recebe os dados sozinho, em qualquer rede.</div>`;
+        <div class="col-intro">O coletor é ligado em um <b>computador com Windows na rede da Claro (cabo da intranet ou VPN)</b>. Abra este painel nesse computador, toque em <b>Configurações → Dados → Meu coletor</b> e siga os 3 passos. Depois disso, o celular recebe os dados sozinho, em qualquer rede.</div>`;
   ov.innerHTML = `
     <div class="modal-content coletor-modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">

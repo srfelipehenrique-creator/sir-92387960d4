@@ -88,13 +88,13 @@ function mapaBotaoHTML(tk, item) {
   const id = _mpId(tk, item.ticket), tem = !!_mp.itens[id];
   return `<button type="button" class="btn-ev-end${tem ? ' tem' : ''}" data-mapa-id="${escapeHtml(id)}" onclick="abrirEnderecoEvento(this)"
       title="${tem ? 'Ver ou trocar o endereço do evento no mapa de calor' : 'Inserir o endereço do evento no mapa de calor'}">
-      <span aria-hidden="true">📍</span><span class="btn-ev-lbl">${tem ? 'Endereço do evento ✓' : 'Inserir endereço do evento'}</span></button>`;
+      <span aria-hidden="true">📍</span><span class="btn-ev-lbl">${tem ? 'Evento ✓' : 'Inserir evento'}</span></button>`;
 }
 function _mpAtualizarBotoes() {
   document.querySelectorAll('[data-mapa-id]').forEach(b => {
     const tem = !!_mp.itens[b.dataset.mapaId];
     b.classList.toggle('tem', tem);
-    const l = b.querySelector('.btn-ev-lbl'); if (l) l.textContent = tem ? 'Endereço do evento ✓' : 'Inserir endereço do evento';
+    const l = b.querySelector('.btn-ev-lbl'); if (l) l.textContent = tem ? 'Evento ✓' : 'Inserir evento';
   });
 }
 

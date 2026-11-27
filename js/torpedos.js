@@ -7,14 +7,28 @@ let contadorTorpedos = 1;
 let torpedoTimer     = null;
 
 function salvarCacheTorpedo() {
-  localStorage.setItem(TORPEDO_KEY, JSON.stringify({ torpedos, contadorTorpedos, idTorpedoAtivo }));
+  localStorage.setItem(TORPEDO_KEY, JSON.stringify({ torpedos, contadorTorpedos, idTorpedoAtivo, salvoEm: Date.now() }));
 }
 
 function carregarCacheTorpedo() {
+  let s = null;
   try {
-    const s = JSON.parse(localStorage.getItem(TORPEDO_KEY));
-    if (s) { torpedos = s.torpedos || []; contadorTorpedos = s.contadorTorpedos || 1; idTorpedoAtivo = s.idTorpedoAtivo || null; }
+    s = JSON.parse(localStorage.getItem(TORPEDO_KEY));
+    if (s) { torpedos = Array.isArray(s.torpedos) ? s.torpedos : []; contadorTorpedos = s.contadorTorpedos || 1; idTorpedoAtivo = s.idTorpedoAtivo || null; }
   } catch(e) {}
+  /* v82: formato antigo (só "tempo") → prazo por horário (venceEm). "tempo"/"atrasado" continuam gravados
+     para a versão principal antiga ler. */
+  /* Sem "salvoEm" = quem gravou por último foi a versão principal antiga (que só atualiza "tempo"):
+     recalcula o horário de todos a partir do tempo. */
+  const agora = Date.now(), daPrincipal = !(s && s.salvoEm);
+  torpedos.forEach(t => { if (daPrincipal || !t.venceEm) t.venceEm = agora + (t.atrasado ? -1 : 1) * (Number(t.tempo) || 0) * 1000; });
+}
+/* Recalcula tempo/atrasado a partir do horário do prazo; devolve true se o estado (alerta) mudou */
+function _torpedoSync(t, agora) {
+  if (!t.venceEm) t.venceEm = agora + (t.atrasado ? -1 : 1) * (Number(t.tempo) || 0) * 1000;
+  const d = Math.round((t.venceEm - agora) / 1000), era = t.atrasado;
+  if (d > 0) { t.atrasado = false; t.tempo = d; } else { t.atrasado = true; t.tempo = -d; }
+  return era !== t.atrasado;
 }
 
 function openTorpedos() {
@@ -61,7 +75,7 @@ function mostrarFormTorpedo(show) {
 function criarNovoTorpedo() {
   const nome   = `EVENTO ${String(contadorTorpedos).padStart(3,'0')}`;
   const novoId = Date.now().toString();
-  const novo   = { id: novoId, nome, tempo: 3600, atrasado: false, dados: {} };
+  const novo   = { id: novoId, nome, tempo: 3600, atrasado: false, venceEm: Date.now() + 3600000, dados: {} };
   TORPEDO_CAMPOS.forEach(c => novo.dados[c] = '');
   torpedos.push(novo); contadorTorpedos++;
   salvarDadosTorpedo(); idTorpedoAtivo = novoId;
@@ -133,7 +147,7 @@ async function copiarTorpedo() {
   if (!texto) return;
   await navigator.clipboard.writeText(texto);
   const t = torpedos.find(t => t.id === idTorpedoAtivo);
-  if (t) { t.tempo = 3600; t.atrasado = false; }
+  if (t) { t.tempo = 3600; t.atrasado = false; t.venceEm = Date.now() + 3600000; }
   salvarCacheTorpedo(); renderizarTimersSidebar();
   const btn = document.getElementById('btn-torpedo-copiar');
   if (btn) { btn.textContent = 'COPIADO!'; btn.style.background = '#10b981'; btn.style.color = '#000'; setTimeout(() => { btn.textContent = 'COPIAR'; btn.style.background = ''; btn.style.color = ''; }, 1500); }
@@ -207,11 +221,11 @@ function iniciarTimerTorpedo() {
   if (torpedoTimer) return;
   torpedoTimer = setInterval(() => {
     if (!torpedos.length) return;
-    torpedos.forEach(t => {
-      if (!t.atrasado) { t.tempo--; if (t.tempo <= 0) { t.atrasado = true; t.tempo = 0; } }
-      else { t.tempo++; }
-    });
-    salvarCacheTorpedo();
+    const agora = Date.now();
+    let mudou = false;
+    torpedos.forEach(t => { if (_torpedoSync(t, agora)) mudou = true; });
+    /* v82: grava quando o estado muda ou a cada 30 s (antes gravava a cada segundo) */
+    if (mudou || agora - (iniciarTimerTorpedo._salvo || 0) > 30000) { salvarCacheTorpedo(); iniciarTimerTorpedo._salvo = agora; }
     const modalAberto = document.getElementById('torpedo-modal')?.classList.contains('active');
     if (modalAberto) renderizarTimersSidebar();
   }, 1000);

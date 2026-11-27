@@ -1,0 +1,219 @@
+/* ══════════════════════════════════════════════════════════════
+   Animações gravitacionais estilo Pixar (v92)
+   Só vale com a chave "Animações gravitacionais" ligada
+   (Configurações → Novidades). Desligar = volta ao padrão v81.
+   - 100% GPU (transform / scale / translate / opacity), sem reflow.
+   - Queda com peso, squash & stretch sutil e acomodação elástica
+     para PC e celular.
+   - Desliga por completo com "reduzir movimento" do sistema.
+   - Nunca pisca nas atualizações automáticas de 2 minutos.
+   ══════════════════════════════════════════════════════════════ */
+
+html.rec-gravidade {
+  --grav-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --grav-settle: cubic-bezier(0.22, 1.18, 0.36, 1);
+  --grav-drop:   cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── 1. Entrada gravitacional dos cards na 1ª carga (.sir-in) ──
+      Queda leve de cima, leve compressão na base (squash) e rebote suave */
+html.rec-gravidade .sir-in {
+  transform-origin: 50% 100%;
+  animation: pixarDropIn 0.62s var(--grav-drop) both;
+  animation-delay: calc(var(--sir-i, 0) * 32ms);
+}
+@keyframes pixarDropIn {
+  0%   { opacity: 0; transform: translate3d(0, -18px, 0) scale(0.965, 1.045); }
+  55%  { opacity: 1; transform: translate3d(0, 3px, 0)   scale(1.022, 0.978); }
+  78%  { opacity: 1; transform: translate3d(0, -2px, 0)  scale(0.993, 1.008); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ── 2. Reacomodação gravitacional ao trocar escopo (Todas / Minhas) ou layout ── */
+html.rec-gravidade .sir-grav-swap {
+  transform-origin: 50% 100%;
+  animation: pixarSwapIn 0.38s var(--grav-drop) both;
+  animation-delay: calc(var(--sir-i, 0) * 18ms);
+}
+@keyframes pixarSwapIn {
+  0%   { opacity: 0.25; transform: translate3d(0, -10px, 0) scale(0.985, 1.025); }
+  62%  { opacity: 1;    transform: translate3d(0, 2px, 0)   scale(1.012, 0.988); }
+  100% { opacity: 1;    transform: none; }
+}
+
+/* ── 3. Números que mudam: pulo com elasticidade (sobe) / queda com peso (desce) ── */
+html.rec-gravidade .sir-tick-up {
+  display: inline-block;
+  transform-origin: 50% 85%;
+  animation: pixarTickUp 0.52s var(--grav-drop);
+}
+html.rec-gravidade .sir-tick-down {
+  display: inline-block;
+  transform-origin: 50% 85%;
+  animation: pixarTickDown 0.52s var(--grav-drop);
+}
+@keyframes pixarTickUp {
+  0%   { opacity: 0.2; transform: translate3d(0, 38%, 0)  scale(0.9, 1.14); }
+  55%  { opacity: 1;   transform: translate3d(0, -10%, 0) scale(1.06, 0.94); }
+  80%  { opacity: 1;   transform: translate3d(0, 3%, 0)   scale(0.98, 1.02); }
+  100% { opacity: 1;   transform: none; }
+}
+@keyframes pixarTickDown {
+  0%   { opacity: 0.2; transform: translate3d(0, -40%, 0) scale(0.92, 1.12); }
+  58%  { opacity: 1;   transform: translate3d(0, 9%, 0)   scale(1.07, 0.93); }
+  82%  { opacity: 1;   transform: translate3d(0, -3%, 0)  scale(0.98, 1.02); }
+  100% { opacity: 1;   transform: none; }
+}
+
+/* ── 4. Toque e clique com squash gravitacional e mola na volta (.pressable) ──
+      Usa propriedades individuais `scale` e `translate` (não interfere em `transform`) */
+html.rec-gravidade .pressable {
+  translate: 0 0;
+  transition-property: scale, translate, filter, opacity, background-color, border-color, box-shadow, color, transform;
+  transition-duration: 280ms, 280ms, 180ms, 180ms, 180ms, 180ms, 180ms, 180ms, 220ms;
+  transition-timing-function: var(--grav-spring), var(--grav-spring), ease-out, ease-out, ease-out, ease-out, ease-out, ease-out, ease-out;
+}
+html.rec-gravidade .pressable.is-pressed {
+  /* Compressão Pixar: encolhe na vertical e expande levemente na horizontal */
+  scale: calc(1 + (1 - var(--press-scale, 0.96)) * 0.35) var(--press-scale, 0.96);
+  translate: 0 2px;
+  transition-duration: 75ms;
+  transition-timing-function: ease-out;
+}
+html.rec-gravidade .pressable:disabled,
+html.rec-gravidade .pressable[aria-disabled="true"] {
+  translate: 0 0 !important;
+}
+@media (pointer: coarse) {
+  html.rec-gravidade .pressable {
+    transition-duration: 240ms, 240ms, 150ms, 150ms, 150ms, 150ms, 150ms, 150ms, 180ms;
+  }
+}
+
+/* ── 5. Flutuação gravitacional leve no hover (somente mouse no PC) ── */
+@media (hover: hover) {
+  html.rec-gravidade :is(.v2-tile, .v2-kpi) {
+    translate: 0 0;
+    transition: translate 260ms var(--grav-spring), border-color 180ms ease, box-shadow 220ms ease;
+  }
+  html.rec-gravidade :is(.v2-tile, .v2-kpi):hover {
+    translate: 0 -2px;
+  }
+  html.rec-gravidade :is(.v2-cell:not(.v2-zero), .v2-kpi-btn):hover:not(.is-pressed) {
+    translate: 0 -1.5px;
+  }
+}
+
+/* ── 6. Modais / janelas com aterrissagem gravitacional ── */
+html.rec-gravidade .modal-overlay.active .modal-content {
+  transform-origin: 50% 60%;
+  animation: pixarModalIn 0.42s var(--grav-drop) both;
+}
+@keyframes pixarModalIn {
+  0%   { opacity: 0.4; transform: translate3d(0, -18px, 0) scale(0.95, 1.03); }
+  58%  { opacity: 1;   transform: translate3d(0, 3px, 0)   scale(1.012, 0.988); }
+  82%  { opacity: 1;   transform: translate3d(0, -1px, 0)  scale(0.998, 1.003); }
+  100% { opacity: 1;   transform: none; }
+}
+/* Celular (≤ 640px): modais ocupam 100% da tela, então sobem de baixo com acomodação limpa */
+@media (max-width: 640px) {
+  html.rec-gravidade .modal-overlay.active .modal-content {
+    transform-origin: 50% 100%;
+    animation: pixarSheetIn 0.34s var(--grav-settle) both;
+  }
+  @keyframes pixarSheetIn {
+    0%   { opacity: 0.6; transform: translate3d(0, 22px, 0); }
+    100% { opacity: 1;   transform: none; }
+  }
+}
+
+/* ── 7. Menu lateral (gaveta) com desaceleração elástica ── */
+html.rec-gravidade body.app-menu-open .app-menu {
+  transition: transform 0.34s var(--grav-settle), visibility 0s;
+}
+
+/* ── 8. Novas Entradas: expansão e seta com mola ── */
+html.rec-gravidade .inbox-chevron {
+  transition: transform 0.32s var(--grav-spring);
+}
+html.rec-gravidade .inbox-body-wrap.sir-grav-inbox .inbox-card,
+html.rec-gravidade .inbox-body-wrap.sir-grav-inbox .inbox-row {
+  transform-origin: 50% 100%;
+  animation: pixarInboxIn 0.38s var(--grav-drop) both;
+  animation-delay: calc(var(--sir-i, 0) * 28ms);
+}
+@keyframes pixarInboxIn {
+  0%   { opacity: 0; transform: translate3d(0, -10px, 0) scale(0.98, 1.025); }
+  65%  { opacity: 1; transform: translate3d(0, 2px, 0)   scale(1.01, 0.99); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ── 9. Toasts, avisos e busca rápida (Ctrl K) ── */
+html.rec-gravidade .action-toast {
+  transform-origin: 50% 100%;
+  animation: pixarToastIn 0.38s var(--grav-drop) both;
+}
+@keyframes pixarToastIn {
+  0%   { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.95, 1.06); }
+  62%  { opacity: 1; transform: translate3d(0, -2px, 0) scale(1.02, 0.98); }
+  100% { opacity: 1; transform: none; }
+}
+html.rec-gravidade .stale-banner {
+  transform-origin: 50% 0%;
+  animation: pixarSwapIn 0.4s var(--grav-drop) both;
+}
+html.rec-gravidade .cmd-overlay.on .cmd-box {
+  transform-origin: 50% 30%;
+  animation: pixarModalIn 0.36s var(--grav-drop) both;
+}
+
+/* ── 10. Barra inferior no celular: leve salto no ícone da aba ativa ── */
+@media (max-width: 640px) {
+  html.rec-gravidade.rec-navcel .nav-celular button.on svg,
+  html.rec-gravidade.rec-navcel .nav-celular button.on i {
+    transform-origin: 50% 100%;
+    animation: pixarHop 0.38s var(--grav-drop) both;
+  }
+  @keyframes pixarHop {
+    0%   { transform: translate3d(0, 0, 0)    scale(1.12, 0.88); }
+    42%  { transform: translate3d(0, -5px, 0) scale(0.92, 1.1); }
+    74%  { transform: translate3d(0, 1px, 0)  scale(1.05, 0.95); }
+    100% { transform: none; }
+  }
+}
+
+/* ── 11. Linha do tempo: barras crescem com leve elasticidade ── */
+html.rec-gravidade .v2-timeline.tl-anim .tl-seg-le,
+html.rec-gravidade .v2-timeline.tl-anim .tl-seg-gt {
+  animation-timing-function: var(--grav-settle);
+}
+
+/* ── 12. Acessibilidade: respeita "reduzir movimento" do aparelho ── */
+@media (prefers-reduced-motion: reduce) {
+  html.rec-gravidade .sir-in,
+  html.rec-gravidade .sir-grav-swap,
+  html.rec-gravidade .sir-tick-up,
+  html.rec-gravidade .sir-tick-down,
+  html.rec-gravidade .modal-overlay.active .modal-content,
+  html.rec-gravidade .inbox-body-wrap.sir-grav-inbox .inbox-card,
+  html.rec-gravidade .inbox-body-wrap.sir-grav-inbox .inbox-row,
+  html.rec-gravidade .action-toast,
+  html.rec-gravidade .stale-banner,
+  html.rec-gravidade .cmd-overlay .cmd-box,
+  html.rec-gravidade.rec-navcel .nav-celular button.on svg,
+  html.rec-gravidade.rec-navcel .nav-celular button.on i {
+    animation: none !important;
+  }
+  html.rec-gravidade .pressable,
+  html.rec-gravidade .v2-tile,
+  html.rec-gravidade .v2-kpi,
+  html.rec-gravidade .inbox-chevron,
+  html.rec-gravidade body.app-menu-open .app-menu {
+    transition-duration: 0ms !important;
+  }
+  html.rec-gravidade .pressable.is-pressed,
+  html.rec-gravidade :is(.v2-tile, .v2-kpi, .v2-cell, .v2-kpi-btn):hover {
+    scale: 1 !important;
+    translate: 0 0 !important;
+  }
+}

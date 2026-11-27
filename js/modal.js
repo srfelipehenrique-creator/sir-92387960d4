@@ -441,22 +441,24 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
     const { newItems, oldItems } = partitionAndSort(arr, tk);
     const buildRowHTML = (item, isNew) => {
       const iden    = makeIdentity(tk, item);
+      const mae     = item.ralMae || item.vide || '';
       const hlClass = highlightTicket && normTicket(item.ticket) === normTicket(highlightTicket) ? 'row-highlight' : '';
-      return `<tr class="ticket-row ${isNew ? 'is-new' : ''} ${hlClass}"
+      return `<tr class="ticket-row ${isNew ? 'is-new' : ''} ${mae ? 'is-assoc' : ''} ${item.manual ? 'is-manual' : ''} ${hlClass}"
           data-ticket="${escapeHtml(item.ticket)}"
           data-identity="${escapeHtml(iden)}"
+          data-ral-mae="${escapeHtml(mae)}"
           data-event-color="none"
           data-obs-status="none"
           data-abertura="${escapeHtml(item.abertura || '')}"
           data-extra="${escapeHtml(item.extra || '')}">
         <td class="color-cycle-col"><span class="color-cycle-dot ev-none" onclick="cycleEventColor(this)" title="Clique para colorir"></span></td>
         <td><span class="cf-tag">${escapeHtml(item.cfOrigem)}</span></td>
-        <td>${makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}</td>
+        <td>${makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}${typeof manualSeloHTML === 'function' ? manualSeloHTML(tk, item) : ''}${mae ? `<span class="ticket-mae-badge" title="Ticket mãe (associado no SIR): ${escapeHtml(mae)}">Mãe: ${escapeHtml(mae)}</span>` : ''}</td>
         <td>${makeDesigHTML(item.designacao, isRal)}</td>
         <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">${escapeHtml(item.abertura || '—')}</td>
         <td class="sla-col">${buildSlaCellHTML(item.abertura || '', isRal)}</td>
         <td>${escapeHtml(item.extra)}</td>
-        <td class="obs-cell">${buildObsHTML('')}</td>
+        <td class="obs-cell">${buildObsHTML('')}${typeof mapaBotaoHTML === 'function' ? mapaBotaoHTML(tk, item) : ''}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>
         <td class="copy-col"><button class="btn-copy-ticket" onclick="copyTicketWA(this)" title="Copiar para enviar no WhatsApp">Copiar</button></td>
       </tr>`;
@@ -546,11 +548,12 @@ function exportModalCSV() {
   const rows = Array.from(tbody.querySelectorAll('tr.ticket-row'));
   if (!rows.length) return;
   const esc = v => `"${String(v||'').replace(/"/g,'""')}"`;
-  const lines = [['CF','Ticket','Designação','Abertura','SLA','Detalhe','Nota','Status OBS'].map(esc).join(',')];
+  const lines = [['CF','Ticket','Ticket Mãe','Designação','Abertura','SLA','Detalhe','Nota','Status OBS'].map(esc).join(',')];
   rows.forEach(row => {
     lines.push([
       row.querySelector('.cf-tag')?.textContent || '',
-      (row.querySelector('.ticket-link, td:nth-child(3)')?.textContent || row.children[2]?.textContent || '').trim(),
+      (row.querySelector('.ticket-link')?.textContent || row.dataset.ticket || '').trim(),
+      row.dataset.ralMae || '',
       (row.querySelector('.desig-link, td:nth-child(4)')?.textContent || row.children[3]?.textContent || '').trim(),
       row.dataset.abertura || '',
       row.querySelector('.sla-badge')?.textContent.trim() || '',

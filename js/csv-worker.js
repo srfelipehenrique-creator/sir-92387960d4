@@ -5,15 +5,17 @@ const CF_COL = 'CF Exec.';
 const normalizeStr = s => String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 
 const REGIONS = {
-  'ES':    { 'MTN':['RT/VTA /MTN/FFA/FO'], 'MTS':['RT/VTA /MTS/FFA/FO'], 'NOR':['RT/VTA /NOR/FFA/FO'], 'SUL':['RT/VTA /SUL/FFA/FO'] },
+  'ES':    { 'MTN':['RT/VTA /MTN/FFA/FO'], 'MTS':['RT/VTA /MTS/FFA/FO'], 'NOR':['RT/VTA /NOR/FFA/FO'], 'SUL':['RT/VTA /SUL/FFA/FO'], 'ESRC':['RC/VTA /MTP/NET/FO','RC/VTA /SUL/NET/FO','RC/VTA /NOR/NET/FO','RC/VTA /JM/NET/FO'] },
   'INTERIOR': { 'SUF':['RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO'], 'SEF':['RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO'], 'NOF':['RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO'], 'LGS':['RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO'], 'BX1':['RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO'], 'MTP':['RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO'] },
   'CAPITAL': { 'NO1':['RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO'], 'NO2':['RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO'], 'NO3':['RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO'], 'OE1':['RT/RJO /OE1/NET/FO','RC/RJO /OE1/NET/FO'], 'SU2':['RT/RJO /SU2/NET/FO','RC/RJO /SU2/NET/FO'], 'CZS':['RT/RJO /CZS/NET/FO','RC/RJO /CZS/NET/FO'] }
 };
 
+const normCFKey = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
 const patternToCF = {};
+const normToPattern = {};
 for (const [, cfs] of Object.entries(REGIONS))
   for (const [cfKey, patterns] of Object.entries(cfs))
-    for (const p of patterns) patternToCF[p] = cfKey;
+    for (const p of patterns) { patternToCF[p] = cfKey; normToPattern[normCFKey(p)] = p; }
 
 /* "REC-1/2026 ^ Cliente ^ Designação ^ Abertura ^ Tipo ^ CF | RAL-2/2026 ^ ..." → lista
    (link da coluna Ass.). Pode trazer REC e RAL; sem prefixo = REC. Repetidas entram 1 vez. */
@@ -68,12 +70,16 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
   const tipoIdx     = getIdx('TIPO RAL');
   const cliIdx      = getIdx('CLIENTE');
   const aberturaIdx = getIdx('ABERTURA');
+  const durIdx      = getIdx('DURACAO');
+  const tecIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'TECN.' || n === 'TECN' || n === 'TECNICO'; });
+  const itemIdx     = headers.findIndex(h => normalizeStr(h).trim() === 'ITEM');
   /* RECs associadas à RAL: "Ass." = quantidade; "RECs Assoc." = lista (só o seu coletor envia) */
   const assIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'ASS.' || n === 'ASS'; });
   const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
   const counts = {}, details = {}, qualidadeDetails = {};
+  const dpDetails = [];
   allP.forEach(p => { counts[p] = 0; details[p] = []; qualidadeDetails[p] = []; });
   let total = 0;
 
@@ -84,17 +90,14 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
       /* Captura RALs de Qualidade em estrutura separada em vez de descartar */
       const qCells = line.split(sep).map(clean);
       if (qCells.length > cfIdx) {
-        const qcf = qCells[cfIdx];
-        for (const p of allP) {
-          if (qcf === p) {
-            qualidadeDetails[p].push({
-              ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
-              designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
-              cfOrigem:   patternToCF[p],
-              abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
-            });
-            break;
-          }
+        const qp = normToPattern[normCFKey(qCells[cfIdx])];
+        if (qp) {
+          qualidadeDetails[qp].push({
+            ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
+            designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
+            cfOrigem:   patternToCF[qp],
+            abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
+          });
         }
       }
       continue;
@@ -104,25 +107,45 @@ function parseWithSep(lines, headerIdx, cfIdx, sep, isRal, headers) {
     const cf = cells[cfIdx];
     if (!cf) continue;
 
-    for (const p of allP) {
-      if (cf === p) {
-        counts[p]++; total++;
-        const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]     : 'N/D';
-        const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx]   : 'N/D';
-        const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
-        let extra = 'N/D';
-        if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
-        else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
-        const it = { ticket, designacao: desig, extra, cfOrigem: patternToCF[p], abertura };
-        if (isRal && assIdx > -1) {
-          it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
-          if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
-        }
-        details[p].push(it);
+    const buildItem = cfCod => {
+      const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]   : 'N/D';
+      const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx] : 'N/D';
+      const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
+      let extra = 'N/D';
+      if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
+      else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
+      const it = { ticket, designacao: desig, extra, cfOrigem: cfCod, abertura, cfRaw: cf };
+      if (durIdx > -1 && cells[durIdx])   it.duracao = cells[durIdx];
+      if (tecIdx > -1 && cells[tecIdx])   it.tecnico = cells[tecIdx];
+      if (itemIdx > -1 && cells[itemIdx]) it.item    = cells[itemIdx];
+      if (isRal && assIdx > -1) {
+        it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
+        if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
       }
+      return it;
+    };
+
+    const ncf = normCFKey(cf);
+    const matchedP = normToPattern[ncf];
+    if (matchedP) {
+      counts[matchedP]++; total++;
+      details[matchedP].push(buildItem(patternToCF[matchedP]));
+    } else if (ncf.startsWith('DP/')) {
+      dpDetails.push(buildItem('DP'));
     }
   }
-  return { counts, details, total, qualidadeDetails };
+  return { counts, details, total, qualidadeDetails, dpDetails };
+}
+
+/* v82: fetch com limite de tempo */
+function fetchLimite(url, opt, ms = 30000) {
+  /* v83: o limite cobre também a leitura do conteúdo (.text/.json) */
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  return fetch(url, Object.assign({}, opt || {}, { signal: ac.signal })).then(r => {
+    if (!r.ok) clearTimeout(t);
+    const ler = f => r[f]().finally(() => clearTimeout(t));
+    return { ok: r.ok, status: r.status, text: () => ler('text'), json: () => ler('json') };
+  }, e => { clearTimeout(t); throw e; });
 }
 
 self.onmessage = async function(e) {
@@ -135,10 +158,10 @@ self.onmessage = async function(e) {
       /* 1º: o seu servidor (dados guardados lá, protegidos pela chave) */
       if (own && own.url && own.key) {
         try {
-          const r = await fetch(own.url + '/data', {
+          const r = await fetchLimite(own.url + '/data', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: own.key }), cache: 'no-store'
-          });
+          }, 12000);
           if (r.ok) {
             const d = await r.json();
             if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; }
@@ -149,8 +172,8 @@ self.onmessage = async function(e) {
       if (ralText === null) {
         const ts = Date.now();
         const [ralResp, recResp] = await Promise.all([
-          fetch(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
-          fetch(`${recUrl}?_=${ts}`, { cache: 'no-store' })
+          fetchLimite(`${ralUrl}?_=${ts}`, { cache: 'no-store' }),
+          fetchLimite(`${recUrl}?_=${ts}`, { cache: 'no-store' })
         ]);
         if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
         [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);

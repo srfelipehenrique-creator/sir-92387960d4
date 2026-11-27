@@ -66,12 +66,19 @@ function parseRawInline(text, isRal) {
   const tipoIdx     = getIdx('TIPO RAL');
   const cliIdx      = getIdx('CLIENTE');
   const aberturaIdx = getIdx('ABERTURA');
+  const durIdx      = getIdx('DURACAO');
+  const tecIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'TECN.' || n === 'TECN' || n === 'TECNICO'; });
+  const itemIdx     = headers.findIndex(h => normalizeStr(h).trim() === 'ITEM');
   /* RECs associadas à RAL: "Ass." = quantidade; "RECs Assoc." = lista (só o seu coletor envia) */
   const assIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'ASS.' || n === 'ASS'; });
   const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
+  const normCF = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
+  const normToPattern = {};
+  allP.forEach(p => { normToPattern[normCF(p)] = p; });
   const counts = {}, details = {}, qualidadeDetails = {};
+  const dpDetails = [];
   allP.forEach(p => { counts[p] = 0; details[p] = []; qualidadeDetails[p] = []; });
   let total = 0;
 
@@ -82,17 +89,14 @@ function parseRawInline(text, isRal) {
       /* Captura RALs de Qualidade em estrutura separada em vez de descartar */
       const qCells = line.split(sep).map(clean);
       if (qCells.length > cfIdx) {
-        const qcf = qCells[cfIdx];
-        for (const p of allP) {
-          if (qcf === p) {
-            qualidadeDetails[p].push({
-              ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
-              designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
-              cfOrigem:   patternToCF[p],
-              abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
-            });
-            break;
-          }
+        const qp = normToPattern[normCF(qCells[cfIdx])];
+        if (qp) {
+          qualidadeDetails[qp].push({
+            ticket:     numIdx > -1 && qCells[numIdx]     ? qCells[numIdx]     : 'N/D',
+            designacao: desigIdx > -1 && qCells[desigIdx] ? qCells[desigIdx]   : 'N/D',
+            cfOrigem:   patternToCF[qp],
+            abertura:   aberturaIdx > -1 && qCells[aberturaIdx] ? qCells[aberturaIdx] : '',
+          });
         }
       }
       continue;
@@ -101,25 +105,35 @@ function parseRawInline(text, isRal) {
     if (cells.length <= cfIdx) continue;
     const cf = cells[cfIdx];
     if (!cf) continue;
-    for (const p of allP) {
-      if (cf === p) {
-        counts[p]++; total++;
-        const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]   : 'N/D';
-        const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx] : 'N/D';
-        const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
-        let extra = 'N/D';
-        if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
-        else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
-        const it = { ticket, designacao: desig, extra, cfOrigem: patternToCF[p], abertura };
-        if (isRal && assIdx > -1) {
-          it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
-          if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
-        }
-        details[p].push(it);
+
+    const buildItem = cfCod => {
+      const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]   : 'N/D';
+      const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx] : 'N/D';
+      const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
+      let extra = 'N/D';
+      if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
+      else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
+      const it = { ticket, designacao: desig, extra, cfOrigem: cfCod, abertura, cfRaw: cf };
+      if (durIdx > -1 && cells[durIdx])   it.duracao = cells[durIdx];
+      if (tecIdx > -1 && cells[tecIdx])   it.tecnico = cells[tecIdx];
+      if (itemIdx > -1 && cells[itemIdx]) it.item    = cells[itemIdx];
+      if (isRal && assIdx > -1) {
+        it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
+        if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
       }
+      return it;
+    };
+
+    const ncf = normCF(cf);
+    const matchedP = normToPattern[ncf];
+    if (matchedP) {
+      counts[matchedP]++; total++;
+      details[matchedP].push(buildItem(patternToCF[matchedP]));
+    } else if (ncf.startsWith('DP/')) {
+      dpDetails.push(buildItem('DP'));
     }
   }
-  return { counts, details, total, qualidadeDetails };
+  return { counts, details, total, qualidadeDetails, dpDetails };
 }
 
 /* ── Fonte dos dados ──
@@ -156,20 +170,31 @@ function setDataSource(src, at) {
   el.setAttribute('role', 'button'); el.tabIndex = 0;
 }
 
+/* v82: fetch com limite de tempo (rede travada não prende o painel) */
+function _fetchLimite(url, opt, ms = 30000) {
+  /* o limite cobre também a leitura do conteúdo (.text/.json) */
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms);
+  return fetch(url, { ...(opt || {}), signal: ac.signal }).then(r => {
+    if (!r.ok) clearTimeout(t);
+    const ler = f => r[f]().finally(() => clearTimeout(t));
+    return { ok: r.ok, status: r.status, text: () => ler('text'), json: () => ler('json') };
+  }, e => { clearTimeout(t); throw e; });
+}
+
 async function fetchAndParseInline(userSavedAreas) {
   let ralText = null, recText = null, src = 'publica', srcAt = 0;
   const own = _ownSource();
   if (own) {
     try {
-      const r = await fetch(own.url + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: own.key }), cache: 'no-store' });
+      const r = await _fetchLimite(own.url + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: own.key }), cache: 'no-store' });
       if (r.ok) { const d = await r.json(); if (d && d.ral && d.rec) { ralText = d.ral; recText = d.rec; src = d.src || 'espelho'; srcAt = d.at || 0; } }
     } catch (e) {}
   }
   if (ralText === null) {
     const ts = Date.now();
     const [ralResp, recResp] = await Promise.all([
-      fetch(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
-      fetch(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
+      _fetchLimite(`${URLS.ral}?_=${ts}`, { cache: 'no-store' }),
+      _fetchLimite(`${URLS.rec}?_=${ts}`, { cache: 'no-store' })
     ]);
     if (!ralResp.ok || !recResp.ok) throw new Error(`HTTP ${ralResp.status}/${recResp.status}`);
     [ralText, recText] = await Promise.all([ralResp.text(), recResp.text()]);
@@ -190,15 +215,22 @@ async function fetchAndParseWorker(userSavedAreas) {
   const worker = getWorker();
   return new Promise((resolve, reject) => {
     worker.onmessage = msg => {
-      if (msg.data.type === 'ERROR') { reject(new Error(msg.data.message)); return; }
+      if (msg.data.type === 'ERROR') { clearTimeout(limite); reject(new Error(msg.data.message)); return; }
       if (msg.data.type === 'RESULT') {
+        clearTimeout(limite);
         const { ralRes, recRes, ralText, recText, src, srcAt } = msg.data;
-        onDataReady(ralRes, recRes, ralText, recText, userSavedAreas);
-        setDataSource(src, srcAt);
-        resolve();
+        /* v82: erro em qualquer módulo não pode deixar a atualização presa para sempre */
+        try { onDataReady(ralRes, recRes, ralText, recText, userSavedAreas); setDataSource(src, srcAt); resolve(); }
+        catch (e) { console.warn('onDataReady', e); reject(e); }
       }
     };
-    worker.onerror = err => reject(err);
+    worker.onerror = err => { clearTimeout(limite); if (csvWorker === worker) csvWorker = null; reject(err); };
+    /* v82: rede travada → desiste em 45 s e usa o último snapshot */
+    const limite = setTimeout(() => {
+      try { worker.terminate(); } catch (e) {}
+      if (csvWorker === worker) csvWorker = null;
+      reject(new Error('tempo esgotado ao buscar os dados'));
+    }, 45000);
     worker.postMessage({ type: 'FETCH_PARSE', ralUrl: URLS.ral, recUrl: URLS.rec, own: _ownSource() });
   });
 }
@@ -224,14 +256,22 @@ function renderDashboard(ralRes, ralR, recRes, recR, userSavedAreas) {
 function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   /* Tickets do "Alimentar off-line" que ainda não estão na fonte */
   if (typeof mergeOfflineFeed === 'function') mergeOfflineFeed(ralRes, recRes, ralText, recText);
+  /* v101: RAL/REC inseridas à mão na tela do CF */
+  if (typeof mergeManualTickets === 'function') mergeManualTickets(ralRes, recRes);
   appState._snapTexts = null;
 
   /* Alimenta o módulo de qualidade com as RALs capturadas separadamente */
   if (typeof buildQualidadeData === 'function' && ralRes.qualidadeDetails)
     buildQualidadeData(ralRes.qualidadeDetails);
 
-  /* RECs associadas às RAL entram na tela de REC (sem repetir tickets) */
+  /* RECs e RALs associadas (inclusive de RALs em DP) entram com ticket mãe */
   if (typeof mergeAssociatedRecs === 'function') mergeAssociatedRecs(ralRes, recRes);
+
+  /* Captura de DP para a Visualização SIR e o Painel Geral (ESRC já integra REGIONS) */
+  appState.sirExtra = {
+    dp: { ral: Array.isArray(ralRes.dpDetails) ? ralRes.dpDetails : [], rec: Array.isArray(recRes.dpDetails) ? recRes.dpDetails : [] },
+    updatedAt: Date.now()
+  };
 
   const ralR = buildRegionData(ralRes.counts, ralRes.details, true);
   const recR = buildRegionData(recRes.counts, recRes.details, false);
@@ -283,6 +323,31 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (flashEl) { flashEl.classList.add('show'); setTimeout(() => flashEl.classList.remove('show'), 2200); }
 
   if (ralText && recText) dbSaveSnapshot(ralText, recText).catch(() => {});
+
+  /* Se o modal de tickets do 1º dashboard estiver aberto (e não for Lixeira, nem houver
+     popup aberto ou digitação em andamento), atualiza na hora para refletir entradas/saídas */
+  try {
+    const mOv = document.getElementById('modal-overlay');
+    const isTrash = typeof isTrashKey === 'function' && isTrashKey(appState.currentModalKey);
+    const hasPopup = !!document.querySelector('#tag-picker-popup, #obs-picker-popup, #color-picker-popup');
+    if (mOv && mOv.classList.contains('active') && appState.currentModalType && appState.currentModalKey && !isTrash && !hasPopup) {
+      const typing = mOv.querySelector('.obs-input:focus, .note-who-input:focus, #modal-filter-input:focus');
+      if (!typing && typeof openModal === 'function') {
+        const sc = document.getElementById('modal-body-scroll');
+        const prevY = sc ? sc.scrollTop : 0;
+        const prevFilter = document.getElementById('modal-filter-input')?.value || '';
+        const titleTxt = document.getElementById('modal-title')?.textContent || '';
+        openModal(appState.currentModalKey, appState.currentModalType === 'ral', titleTxt);
+        if (prevFilter) {
+          const inp = document.getElementById('modal-filter-input');
+          if (inp) { inp.value = prevFilter; if (typeof filterModalTable === 'function') filterModalTable(); }
+        }
+        if (sc && prevY) sc.scrollTop = prevY;
+      }
+    }
+  } catch (e) {}
+
+  try { window.dispatchEvent(new CustomEvent('sir:data-ready', { detail: { at: now } })); } catch (e) {}
 }
 
 /* ── Offline snapshot fallback ── */
@@ -335,6 +400,7 @@ async function loadAll(userSavedAreas) {
   }
 
   try {
+  try {
     if (IS_FILE) {
       await fetchAndParseInline(userSavedAreas);
     } else {
@@ -342,24 +408,39 @@ async function loadAll(userSavedAreas) {
     }
   } catch(err) {
     document.getElementById('status-dot').style.background = '#c62828';
-    const fallback = await loadFromSnapshot(userSavedAreas);
+    let fallback = false;
+    try { fallback = await loadFromSnapshot(userSavedAreas); } catch (e) {}
     if (!fallback) {
       document.getElementById('main-grid').innerHTML =
         `<div style="text-align:center;grid-column:1/-1;color:#c62828;font-size:22px;padding-top:40px;">
-          Falha de comunicação: ${String(err.message || err)}
+          Falha de comunicação: ${escapeHtml(String(err.message || err))}
         </div>`;
     }
   }
 
-  isLoading = false;
-  resetCountdown(userSavedAreas);
+  } finally {
+    isLoading = false;   /* v82: sempre libera a próxima atualização */
+    resetCountdown(userSavedAreas);
+  }
 }
 
+/* v82: a contagem usa o relógio (não o número de "tiques"): em segundo plano o navegador
+   atrasa os timers, então ao voltar para o app ele atualiza na hora se o prazo já passou.
+   Quando algum usuário está logado no 2º dashboard/Visualização SIR, acelera para 60s. */
+function getActivePollInterval() {
+  try {
+    if (typeof getSirVisaoState === 'function' && getSirVisaoState().loggedIn) return 60000;
+  } catch (e) {}
+  return INTERVAL;
+}
+let nextLoadAt = 0, _lastAreas = null;
 function resetCountdown(userSavedAreas) {
-  countdownVal = INTERVAL / 1000;
+  const stepMs = getActivePollInterval();
+  countdownVal = stepMs / 1000;
+  nextLoadAt = Date.now() + stepMs; _lastAreas = userSavedAreas;
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
-    countdownVal--;
+    countdownVal = Math.max(0, Math.round((nextLoadAt - Date.now()) / 1000));
     document.getElementById('countdown').textContent =
       `Atualiza em ${Math.floor(countdownVal / 60)}:${String(countdownVal % 60).padStart(2,'0')}`;
     if (countdownVal <= 0) {
@@ -394,3 +475,8 @@ function searchTicket(userSavedAreas) {
   openModal(found.dataKey, found.isRal, found.title, found.item.ticket);
   input.select();
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || isLoading || !nextLoadAt) return;
+  if (Date.now() >= nextLoadAt) { if (countdownTimer) clearInterval(countdownTimer); loadAll(_lastAreas || getUserSavedAreas()); }
+});

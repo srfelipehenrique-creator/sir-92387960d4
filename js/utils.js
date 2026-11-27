@@ -2,8 +2,40 @@
 const escapeHtml   = s => String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const normTicket   = t => String(t||'').replace(/\s+/g,'').replace(/[^A-Za-z0-9/-]/g,'').toUpperCase();
 
-const makeIdentity = (tk, i) =>
+const makeIdentityRaw = (tk, i) =>
   `${tk}::${normTicket(i.ticket)}::${normalizeStr(i.cfOrigem)}::${normalizeStr(i.designacao)}::${normalizeStr(i.extra)}`;
+
+/* v101 — apelidos de identidade: quando os dados de um ticket mudam (inserção manual
+   ou o SIR atualizou CF/designação/tipo), a identidade nova aponta para a antiga e
+   as notas, a classificação e os registros continuam no mesmo ticket.
+   { identidadeNova: { to: identidadeAntiga, at } } — guardado neste aparelho, 60 dias. */
+const LS_IDENT_ALIAS = 'sir_ident_alias_v1';
+const _identAlias = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem(LS_IDENT_ALIAS) || '{}') || {};
+    const lim = Date.now() - 60 * 86400000;
+    for (const k of Object.keys(v)) if (!v[k] || !v[k].to || Math.max(v[k].at || 0, v[k].hit || 0) < lim) delete v[k];
+    return v;
+  } catch (e) { return {}; }
+})();
+function resolveIdentity(id) {
+  let cur = id, n = 0;
+  while (_identAlias[cur] && n++ < 10) { _identAlias[cur].hit = Date.now(); cur = _identAlias[cur].to; }
+  return cur;
+}
+function setIdentityAlias(from, to) {
+  if (!from || !to) return;
+  to = resolveIdentity(to);
+  if (from === to || resolveIdentity(from) === to) return;
+  _identAlias[from] = { to, at: Date.now() };
+  for (const k of Object.keys(_identAlias)) if (_identAlias[k].to === from) _identAlias[k] = { to, at: Date.now() };
+  try {   /* junta com o que a outra versão (principal/backup) gravou nesse meio-tempo */
+    const disco = JSON.parse(localStorage.getItem(LS_IDENT_ALIAS) || '{}') || {};
+    for (const k of Object.keys(disco)) if (!_identAlias[k]) _identAlias[k] = disco[k];
+    localStorage.setItem(LS_IDENT_ALIAS, JSON.stringify(_identAlias));
+  } catch (e) {}
+}
+const makeIdentity = (tk, i) => resolveIdentity(makeIdentityRaw(tk, i));
 
 function animateValue(el, start, end, dur) {
   /* v68: sem animação quando o sistema pede "reduzir movimento" */

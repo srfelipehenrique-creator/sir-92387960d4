@@ -1,0 +1,33 @@
+/* ══ Layout que se ajusta à tela (v85) — chave "Layout Full HD" ══
+   No computador (a partir de 1101px de largura), sem medidas fixas:
+   - a coluna da direita acompanha a tela (entre 300 e 460px);
+   - as regiões se organizam sozinhas em 3, 2 ou 1 coluna conforme o espaço;
+   - os cards de área se distribuem em quantas colunas couberem.
+   Em 1920×1080 ficam as três regiões lado a lado ocupando a tela inteira.
+   O ajuste de altura (js/fit-tela.js) continua valendo. */
+@media (min-width: 1101px) {
+  html.rec-fhd body.layout-v2 .page-shell {
+    --v2-sidebar: clamp(300px, 21vw, 460px);
+    padding: 14px clamp(12px, 1.2vw, 28px) 44px; gap: 12px clamp(12px, 1vw, 22px);
+  }
+  html.rec-fhd body.layout-v2 .v2-regions {
+    display: grid; gap: clamp(12px, 1vw, 20px); align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  }
+  /* a partir de 1440px as três regiões sempre lado a lado (1440, 1600, 1920, 2560…) */
+  @media (min-width: 1440px) { html.rec-fhd body.layout-v2 .v2-regions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  html.rec-fhd body.layout-v2 .v2-region { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  html.rec-fhd body.layout-v2 .v2-region-head { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 2px 0 2px 10px; }
+  html.rec-fhd body.layout-v2 .v2-region-name { font-size: 16px; }
+  html.rec-fhd body.layout-v2 .v2-region-head .mini-legenda { margin-left: auto; }
+  html.rec-fhd body.layout-v2 .v2-tiles,
+  html.rec-fhd body.fit-tela .v2-tiles { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  html.rec-fhd body.layout-v2 .v2-tile { padding: 8px 10px 10px; gap: 6px; }
+  html.rec-fhd body.layout-v2 .v2-tile-cf { font-size: 15px; }
+  html.rec-fhd body.layout-v2 .v2-cell { height: clamp(46px, 4.6vh, 58px); }
+  html.rec-fhd body.layout-v2 .v2-cell-val { font-size: clamp(20px, 1.4vw, 28px); }
+  html.rec-fhd body.layout-v2 .v2-kpis { gap: clamp(10px, .8vw, 16px); }
+  /* Os gráficos de barras de cada região ficam escondidos: o minigráfico de cada card já mostra
+     a tendência, e assim as regiões cabem na primeira tela. (Desligar a chave traz de volta.) */
+  html.rec-fhd body.layout-v2 :is(.v2-reg-charts, .v2-region-head .v2-charts-toggle, .v2-region-head [data-v2chart]) { display: none !important; }
+}

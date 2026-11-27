@@ -6,11 +6,14 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
     .then(reg => reg.update())
     .catch(e => console.warn('SW:', e));
-  /* Quando uma versão nova assume, recarrega uma vez para aplicar na hora */
+  /* v101: sem recarregar sozinho. Antes, quando um service worker assumia a página
+     (versão nova, ou a backup tomando o lugar do da principal, que cobre /backup/ também),
+     a página era recarregada logo depois de abrir. Os arquivos do app já vêm da rede
+     primeiro (sw.js), então a página aberta já está na versão nova: só avisa. */
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!_hadSW || window.__sirReloaded) return;
-    window.__sirReloaded = true;
-    location.reload();
+    if (!_hadSW || window.__sirSwAviso) return;
+    window.__sirSwAviso = true;
+    console.info('SIR: versão nova do app ativada (sem recarregar).');
   });
 }
 
@@ -84,9 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(dismissToast, 5000);
 
   /* Init IndexedDB historico (migrates from localStorage), then load data */
-  initHistorico().then(() => {
+  /* v82: se o banco local falhar (navegação privada, espaço cheio), o painel carrega mesmo assim */
+  Promise.resolve().then(() => initHistorico()).catch(e => console.warn('histórico indisponível', e)).finally(() => {
     loadAll(getUserSavedAreas());
     /* Restaura módulos fixados após o DB estar pronto */
-    if (typeof restorePinnedModules === 'function') restorePinnedModules();
+    try { if (typeof restorePinnedModules === 'function') restorePinnedModules(); } catch (e) { console.warn(e); }
   });
 });

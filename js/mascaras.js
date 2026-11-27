@@ -10,6 +10,7 @@ function openMascaras() {
   document.getElementById('m_userName').value = nome;
   atualizarPreviewMascara(); atualizarChipsMascara();
   document.getElementById('mascaras-modal').classList.add('active');
+  if (mascaraPreviewTimer) clearInterval(mascaraPreviewTimer);   /* v82: sem timer órfão */
   mascaraPreviewTimer = setInterval(atualizarPreviewMascara, 1000);
   document.getElementById('m_userName').focus();
 }

@@ -3,7 +3,7 @@ const URLS = {
   rec: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_rec.csv'
 };
 
-const INTERVAL   = 300000;
+const INTERVAL   = 120000; /* 2 min */
 const CF_COL     = 'CF Exec.';
 
 const STORAGE_TABLE  = 'sir_table_state_v5';
@@ -32,10 +32,11 @@ const RAL_TYPE_ORDER = ['FOTONICO', 'BACKBONE', 'COLETOR', 'PPC', 'ACESSO CLIENT
 
 const REGIONS = {
   'ES': {
-    'MTN': ['RT/VTA /MTN/FFA/FO'],
-    'MTS': ['RT/VTA /MTS/FFA/FO'],
-    'NOR': ['RT/VTA /NOR/FFA/FO'],
-    'SUL': ['RT/VTA /SUL/FFA/FO']
+    'MTN':  ['RT/VTA /MTN/FFA/FO'],
+    'MTS':  ['RT/VTA /MTS/FFA/FO'],
+    'NOR':  ['RT/VTA /NOR/FFA/FO'],
+    'SUL':  ['RT/VTA /SUL/FFA/FO'],
+    'ESRC': ['RC/VTA /MTP/NET/FO','RC/VTA /SUL/NET/FO','RC/VTA /NOR/NET/FO','RC/VTA /JM/NET/FO']
   },
   'INTERIOR': {
     'SUF': ['RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO'],
@@ -59,7 +60,8 @@ const CF_NAMES = {
   'MTN': 'Metropolitana Norte - ES',
   'MTS': 'Metropolitana Sul - ES',
   'NOR': 'Norte - ES',
-  'SUL': 'ES',
+  'SUL': 'Sul - ES',
+  'ESRC': 'RC-ES - ES',
   'SUF': 'Sul Fluminense - RJ',
   'SEF': 'Serra Fluminense - RJ',
   'NOF': 'Norte Fluminense - RJ',

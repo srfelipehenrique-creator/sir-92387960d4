@@ -94,12 +94,13 @@
 
 /* ══ Linha do Tempo (RAL/REC por tempo decorrido) — abaixo das áreas (v51) ══ */
 .v2-timeline {
+  --tl-le: #22d3ee; --tl-gt: #fb923c; --tl-le-txt: #22d3ee; --tl-gt-txt: #fb923c;
   margin-top: 18px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--r);
   padding: 14px 16px 10px;
 }
 .v2-timeline .tl-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .v2-timeline .tl-title-wrap { display: flex; align-items: flex-start; gap: 8px; margin-right: 4px; }
-.v2-timeline .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; margin-top: 6px; flex: none; }
+.v2-timeline .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tl-le); box-shadow: 0 0 8px var(--tl-le); margin-top: 6px; flex: none; }
 .v2-timeline .tl-title { font-size: 14px; font-weight: 800; color: var(--text-main); }
 .v2-timeline .tl-sub { font-size: 11px; color: var(--text-muted); }
 .v2-timeline .tl-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
@@ -111,27 +112,82 @@
 .v2-timeline .tl-pill b { color: var(--text-main); }
 .v2-timeline .tl-toggle { margin: 0; align-self: center; }
 .v2-timeline.tl-closed { padding-bottom: 14px; }
-.v2-timeline .tl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+.v2-timeline .tl-cards { display: grid; grid-template-columns: 1fr 1fr minmax(150px, .6fr); gap: 12px; margin: 14px 0 10px; }
 .v2-timeline .tl-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; background: var(--bg-panel-2); transition: opacity .15s; }
 .v2-timeline .tl-card.dim { opacity: .45; }
 .v2-timeline .tl-card-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
-.v2-timeline .tl-le .tl-card-top span { color: #22d3ee; }
-.v2-timeline .tl-gt .tl-card-top span { color: #fb923c; }
-.v2-timeline .tl-card-top b { color: var(--text-main); font-family: var(--font-mono); }
+.v2-timeline .tl-le .tl-card-top span { color: var(--tl-le-txt); }
+.v2-timeline .tl-gt .tl-card-top span { color: var(--tl-gt-txt); }
+.v2-timeline .tl-card-top b { color: var(--text-main); font-variant-numeric: tabular-nums; }
 .v2-timeline .tl-card-top small { color: var(--text-muted); font-weight: 600; }
 .v2-timeline .tl-track { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
-.v2-timeline .tl-track i { display: block; height: 100%; border-radius: inherit; transition: width .4s; }
-.v2-timeline .tl-le .tl-track i { background: #22d3ee; }
-.v2-timeline .tl-gt .tl-track i { background: linear-gradient(90deg, #f59e0b, var(--v2-crit)); }
+.v2-timeline .tl-track i { display: block; height: 100%; border-radius: inherit; transition: width 1s cubic-bezier(.2,.8,.2,1) .25s; }
+.v2-timeline .tl-le .tl-track i { background: var(--tl-le); }
+.v2-timeline .tl-gt .tl-track i { background: var(--tl-gt); }
 .v2-timeline .tl-chart { min-height: 120px; }
 .v2-timeline .tl-div { stroke: var(--text-muted); stroke-opacity: .6; }
-.v2-timeline .tl-col:hover path { filter: brightness(1.15); }
 .v2-timeline .tl-note { font-size: 10.5px; color: var(--text-muted); text-align: right; min-height: 4px; }
 @media (max-width: 640px) {
   .v2-timeline { padding: 12px 10px 8px; }
   .v2-timeline .tl-cards { grid-template-columns: 1fr; gap: 8px; }
+  .v2-timeline .tl-peak { display: flex; justify-content: space-between; align-items: baseline; }
+  .v2-timeline .tl-peak .tl-card-top { margin: 0; }
   .v2-timeline .tl-area { margin-left: 0; max-width: 100%; flex: 1; }
   .v2-timeline .tl-toggle { margin-left: auto; }
+}
+
+/* ══ Linha do Tempo v78: barras planas, pico do dia, balão e animação de entrada ══ */
+.v2-timeline .tl-peak .tl-card-top span { color: var(--text-soft, var(--text-main)); }
+.v2-timeline .tl-peak-v { font-size: 18px; font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.v2-timeline .tl-peak-v small { font-size: 12px; font-weight: 600; color: var(--text-soft, var(--text-main)); margin-left: 4px; }
+.v2-timeline .tl-chart { position: relative; }
+.v2-timeline .tl-chart.tl-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.v2-timeline .tl-chart.tl-scroll .v2-chart-svg { width: auto; max-width: none; }
+.v2-timeline .tl-chart.tl-scroll {
+  display: flex;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+}
+.v2-timeline .tl-chart.tl-scroll > .v2-chart-svg { flex: none; }
+.v2-timeline .tl-yfix { position: sticky; left: 0; z-index: 2; flex: none; width: 32px; margin-right: -32px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #22d3ee) 9%, var(--bg-panel)) 0%, color-mix(in srgb, var(--accent, #22d3ee) 3%, var(--bg-panel)) 55%, var(--bg-panel) 100%);
+  box-shadow: 6px 0 8px -6px rgba(0,0,0,.35); }
+.v2-timeline .tl-yfix .v2-chart-svg { width: 32px; }
+.v2-timeline .tl-stack { transition: filter .2s ease; }
+.v2-timeline .g-hit { transition: fill .2s ease; }
+.v2-timeline .tl-col { cursor: pointer; outline: none; }
+.v2-timeline .tl-col:hover .tl-stack, .v2-timeline .tl-col:focus-visible .tl-stack { filter: brightness(1.15); }
+.v2-timeline .tl-col:focus-visible .g-hit { fill: color-mix(in srgb, var(--text-main) 10%, transparent); }
+@media (hover: hover) { .v2-timeline .tl-col:hover .g-hit { fill: color-mix(in srgb, var(--text-main) 10%, transparent); } }
+.v2-timeline .tl-col:focus-visible .g-hit { stroke: var(--tl-le-txt); stroke-width: 2; }
+.v2-timeline .tl-cur-bg { fill: var(--tl-le); fill-opacity: .08; }
+.v2-timeline .tl-x-cur { fill: var(--tl-le-txt) !important; font-weight: 800; }
+.v2-timeline .tl-seg-le { fill: var(--tl-le); }
+.v2-timeline .tl-seg-gt { fill: var(--tl-gt); }
+.v2-timeline .tl-val { fill: var(--text-main); }
+.v2-timeline .v2-chart-svg .g-x, .v2-timeline .v2-chart-svg .g-val, .v2-timeline .tl-ax-t { font-size: 11px; font-family: inherit; font-variant-numeric: tabular-nums; }
+/* temas claros: tons mais escuros para manter o contraste (barras ≥ 3:1, textos ≥ 4,5:1) */
+[data-mode="light"] .v2-timeline { --tl-le: #0891b2; --tl-gt: #ea580c; --tl-le-txt: #0e7490; --tl-gt-txt: #c2410c; }
+.v2-timeline .tl-tip {
+  position: absolute; top: 2px; transform: translateX(-50%); z-index: 5; pointer-events: none; white-space: nowrap;
+  background: var(--bg-panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px;
+  font-size: 11.5px; color: var(--text-main); box-shadow: 0 6px 18px rgba(0,0,0,.35); animation: tlTip .16s ease-out;
+}
+.v2-timeline .tl-tip b { display: block; font-size: 12.5px; margin-bottom: 2px; }
+.v2-timeline .tl-tip span, .v2-timeline .tl-tip em { display: block; }
+.v2-timeline .tl-tip em { font-style: normal; color: var(--text-soft, var(--text-main)); margin-top: 2px; }
+.v2-timeline .tl-tip .tl-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+@keyframes tlTip { from { opacity: 0; margin-top: 4px; } to { opacity: 1; margin-top: 0; } }
+/* entrada: colunas sobem da esquerda para a direita, o laranja empilha depois, números por último */
+.v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt {
+  transform-box: fill-box; transform-origin: 50% 100%; animation: tlGrow .75s cubic-bezier(.2,.8,.2,1) both;
+}
+.v2-timeline.tl-anim .tl-val { animation: tlFade .4s ease-out both; }
+@keyframes tlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes tlFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .v2-timeline.tl-anim .tl-seg-le, .v2-timeline.tl-anim .tl-seg-gt, .v2-timeline.tl-anim .tl-val, .v2-timeline .tl-tip { animation: none; }
+  .v2-timeline .tl-track i, .v2-timeline .tl-stack, .v2-timeline .g-hit { transition: none; }
 }
 
 /* ══ Novas Entradas: Cards ou Lista compacta (v51) ══ */
@@ -227,3 +283,35 @@ body.layout-v2 .inbox-header > div:last-child { flex-wrap: wrap; margin-left: au
   display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px;
   background: #f59e0b; color: #1a1000; font-size: 9px; font-weight: 800; letter-spacing: 1px; line-height: 15px;
 }
+
+/* ══ Animações sutis (v81) — js/animacoes.js ══ */
+/* 1. entrada do painel, em sequência rápida, uma vez por abertura */
+.sir-in { animation: sirIn .42s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--sir-i, 0) * 28ms); }
+@keyframes sirIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* 2. número que mudou: desliza na direção da mudança + brilho curto na célula
+      (o brilho fica num ::after — o box-shadow da célula é !important em visual-3d.css) */
+.sir-tick-up   { display: inline-block; animation: sirTickUp .45s cubic-bezier(.2,.8,.2,1); }
+.sir-tick-down { display: inline-block; animation: sirTickDown .45s cubic-bezier(.2,.8,.2,1); }
+@keyframes sirTickUp   { from { opacity: .2; transform: translateY(45%); } }
+@keyframes sirTickDown { from { opacity: .2; transform: translateY(-45%); } }
+.sir-glow-up, .sir-glow-down { position: relative; }
+.sir-glow-up::after, .sir-glow-down::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; z-index: 1;
+  animation: sirGlow 1.2s ease-out both;
+}
+.sir-glow-up::after   { --sir-gc: var(--v2-warn, #f5b941); }
+.sir-glow-down::after { --sir-gc: var(--v2-ok, #34d399); }
+@keyframes sirGlow {
+  0%   { box-shadow: 0 0 0 2px var(--sir-gc), 0 0 16px color-mix(in srgb, var(--sir-gc) 55%, transparent); opacity: 1; }
+  100% { box-shadow: 0 0 0 2px var(--sir-gc), 0 0 16px color-mix(in srgb, var(--sir-gc) 55%, transparent); opacity: 0; }
+}
+/* 3. pulso do ponto de status quando chegam dados novos (num ::after, sem parar o pulso normal) */
+#status-dot { position: relative; }
+#status-dot.sir-ping::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; animation: sirPing .9s ease-out both; }
+@keyframes sirPing { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--v2-ok, #34d399) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .sir-in, .sir-tick-up, .sir-tick-down, .sir-glow-up::after, .sir-glow-down::after, #status-dot.sir-ping::after { animation: none !important; }
+}
+
+/* v83: cabeçalhos das Configurações viraram <button> (teclado/leitor de tela) */
+button.cfg-section-hd { width: 100%; background: transparent; border: 0; color: inherit; font: inherit; text-align: left; }

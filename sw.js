@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '73';
+const CACHE_NAME   = CACHE_PREFIX + '101';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -22,7 +22,20 @@ const SHELL_ASSETS = [
   'css/menu.css',
   'css/pressable.css',
   'css/acessibilidade.css',
+  'css/mapa-calor.css',
+  'css/rec-contraste.css',
+  'assets/fonts/barlow-condensed-latin-600-normal.woff2',
+  'assets/fonts/barlow-condensed-latin-700-normal.woff2',
+  'css/rec-hud.css',
+  'css/rec-mini.css',
+  'css/rec-comando.css',
+  'css/rec-navcel.css',
+  'css/rec-fhd.css',
+  'css/rec-gravidade.css',
+  'css/rec-netflix.css',
   'css/reconnect-video.css',
+  'css/sir-visao.css',
+  'css/painel-geral.css',
   'assets/reconnect.mp4',
   'js/theme-mode.js',
   'assets/icon.svg',
@@ -58,16 +71,30 @@ const SHELL_ASSETS = [
   'js/layout-v2.js',
   'js/charts-v2.js',
   'js/timeline.js',
+  'js/animacoes.js',
+  'js/recursos.js',
+  'js/mini-grafico.js',
+  'js/hud.js',
+  'js/netflix.js',
+  'js/comando.js',
+  'js/nav-celular.js',
+  'js/janelas.js',
   'js/events.js',
   'js/rec-assoc.js',
   'js/offline-feed.js',
+  'js/manual-tickets.js',
   'js/lista-abas.js',
   'js/tickets-ui.js',
   'js/lixeira.js',
   'js/menu.js',
   'js/fit-tela.js',
+  'js/mapa-calor.js',
   'js/stale.js',
   'js/reconnect-video.js',
+  'js/sir-regras.js',
+  'js/sir-visao.js',
+  'js/painel-geral.js',
+  'js/intro-fx.js',
   'js/siglas.js',
   'js/siglas-busca.js',
   'js/siglas-worker.js',
@@ -79,7 +106,7 @@ const SHELL_ASSETS = [
   'js/backup.js',
   'js/pressable.js',
   'js/app.js',
-  'https://unpkg.com/lucide@latest/dist/umd/lucide.min.js',
+  'https://unpkg.com/lucide@1.81.0/dist/umd/lucide.min.js',
   'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js',
 ];
 
@@ -132,7 +159,8 @@ self.addEventListener('fetch', e => {
           return resp;
         })
         .catch(() => caches.match(req, { ignoreSearch: true })
-          .then(r => r || caches.match('index.html'))
+          /* v82: a página inicial só substitui navegação; arquivo que falhou devolve erro de verdade */
+          .then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : null))
           .then(r => r || Response.error()))
     );
     return;

@@ -256,6 +256,8 @@ function renderDashboard(ralRes, ralR, recRes, recR, userSavedAreas) {
 function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   /* Tickets do "Alimentar off-line" que ainda não estão na fonte */
   if (typeof mergeOfflineFeed === 'function') mergeOfflineFeed(ralRes, recRes, ralText, recText);
+  /* v101: RAL/REC inseridas à mão na tela do CF */
+  if (typeof mergeManualTickets === 'function') mergeManualTickets(ralRes, recRes);
   appState._snapTexts = null;
 
   /* Alimenta o módulo de qualidade com as RALs capturadas separadamente */

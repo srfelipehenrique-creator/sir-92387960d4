@@ -1,5 +1,14 @@
-# ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w5)
+﻿# ══════════════════════════════════════════════════════════════
+#  Coletor SIR para Windows  (versão w9)
+#  - w9: intervalo de 60s (tempo real) e lê também o link de associadas (Ass.)
+#    de RALs em DP (além dos CFs do painel) para contabilizar todos os tickets
+#    reais com ticket mãe nos dois dashboards.
+#  - w8: suporta REDE 1 (http://10.13.54.150:20020/index.cfm?nofoc=yes) e
+#    REDE 2 (http://10.53.224.155/index.cfm?finalizada=sim) com troca automática
+#    ou escolha via SIR_REDE=1|2, e inclui ESRC na leitura de RECs associadas.
+#  - w6: se a lista de REC vier sem nenhuma tabela (sessão do SIR expirada sem
+#    mostrar a tela de senha), entra de novo e relê, em vez de travar no erro
+#    "esperava 9 colunas, veio 0". O diagnóstico mostra para onde a página manda.
 #  - w5: usa o endereço do SIR 10.53.224.155 (index.cfm?nofoc=yes); se não
 #    responder, tenta o endereço antigo 172.30.130.133.
 #  - w4: na página do link da coluna Ass. lê também as RAL (não só as REC),
@@ -8,7 +17,7 @@
 #    das suas áreas e envia a lista dessas RECs junto (coluna "RECs Assoc.").
 #  - Dois cliques no arquivo "Coletor SIR.cmd" e pronto.
 #  - Entra no SIR com o SEU usuário e senha, lê as listas de RAL e REC
-#    e envia ao seu servidor a cada 5 minutos, enquanto a janela estiver aberta.
+#    e envia ao seu servidor a cada 2 minutos, enquanto a janela estiver aberta.
 #  - Não precisa instalar nada, nem favorito, nem deixar o navegador aberto.
 #  - O login fica guardado criptografado pelo Windows
 #    (só a sua conta, neste computador, consegue abrir).
@@ -17,14 +26,20 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w5'
+$VERSAO   = 'w9'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
-$BASES    = @('http://10.53.224.155', 'http://172.30.130.133')   # o 1º que responder é usado
-if ($env:SIR_BASE) { $BASES = @($env:SIR_BASE) }       # só para testes
-$BASE     = $BASES[0]
-$ENTRADA  = '/index.cfm?nofoc=yes'
-$INTERVALO = 300
+$REDES    = @(
+  @{ Nome = 'REDE 1'; Base = 'http://10.13.54.150:20020'; Entrada = '/index.cfm?nofoc=yes' },
+  @{ Nome = 'REDE 2'; Base = 'http://10.53.224.155';      Entrada = '/index.cfm?finalizada=sim' },
+  @{ Nome = 'REDE 2 (nofoc)'; Base = 'http://10.53.224.155'; Entrada = '/index.cfm?nofoc=yes' },
+  @{ Nome = 'Reserva'; Base = 'http://172.30.130.133';    Entrada = '/index.cfm?nofoc=yes' }
+)
+if ($env:SIR_REDE -eq '2') { $REDES = @($REDES[1], $REDES[2], $REDES[0], $REDES[3]) }
+if ($env:SIR_BASE) { $REDES = @(@{ Nome = 'Custom'; Base = $env:SIR_BASE; Entrada = '/index.cfm?nofoc=yes' }) }
+$BASE     = $REDES[0].Base
+$ENTRADA  = $REDES[0].Entrada
+$INTERVALO = 60
 $REC_PATH = '/generico/NOVAlistaDeTarefasItensRecebidos.cfm'
 $RAL_PATH = '/navegacao/NOVAframesetNivel2ListaDeTarefas.cfm'
 $F_FILTRO = 'frameFiltro'
@@ -92,7 +107,13 @@ function Abrir([string]$url, [string]$metodo = 'GET', $campos = $null) {
   try { if ($r.BaseResponse.RequestMessage.RequestUri) { $final = $r.BaseResponse.RequestMessage.RequestUri.AbsoluteUri } } catch {}
   $html = Decodificar $ms.ToArray()
   $q = ([regex]::Matches($html, '(?is)<i?frame\b[^>]*name\s*=\s*["'']?([\w-]+)') | ForEach-Object { $_.Groups[1].Value }) -join ','
-  $script:Trilha += ,('   -> {0} | quadros: {1} | forms: {2} | tabelas: {3} | login: {4}' -f ([Uri]$final).AbsolutePath, $q, ([regex]::Matches($html, '(?i)<form\b')).Count, ([regex]::Matches($html, '(?i)<table\b')).Count, (Eh-Login $html))
+  $nt = ([regex]::Matches($html, '(?i)<table\b')).Count
+  $script:Trilha += ,('   -> {0} | quadros: {1} | forms: {2} | tabelas: {3} | login: {4}' -f ([Uri]$final).AbsolutePath, $q, ([regex]::Matches($html, '(?i)<form\b')).Count, $nt, (Eh-Login $html))
+  if ($nt -eq 0 -and ([Uri]$final).AbsolutePath -eq $REC_PATH) {   # lista de REC sem tabela: registra só pistas (tamanho, redirecionamento, começo do texto)
+    $rd = [regex]::Match($html, '(?is)(?:location(?:\.href)?\s*(?:=|\.replace\(|\.assign\()\s*|http-equiv\s*=\s*["'']?refresh[^>]*url\s*=\s*)["'']?([^"''\s>);]+)')
+    $tx = Texto-Celula $html; if ($tx.Length -gt 120) { $tx = $tx.Substring(0, 120) + '...' }
+    $script:Trilha += ,('      sem tabela | {0} bytes | manda para: {1} | texto: {2}' -f $html.Length, $(if ($rd.Success) { $rd.Groups[1].Value } else { '-' }), $tx)
+  }
   return @{ Html = $html; Url = $final }
 }
 function Juntar([string]$base, [string]$rel) {
@@ -198,17 +219,18 @@ function Achar-FormLogin([string]$url, [int]$prof) {
   if ($prof -lt 3) { foreach ($q in (Quadros $p.Html)) { $r = Achar-FormLogin (Juntar $p.Url $q.Src) ($prof + 1); if ($r) { return $r } } }
   return $null
 }
-# Testa os endereços do SIR e fica com o primeiro que responder
+# Testa os endereços do SIR (REDE 1 e REDE 2) e fica com o primeiro que responder
 function Escolher-Base {
   $ultimo = $null
-  foreach ($b in $BASES) {
+  foreach ($r in $REDES) {
+    $b = $r.Base; $e = $r.Entrada
     try {
-      $null = Invoke-WebRequest -Uri ($b + $ENTRADA) -UseBasicParsing -TimeoutSec 15 -MaximumRedirection 10
-      if ($script:BASE -ne $b) { Info "Usando o SIR em $b" }
-      $script:BASE = $b; return
+      $null = Invoke-WebRequest -Uri ($b + $e) -UseBasicParsing -TimeoutSec 15 -MaximumRedirection 10
+      if ($script:BASE -ne $b -or $script:ENTRADA -ne $e) { Info "Usando o SIR ($($r.Nome)) em $b$e" }
+      $script:BASE = $b; $script:ENTRADA = $e; return
     } catch {
       $st = $null; try { $st = [int]$_.Exception.Response.StatusCode } catch {}
-      if ($st) { $script:BASE = $b; return }      # respondeu (mesmo com erro HTTP): o servidor existe
+      if ($st) { $script:BASE = $b; $script:ENTRADA = $e; return }   # respondeu (mesmo com erro HTTP): o servidor existe
       $ultimo = $_.Exception.Message
     }
   }
@@ -233,9 +255,15 @@ function Entrar($cred) {
 }
 
 # ─────────── Coletas ───────────
-function Coletar-Rec {
+function Coletar-Rec([bool]$repetindo = $false) {
   $p = Abrir ($BASE + $REC_PATH)
   if (Eh-Login $p.Html) { throw 'sessao' }
+  # Sem nenhuma tabela = o SIR derrubou a sessão sem mostrar a tela de senha.
+  # 1ª vez: pede novo login; se repetir logo depois do login, avisa e tenta na próxima.
+  if (-not [regex]::IsMatch($p.Html, '(?i)<table\b')) {
+    if ($repetindo) { throw 'vazio:REC (página sem tabela mesmo depois de entrar de novo)' }
+    throw 'sessao'
+  }
   return Para-Csv (Linhas-Tabela $p.Html) $HEAD_REC 'REC'
 }
 # Desce pelos quadros (primeiro os nomes conhecidos) até achar a tabela de 13 colunas
@@ -255,8 +283,9 @@ function Achar-Lista([string]$html, [string]$url, [int]$prof) {
 # ─────────── RECs associadas às RAL (link do número na coluna "Ass.") ───────────
 # Só as RAL das áreas do painel (RJ/ES). Cada RAL com Ass. > 0 tem o número como
 # link; o coletor abre esse link e lê as RECs listadas. Para não pesar no SIR,
-# relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 3 coletas (15 min).
+# relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 7 coletas (~14 min).
 $CFS_PAINEL = @('RT/VTA /MTN/FFA/FO','RT/VTA /MTS/FFA/FO','RT/VTA /NOR/FFA/FO','RT/VTA /SUL/FFA/FO',
+  'RC/VTA /MTP/NET/FO','RC/VTA /SUL/NET/FO','RC/VTA /NOR/NET/FO','RC/VTA /JM/NET/FO',
   'RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO','RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO','RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO',
   'RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO','RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO','RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO',
   'RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO','RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO','RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO',
@@ -332,10 +361,13 @@ function Anexar-Associadas($lista) {
   for ($i = 0; $i -lt $lista.Linhas.Count; $i++) {
     $r = $lista.Linhas[$i]; $val = ''
     $ralNum = $r[3]; $ass = 0
-    if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $CFS_PAINEL -contains $r[7] -and $ralNum -match '^RAL') {
+    $cfNorm = (($r[7] -replace '\s*/\s*', '/') -replace '\s+', ' ').Trim().ToUpper()
+    $cfsNorm = $CFS_PAINEL | ForEach-Object { (($_ -replace '\s*/\s*', '/') -replace '\s+', ' ').Trim().ToUpper() }
+    $cfEhAlvo = ($cfsNorm -contains $cfNorm) -or ($cfNorm -match '^DP/')
+    if ([int]::TryParse(($r[8] -replace '\D', ''), [ref]$ass) -and $ass -gt 0 -and $cfEhAlvo -and $ralNum -match '^RAL') {
       $nRal++
       $c = $script:CacheAss[$ralNum]
-      if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 3) { $val = $c.Val }
+      if ($c -and $c.N -eq $ass -and ($script:Ciclo - $c.Ciclo) -lt 7) { $val = $c.Val }
       else {
         $link = Link-Da-Celula $lista.Brutas[$i][8]
         if (-not $link) {
@@ -415,7 +447,7 @@ function Explicar([string]$e) {
       if ($e -eq 'servidor:codigo') { return 'Este coletor ficou antigo. Abra o painel, vá em Configurações > Dados > Meu coletor e baixe de novo.' }
       return "Não consegui entregar ao seu servidor ($e). A rede pode estar bloqueando workers.dev."
     }
-    default    { return "Não consegui abrir o SIR. Confira se a VPN da Claro está ligada; tento de novo sozinho. ($e)" }
+    default    { return "Não consegui abrir o SIR. Confira se o computador está na rede da Claro (cabo da intranet ou VPN); tento de novo sozinho. ($e)" }
   }
 }
 
@@ -447,7 +479,7 @@ Write-Host '   COLETOR SIR' -ForegroundColor Cyan
 Write-Host '   Leva as RAL e REC do SIR para o seu painel' -ForegroundColor Cyan
 Write-Host '  ==============================================' -ForegroundColor Cyan
 Write-Host ''
-Write-Host '   1. A VPN da Claro precisa estar ligada.'
+Write-Host '   1. O computador precisa estar na rede da Claro (cabo da intranet ou VPN).'
 Write-Host '   2. DEIXE ESTA JANELA ABERTA (pode minimizar).'
 Write-Host '   3. Para desligar o coletor, feche esta janela.'
 Write-Host ''
@@ -465,7 +497,7 @@ while ($true) {
     if (-not $logado) { Entrar $cred; $logado = $true }
     Info 'Lendo RAL e REC no SIR...'
     try { $rec = Coletar-Rec; $ral = Coletar-Ral }
-    catch { if ("$($_.Exception.Message)" -eq 'sessao') { $logado = $false; Entrar $cred; $logado = $true; $rec = Coletar-Rec; $ral = Coletar-Ral } else { throw } }
+    catch { if ("$($_.Exception.Message)" -eq 'sessao') { $logado = $false; Entrar $cred; $logado = $true; $rec = Coletar-Rec $true; $ral = Coletar-Ral } else { throw } }
     $diag.ral = $ral.N; $diag.rec = $rec.N; $diag.associadas = $script:DiagAss
     Info "Enviando ao seu servidor (RAL $($ral.N) · REC $($rec.N))..."
     $j = Enviar $ral.Csv $rec.Csv
@@ -477,7 +509,7 @@ while ($true) {
     $falhas++; $diag.erro = $msg; $diag.trilha = $script:Trilha
     Erro (Explicar $msg)
     if ($msg -eq 'login') { $logado = $false; $cred = Ler-Login $true }
-    elseif ($msg -like 'sessao*') { $logado = $false }
+    elseif ($msg -notlike 'servidor*') { $logado = $false }    # qualquer falha de leitura: entra de novo no SIR na próxima tentativa
     try { ($diag | ConvertTo-Json) | Set-Content -Path $ARQ_DIAG -Encoding UTF8; Info "Diagnóstico salvo em $ARQ_DIAG (sem dados de tickets nem senha)" } catch {}
   }
   if ($env:SIR_UMA_VEZ) { break }            # só para testes

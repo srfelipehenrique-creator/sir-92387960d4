@@ -1,0 +1,59 @@
+/* ══ Busca rápida Ctrl K (v83) — js/comando.js ══ */
+.cmd-overlay {
+  position: fixed; inset: 0; z-index: 3000; display: flex; justify-content: center; align-items: flex-start;
+  padding: 10vh 16px 16px; background: rgba(4, 10, 18, .62); opacity: 0; transition: opacity .18s ease;
+}
+.cmd-overlay[hidden] { display: none; }
+.cmd-overlay.on { opacity: 1; }
+.cmd-box {
+  width: min(680px, 100%); max-height: 78vh; display: flex; flex-direction: column; gap: 10px; padding: 16px;
+  background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--line-strong); border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.45); transform: translateY(-8px) scale(.985); transition: transform .22s cubic-bezier(.2,.8,.2,1);
+}
+.cmd-overlay.on .cmd-box { transform: none; }
+.cmd-lbl { font-size: 12px; color: var(--text-soft, var(--text-main)); }
+.cmd-field { display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 1px solid var(--hud, var(--accent)); border-radius: 8px; background: var(--bg-panel-2); color: var(--hud, var(--accent)); }
+.cmd-field input { flex: 1; min-width: 0; min-height: 46px; border: 0; background: transparent; color: var(--text-main); font: inherit; font-size: 17px; outline: none; }
+.cmd-fechar { min-height: 32px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: transparent; color: var(--text-soft, var(--text-main)); font: inherit; font-size: 12px; cursor: pointer; }
+.cmd-lista { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.cmd-lista[hidden], .cmd-det[hidden] { display: none; }
+.cmd-item { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cmd-item:hover { background: var(--bg-hover); }
+.cmd-item.on { background: color-mix(in srgb, var(--hud, var(--accent)) 14%, transparent); border-color: color-mix(in srgb, var(--hud, var(--accent)) 55%, transparent); }
+.cmd-tipo { flex: none; width: 64px; font-size: 12px; font-weight: 700; color: var(--text-soft, var(--text-main)); }
+.cmd-txt { display: flex; flex-direction: column; min-width: 0; }
+.cmd-txt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-txt small { font-size: 12px; color: var(--text-soft, var(--text-main)); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-vazio { margin: 8px 4px; color: var(--text-soft, var(--text-main)); }
+.cmd-dica { margin: 0; font-size: 12px; color: var(--text-soft, var(--text-main)); opacity: .85; }
+.cmd-det { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; animation: cmdIn .22s ease-out; }
+@keyframes cmdIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.cmd-det-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.cmd-voltar { min-height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 6px; background: transparent; color: var(--text-main); font: inherit; cursor: pointer; }
+.cmd-det-tit { margin: 0; flex: 1; font-size: 24px; font-family: var(--hud-font, inherit); letter-spacing: .5px; }
+.cmd-det-n { display: flex; gap: 14px; font-size: 12px; color: var(--text-soft, var(--text-main)); }
+.cmd-det-n b { font-size: 22px; color: var(--text-main); font-family: var(--hud-font, inherit); font-variant-numeric: tabular-nums; margin-left: 3px; }
+.cmd-det-sub { margin: 4px 0 0; font-size: 14px; }
+.cmd-det-lista { display: flex; flex-direction: column; gap: 6px; }
+.cmd-tk { display: grid; grid-template-columns: 130px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-left: 3px solid var(--c); border-radius: 6px; background: var(--bg-panel-2); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cmd-tk:hover { background: var(--bg-hover); }
+.cmd-tk small { display: block; font-size: 12px; color: var(--text-soft, var(--text-main)); }
+.cmd-tk-mid { min-width: 0; }
+.cmd-tk-mid span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-tk-mid i { display: block; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--c); transform-origin: left; animation: cmdBar .8s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes cmdBar { from { transform: scaleX(0); } }
+.cmd-tk-r { color: var(--text-main); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cmd-det-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.cmd-btn { min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 8px; background: transparent; color: var(--text-main); font: inherit; cursor: pointer; }
+.cmd-btn:first-child { background: var(--hud, var(--accent)); border-color: transparent; color: #07131F; font-weight: 600; }
+:root[data-mode="light"] .cmd-btn:first-child, :root:not(.rec-hud) .cmd-btn:first-child { color: #fff; }
+.cmd-overlay :is(button, input):focus-visible { outline: 2px solid var(--hud, var(--accent)); outline-offset: 2px; }
+.btn-cmd[hidden] { display: none !important; }
+@media (max-width: 640px) {
+  .cmd-overlay { padding: 8px; }
+  .cmd-fechar, .cmd-voltar { min-height: 44px; min-width: 44px; }
+  .cmd-box { max-height: calc(100vh - 16px); }
+  .cmd-tk { grid-template-columns: 1fr auto; }
+  .cmd-tk-mid { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .cmd-overlay, .cmd-box { transition: none; } .cmd-det, .cmd-tk-mid i { animation: none; } }

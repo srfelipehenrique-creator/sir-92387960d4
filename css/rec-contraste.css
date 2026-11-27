@@ -1,0 +1,16 @@
+/* ══ Textos com mais contraste (v83) — chave "Textos com mais contraste" ══
+   Os textos secundários (--text-muted) e "apagados" (--text-dim) passam a
+   ser calculados a partir da cor do texto e do fundo de CADA tema, então
+   ficam legíveis em todos (≥ 4,5:1), inclusive no Alto Contraste.
+   Rótulos muito pequenos sobem para no mínimo 11px. */
+:root.rec-contraste:not(#_) {
+  --text-muted: color-mix(in srgb, var(--text-main) 80%, var(--bg-panel));
+  --text-dim:   color-mix(in srgb, var(--text-main) 70%, var(--bg-panel));
+}
+/* temas em que o próprio texto principal já tem pouca folga: secundários = texto principal */
+:root.rec-contraste:is([data-skin="solarized"], [data-skin="sepia"], [data-skin="lavanda"]):not(#_) { --text-muted: var(--text-main); --text-dim: var(--text-main); }
+html.rec-contraste body.high-contrast { --text-dim: var(--text-muted); }
+html.rec-contraste .v2-cell-lbl { font-size: 11px !important; opacity: 1 !important; }
+html.rec-contraste :is(.v2-kpi-type, .v2-region-count, .new-badge, .inbox-section-count) { font-size: 11px !important; }
+html.rec-contraste .footer-brand { opacity: 1; }
+html.rec-contraste .page-footer { font-size: 11px; }

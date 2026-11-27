@@ -20,11 +20,11 @@
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
   :root {
-    --accent: #6366f1;
-    --accent-glow: rgba(99,102,241,0.3);
-    --bg: #141416;
-    --panel: #1c1c1f;
-    --elevated: #28282c;
+    --accent: #E50914;
+    --accent-glow: rgba(229,9,20,0.32);
+    --bg: #141414;
+    --panel: #181818;
+    --elevated: #242424;
     --line: rgba(255,255,255,0.08);
     --line-strong: rgba(255,255,255,0.14);
     --text: #e2e2e2;
@@ -248,19 +248,42 @@
   }
   @media (pointer: coarse) { .lock-input { font-size: 16px; } }
 
-  /* Modo claro (segue a escolha feita no painel ou o tema do aparelho) */
+  /* Modo claro suave (v94) */
   :root[data-mode="light"] {
-    --bg: #f3f4f6; --panel: #ffffff; --elevated: #f5f6f8;
-    --line: rgba(15,23,42,0.10); --line-strong: rgba(15,23,42,0.18);
-    --text: #17191d; --text-soft: rgba(23,25,29,0.76); --text-muted: rgba(23,25,29,0.54); --text-dim: rgba(23,25,29,0.34);
+    --accent: #B8252E; --accent-glow: rgba(184,37,46,0.22);
+    --bg: #ECE8E1; --panel: #F6F3EE; --elevated: #E9E4DC;
+    --line: rgba(54,46,38,0.11); --line-strong: rgba(54,46,38,0.22);
+    --text: #242220; --text-soft: #46423E; --text-muted: #66605A; --text-dim: rgba(36,34,32,0.46);
   }
-  :root[data-mode="light"] .lock-brand { background: linear-gradient(135deg, #17191d 0%, rgba(23,25,29,0.55) 100%); -webkit-background-clip: text; background-clip: text; }
-  :root[data-mode="light"] .lock-card { box-shadow: 0 24px 60px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.05); }
+  :root[data-mode="light"] .lock-brand { background: linear-gradient(135deg, #242220 0%, rgba(36,34,32,0.62) 100%); -webkit-background-clip: text; background-clip: text; }
+  :root[data-mode="light"] .lock-card { box-shadow: 0 20px 50px rgba(45,38,30,0.12), 0 0 0 1px rgba(54,46,38,0.08); }
+
+  /* ── Entrada (v90): fibras de luz convergem num núcleo, pulso em anéis, cartão surge ── */
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  body.intro-on .lock-card { animation: none; opacity: 0; transform: scale(0.9); }
+  body.intro-on .bg-grid { opacity: 0; }
+  .lock-card.surge { animation: cardSurge 0.9s var(--ease-out) both; }
+  @keyframes cardSurge {
+    0%   { opacity: 0; transform: scale(0.86); filter: blur(6px); }
+    60%  { opacity: 1; filter: blur(0); }
+    100% { opacity: 1; transform: none; }
+  }
+  .fx-skip {
+    position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 30;
+    font: 600 12px 'Inter', system-ui, sans-serif; letter-spacing: .4px;
+    color: var(--text-soft); background: var(--panel); border: 1px solid var(--line-strong);
+    border-radius: 999px; padding: 9px 16px; cursor: pointer; backdrop-filter: blur(6px);
+    transition: opacity .3s;
+  }
+  .fx-skip:hover, .fx-skip:focus-visible { color: var(--text); border-color: var(--accent); outline: none; }
+  body:not(.intro-on) .fx-skip { opacity: 0; pointer-events: none; }
 </style>
 <link rel="stylesheet" href="../css/pressable.css">
 </head>
 <body>
 
+<canvas id="fx" aria-hidden="true"></canvas>
+<button class="fx-skip" id="fx-skip" type="button">Pular</button>
 <div class="bg-grid"></div>
 
 <div class="lock-card" id="lock-card">
@@ -348,6 +371,7 @@
   ].join('');
 
   const _s  = 'sir_auth_v1';
+  const _semEntrada = () => { try { sessionStorage.setItem('sir_intro_skip', '1'); } catch (e) {} };
   const _r  = '../index.html';
 
   let deferredInstall = null;
@@ -425,7 +449,7 @@
       } catch(e) {}
     }
 
-    location.replace(_r);
+    _semEntrada(); location.replace(_r);
   }
 
   async function installPWA() {
@@ -437,9 +461,133 @@
     if (outcome === 'accepted') {
       btn.textContent = '✓ Instalado!';
     } else {
-      location.replace(_r);
+      _semEntrada(); location.replace(_r);
     }
   }
+</script>
+<script>
+/* ── Entrada animada (v90) ──
+   Toca a cada carregamento da página; quem prefere menos movimento vê o cartão direto.
+   Clique, toque, tecla ou "Pular" encerram na hora. Depois fica um fundo leve. */
+(function () {
+  const cv = document.getElementById('fx'), cx = cv.getContext('2d');
+  const card = document.getElementById('lock-card');
+  const skipBtn = document.getElementById('fx-skip');
+  const calmo = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const claro = () => document.documentElement.getAttribute('data-mode') === 'light';
+  const DUR = 2300;              /* duração da entrada (ms) */
+  let W = 0, H = 0, R = 0, dpr = 1, t0 = 0, fim = false, fibras = [], raf = 0;
+
+  function medir() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight; R = Math.hypot(W, H) / 2;
+    cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    criarFibras();
+  }
+  function criarFibras() {
+    const n = W < 600 ? 14 : 22;
+    fibras = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.35;
+      const curva = (Math.random() - 0.5) * 0.9;           /* fibras levemente curvas, como cabos */
+      fibras.push({ a, curva, atraso: Math.random() * 0.35, vel: 0.75 + Math.random() * 0.5, cor: Math.random() < 0.7 ? 0 : 1 });
+    }
+  }
+  /* ponto da fibra: s=0 na borda, s=1 no núcleo */
+  function ponto(f, s) {
+    const r = R * (1 - s) + 34 * s;
+    const ang = f.a + f.curva * (1 - s) * (1 - s);
+    return [W / 2 + Math.cos(ang) * r, H / 2 + Math.sin(ang) * r];
+  }
+  const COR = () => claro() ? ['79,70,229', '14,116,144'] : ['129,140,248', '56,189,248'];
+
+  function aneis(alfa, escala) {
+    const c = claro() ? '15,23,42' : '255,255,255';
+    for (let i = 1; i <= 7; i++) {
+      const r = (60 + i * i * 14) * escala;
+      cx.beginPath(); cx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
+      cx.strokeStyle = `rgba(${c},${alfa * (0.09 - i * 0.008)})`; cx.lineWidth = 1.5; cx.stroke();
+    }
+  }
+  function fibra(f, cabeca, comp, alfa) {
+    const ini = Math.max(0, cabeca - comp);
+    if (cabeca <= 0) return;
+    const [r1, r2] = [ponto(f, ini), ponto(f, Math.min(1, cabeca))];
+    const g = cx.createLinearGradient(r1[0], r1[1], r2[0], r2[1]);
+    const c = COR()[f.cor];
+    g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(1, `rgba(${c},${alfa})`);
+    cx.beginPath();
+    for (let k = 0; k <= 12; k++) { const p = ponto(f, ini + (Math.min(1, cabeca) - ini) * k / 12); k ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]); }
+    cx.strokeStyle = g; cx.lineWidth = 2; cx.lineCap = 'round';
+    cx.shadowColor = `rgba(${c},${alfa})`; cx.shadowBlur = 12; cx.stroke(); cx.shadowBlur = 0;
+  }
+
+  function quadroEntrada(now) {
+    const t = (now - t0) / DUR;
+    cx.clearRect(0, 0, W, H);
+    aneis(Math.min(1, t * 3), 1 + 0.06 * (1 - Math.min(1, t)));
+    /* 0–65%: pulsos correm pelas fibras até o núcleo */
+    fibras.forEach(f => { const c = (t / 0.65 - f.atraso) * f.vel * 1.4; if (c > 0 && c < 1.35) fibra(f, c, 0.35, 0.95); });
+    /* núcleo acende conforme a luz chega */
+    const carga = Math.max(0, Math.min(1, (t - 0.35) / 0.3));
+    if (carga > 0) {
+      const c = COR()[0], g = cx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, 70 + 40 * carga);
+      g.addColorStop(0, `rgba(${c},${0.55 * carga})`); g.addColorStop(1, `rgba(${c},0)`);
+      cx.fillStyle = g; cx.beginPath(); cx.arc(W / 2, H / 2, 110, 0, Math.PI * 2); cx.fill();
+    }
+    /* 65%+: onda de choque em anéis e o cartão surge */
+    if (t > 0.65) {
+      const u = (t - 0.65) / 0.35, c = COR()[1];
+      for (let k = 0; k < 3; k++) {
+        const v = u - k * 0.12; if (v <= 0) continue;
+        cx.beginPath(); cx.arc(W / 2, H / 2, 40 + v * R, 0, Math.PI * 2);
+        cx.strokeStyle = `rgba(${c},${0.5 * (1 - v)})`; cx.lineWidth = 2.5 - k * 0.6; cx.stroke();
+      }
+      if (!card.classList.contains('surge')) revelar();
+    }
+    if (t >= 1) { encerrar(); return; }
+    raf = requestAnimationFrame(quadroEntrada);
+  }
+
+  /* fundo leve depois da entrada: um pulso de vez em quando */
+  let pulsos = [], proximo = 0, ultimo = 0;
+  function quadroCalmo(now) {
+    if (document.hidden) { raf = requestAnimationFrame(quadroCalmo); return; }
+    if (now - ultimo < 33) { raf = requestAnimationFrame(quadroCalmo); return; }  /* ~30 qps basta */
+    const dt = ultimo ? (now - ultimo) / 1000 : 0; ultimo = now;
+    cx.clearRect(0, 0, W, H);
+    aneis(0.7, 1);
+    if (now > proximo && fibras.length) { pulsos.push({ f: fibras[(Math.random() * fibras.length) | 0], s: 0 }); proximo = now + 900 + Math.random() * 1400; }
+    pulsos = pulsos.filter(p => (p.s += dt * 0.45) < 1.3);
+    pulsos.forEach(p => fibra(p.f, p.s, 0.25, 0.4));
+    raf = requestAnimationFrame(quadroCalmo);
+  }
+
+  function revelar() {
+    document.body.classList.remove('intro-on');
+    card.classList.add('surge');
+    const k = document.getElementById('lock-key'); if (k) setTimeout(() => k.focus(), 350);
+  }
+  function encerrar() {
+    if (fim) return; fim = true;
+    cancelAnimationFrame(raf);
+    if (!card.classList.contains('surge')) revelar();
+    if (skipBtn.isConnected) skipBtn.remove();
+    ['pointerdown', 'keydown'].forEach(ev => removeEventListener(ev, pular, true));
+    raf = requestAnimationFrame(quadroCalmo);
+  }
+  function pular(e) { if (e && e.type === 'keydown' && e.key === 'Tab') return; encerrar(); }
+
+  medir();
+  addEventListener('resize', medir);
+  if (calmo) { cv.style.display = 'none'; skipBtn.remove(); return; }   /* sem animação: cartão aparece normal */
+  document.body.classList.add('intro-on');
+  skipBtn.addEventListener('click', encerrar);
+  ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, pular, true));
+  t0 = performance.now();
+  setTimeout(encerrar, DUR + 1500);   /* rede de segurança: aba em 2º plano não deixa o cartão escondido */
+  raf = requestAnimationFrame(quadroEntrada);
+})();
 </script>
 <script src="../js/pressable.js"></script>
 </body>
