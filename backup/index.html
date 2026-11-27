@@ -44,6 +44,8 @@
 <link rel="stylesheet" href="css/rec-gravidade.css">
 <link rel="stylesheet" href="css/rec-netflix.css">
 <link rel="stylesheet" href="css/reconnect-video.css">
+<link rel="stylesheet" href="css/sir-visao.css">
+<link rel="stylesheet" href="css/painel-geral.css">
 <script src="js/theme-mode.js"></script>
 <script src="js/recursos.js"></script>
 <script src="https://unpkg.com/lucide@1.81.0/dist/umd/lucide.min.js"></script>
@@ -96,6 +98,25 @@
           </button>
           <button class="btn-settings btn-icon btn-trash" id="btn-trash" onclick="openTrash()" title="Lixeira — tickets que saíram da tela nos últimos 60 dias" aria-label="Lixeira">
             <i data-lucide="trash-2"></i><b class="trash-count" hidden></b>
+          </button>
+        </div>
+      </div>
+      <!-- Visualização SIR (REDE 1 / REDE 2) -->
+      <div class="menu-sir-group" id="menu-sir-group">
+        <button type="button" class="menu-sir-toggle" id="btn-menu-sir" data-menu-keep-open="true"
+                aria-expanded="false" aria-controls="menu-sir-sub" onclick="toggleSirSubmenu(this)">
+          <i data-lucide="monitor"></i>
+          <span>Visualização SIR</span>
+          <i data-lucide="chevron-down" class="menu-sir-chev"></i>
+        </button>
+        <div class="menu-sir-sub" id="menu-sir-sub" hidden>
+          <button type="button" class="menu-sir-sub-opt" data-sir-rede="rede1" onclick="openSirVisao('rede1')">
+            <span class="sir-sub-head"><i class="sir-sub-dot"></i>REDE 1</span>
+            <small>10.13.54.150:20020 · nofoc</small>
+          </button>
+          <button type="button" class="menu-sir-sub-opt" data-sir-rede="rede2" onclick="openSirVisao('rede2')">
+            <span class="sir-sub-head"><i class="sir-sub-dot"></i>REDE 2</span>
+            <small>10.53.224.155 · finalizada</small>
           </button>
         </div>
       </div>
@@ -844,6 +865,9 @@
 <script src="js/lixeira.js"></script>
 <script src="js/stale.js"></script>
 <script src="js/reconnect-video.js"></script>
+<script src="js/sir-regras.js"></script>
+<script src="js/sir-visao.js"></script>
+<script src="js/painel-geral.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/fit-tela.js"></script>
 <script src="js/mapa-calor.js"></script>

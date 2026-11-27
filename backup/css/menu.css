@@ -174,6 +174,42 @@ body.app-menu-open .app-menu {
 .menu-layout-opt.on { color: var(--accent); font-weight: 700; }
 .menu-layout-opt.on svg { color: var(--accent); }
 
+/* ── Submenu Visualização SIR (REDE 1 / REDE 2) ── */
+.menu-sir-group { position: relative; margin-top: 13px; padding-top: 6px; }
+.menu-sir-group::before { content: ''; position: absolute; top: -7px; left: 12px; right: 12px; height: 1px; background: var(--line); }
+.menu-sir-toggle {
+  display: flex; align-items: center; gap: 16px;
+  width: 100%; min-height: 46px; padding: 0 14px; border-radius: 10px;
+  background: transparent; border: 0; cursor: pointer;
+  color: var(--text-main); font: 600 14px/1.2 var(--font-sans); text-align: left;
+  transition: background var(--t) var(--ease);
+}
+.menu-sir-toggle:hover { background: var(--bg-hover); }
+.menu-sir-toggle:active { background: var(--accent-soft); }
+.menu-sir-toggle svg, .menu-sir-toggle i { width: 20px; height: 20px; flex: none; color: var(--accent); }
+.menu-sir-toggle > span { flex: 1; min-width: 0; }
+.menu-sir-chev { width: 16px !important; height: 16px !important; color: var(--text-muted) !important; transition: transform .2s var(--ease); }
+.menu-sir-toggle.is-open .menu-sir-chev { transform: rotate(180deg); color: var(--accent) !important; }
+.menu-sir-sub {
+  display: flex; flex-direction: column; gap: 3px;
+  margin: 4px 0 2px 18px; padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
+.menu-sir-sub[hidden] { display: none !important; }
+.menu-sir-sub-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 9px;
+  background: transparent; border: 0; cursor: pointer; text-align: left;
+  color: var(--text-main); transition: background var(--t) var(--ease);
+}
+.menu-sir-sub-opt:hover { background: var(--bg-hover); }
+.menu-sir-sub-opt:active { background: var(--accent-soft); }
+.menu-sir-sub-opt .sir-sub-head { display: flex; align-items: center; gap: 8px; font: 700 13px/1.2 var(--font-sans); }
+.menu-sir-sub-opt .sir-sub-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.menu-sir-sub-opt[data-sir-rede="rede1"] .sir-sub-dot { background: #3987e5; }
+.menu-sir-sub-opt[data-sir-rede="rede2"] .sir-sub-dot { background: #d55181; }
+.menu-sir-sub-opt small { font: 500 11px/1.2 var(--font-mono); color: var(--text-muted); padding-left: 15px; }
+
 /* ── Card "Novas Entradas": título recolhe/expande ── */
 #inbox-title-toggle { cursor: pointer; user-select: none; border-radius: 8px; outline-offset: 3px; }
 #inbox-title-toggle:hover .inbox-title { color: var(--text-main); }
@@ -197,9 +233,10 @@ body.layout-v2 .inbox-section.inbox-collapsed { max-height: none; }
 @media (max-width: 430px) {
   header { padding-right: max(6px, env(safe-area-inset-right)) !important; }
   .app-bar { gap: 4px; }
-  .app-menu-btn { width: 36px; height: 36px; }
+  .app-menu-btn { width: 36px; height: 36px; position: relative; }
   .hdr-quick { gap: 0; }
-  .hdr-quick .btn-icon { width: 30px; height: 30px; }
+  .hdr-quick .btn-icon { width: 30px; height: 30px; position: relative; }
+  .hdr-quick .btn-icon::after, .app-menu-btn::after { content: ''; position: absolute; inset: -7px; }
   .hdr-quick .btn-icon svg { width: 17px; height: 17px; }
   .hdr-scope-grp { gap: 0; }
   .hdr-scope-opt { font-size: 13px; padding: 7px 5px; }

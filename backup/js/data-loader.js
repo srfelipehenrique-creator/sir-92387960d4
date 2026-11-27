@@ -66,12 +66,18 @@ function parseRawInline(text, isRal) {
   const tipoIdx     = getIdx('TIPO RAL');
   const cliIdx      = getIdx('CLIENTE');
   const aberturaIdx = getIdx('ABERTURA');
+  const durIdx      = getIdx('DURACAO');
+  const tecIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'TECN.' || n === 'TECN' || n === 'TECNICO'; });
+  const itemIdx     = headers.findIndex(h => normalizeStr(h).trim() === 'ITEM');
   /* RECs associadas à RAL: "Ass." = quantidade; "RECs Assoc." = lista (só o seu coletor envia) */
   const assIdx      = headers.findIndex(h => { const n = normalizeStr(h).trim(); return n === 'ASS.' || n === 'ASS'; });
   const recsAssIdx  = getIdx('RECS ASSOC');
 
   const allP = Object.keys(patternToCF);
+  const ESRC_SET = new Set(['RC/VTA/MTP/NET/FO', 'RC/VTA/SUL/NET/FO', 'RC/VTA/NOR/NET/FO', 'RC/VTA/JM/NET/FO']);
+  const normCF = s => String(s || '').toUpperCase().replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim();
   const counts = {}, details = {}, qualidadeDetails = {};
+  const dpDetails = [], esrcDetails = [];
   allP.forEach(p => { counts[p] = 0; details[p] = []; qualidadeDetails[p] = []; });
   let total = 0;
 
@@ -101,25 +107,43 @@ function parseRawInline(text, isRal) {
     if (cells.length <= cfIdx) continue;
     const cf = cells[cfIdx];
     if (!cf) continue;
+
+    const buildItem = cfCod => {
+      const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]   : 'N/D';
+      const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx] : 'N/D';
+      const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
+      let extra = 'N/D';
+      if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
+      else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
+      const it = { ticket, designacao: desig, extra, cfOrigem: cfCod, abertura, cfRaw: cf };
+      if (durIdx > -1 && cells[durIdx])   it.duracao = cells[durIdx];
+      if (tecIdx > -1 && cells[tecIdx])   it.tecnico = cells[tecIdx];
+      if (itemIdx > -1 && cells[itemIdx]) it.item    = cells[itemIdx];
+      if (isRal && assIdx > -1) {
+        it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
+        if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
+      }
+      return it;
+    };
+
+    let matchedMain = false;
     for (const p of allP) {
       if (cf === p) {
         counts[p]++; total++;
-        const ticket   = numIdx > -1 && cells[numIdx]     ? cells[numIdx]   : 'N/D';
-        const desig    = desigIdx > -1 && cells[desigIdx] ? cells[desigIdx] : 'N/D';
-        const abertura = aberturaIdx > -1 && cells[aberturaIdx] ? cells[aberturaIdx] : '';
-        let extra = 'N/D';
-        if (isRal && tipoIdx > -1 && cells[tipoIdx])  extra = cells[tipoIdx];
-        else if (!isRal && cliIdx > -1 && cells[cliIdx]) extra = cells[cliIdx];
-        const it = { ticket, designacao: desig, extra, cfOrigem: patternToCF[p], abertura };
-        if (isRal && assIdx > -1) {
-          it.ass = parseInt(String(cells[assIdx] || '').replace(/\D/g, ''), 10) || 0;
-          if (recsAssIdx > -1) it.recs = parseRecsAssoc(cells[recsAssIdx]);
-        }
-        details[p].push(it);
+        details[p].push(buildItem(patternToCF[p]));
+        matchedMain = true;
+      }
+    }
+    if (!matchedMain) {
+      const ncf = normCF(cf);
+      if (ncf.startsWith('DP/')) {
+        dpDetails.push(buildItem('DP'));
+      } else if (ESRC_SET.has(ncf)) {
+        esrcDetails.push(buildItem('ESRC'));
       }
     }
   }
-  return { counts, details, total, qualidadeDetails };
+  return { counts, details, total, qualidadeDetails, dpDetails, esrcDetails };
 }
 
 /* ── Fonte dos dados ──
@@ -248,6 +272,13 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (typeof buildQualidadeData === 'function' && ralRes.qualidadeDetails)
     buildQualidadeData(ralRes.qualidadeDetails);
 
+  /* Captura não-destrutiva de DP e ESRC para a Visualização SIR e o Painel Geral */
+  appState.sirExtra = {
+    dp:   { ral: Array.isArray(ralRes.dpDetails) ? ralRes.dpDetails : [], rec: Array.isArray(recRes.dpDetails) ? recRes.dpDetails : [] },
+    esrc: { ral: Array.isArray(ralRes.esrcDetails) ? ralRes.esrcDetails : [], rec: Array.isArray(recRes.esrcDetails) ? recRes.esrcDetails : [] },
+    updatedAt: Date.now()
+  };
+
   /* RECs associadas às RAL entram na tela de REC (sem repetir tickets) */
   if (typeof mergeAssociatedRecs === 'function') mergeAssociatedRecs(ralRes, recRes);
 
@@ -301,6 +332,7 @@ function onDataReady(ralRes, recRes, ralText, recText, userSavedAreas) {
   if (flashEl) { flashEl.classList.add('show'); setTimeout(() => flashEl.classList.remove('show'), 2200); }
 
   if (ralText && recText) dbSaveSnapshot(ralText, recText).catch(() => {});
+  try { window.dispatchEvent(new CustomEvent('sir:data-ready', { detail: { at: now } })); } catch (e) {}
 }
 
 /* ── Offline snapshot fallback ── */

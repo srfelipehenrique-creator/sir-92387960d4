@@ -1,5 +1,8 @@
 # ══════════════════════════════════════════════════════════════
-#  Coletor SIR para Windows  (versão w6)
+#  Coletor SIR para Windows  (versão w8)
+#  - w8: suporta REDE 1 (http://10.13.54.150:20020/index.cfm?nofoc=yes) e
+#    REDE 2 (http://10.53.224.155/index.cfm?finalizada=sim) com troca automática
+#    ou escolha via SIR_REDE=1|2, e inclui ESRC na leitura de RECs associadas.
 #  - w6: se a lista de REC vier sem nenhuma tabela (sessão do SIR expirada sem
 #    mostrar a tela de senha), entra de novo e relê, em vez de travar no erro
 #    "esperava 9 colunas, veio 0". O diagnóstico mostra para onde a página manda.
@@ -20,13 +23,19 @@
 # ══════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$VERSAO   = 'w7'
+$VERSAO   = 'w8'
 $SRV_URL  = '__SIR_URL__'
 $SRV_TOK  = '__SIR_TOKEN__'
-$BASES    = @('http://10.53.224.155', 'http://172.30.130.133')   # o 1º que responder é usado
-if ($env:SIR_BASE) { $BASES = @($env:SIR_BASE) }       # só para testes
-$BASE     = $BASES[0]
-$ENTRADA  = '/index.cfm?nofoc=yes'
+$REDES    = @(
+  @{ Nome = 'REDE 1'; Base = 'http://10.13.54.150:20020'; Entrada = '/index.cfm?nofoc=yes' },
+  @{ Nome = 'REDE 2'; Base = 'http://10.53.224.155';      Entrada = '/index.cfm?finalizada=sim' },
+  @{ Nome = 'REDE 2 (nofoc)'; Base = 'http://10.53.224.155'; Entrada = '/index.cfm?nofoc=yes' },
+  @{ Nome = 'Reserva'; Base = 'http://172.30.130.133';    Entrada = '/index.cfm?nofoc=yes' }
+)
+if ($env:SIR_REDE -eq '2') { $REDES = @($REDES[1], $REDES[2], $REDES[0], $REDES[3]) }
+if ($env:SIR_BASE) { $REDES = @(@{ Nome = 'Custom'; Base = $env:SIR_BASE; Entrada = '/index.cfm?nofoc=yes' }) }
+$BASE     = $REDES[0].Base
+$ENTRADA  = $REDES[0].Entrada
 $INTERVALO = 120
 $REC_PATH = '/generico/NOVAlistaDeTarefasItensRecebidos.cfm'
 $RAL_PATH = '/navegacao/NOVAframesetNivel2ListaDeTarefas.cfm'
@@ -207,17 +216,18 @@ function Achar-FormLogin([string]$url, [int]$prof) {
   if ($prof -lt 3) { foreach ($q in (Quadros $p.Html)) { $r = Achar-FormLogin (Juntar $p.Url $q.Src) ($prof + 1); if ($r) { return $r } } }
   return $null
 }
-# Testa os endereços do SIR e fica com o primeiro que responder
+# Testa os endereços do SIR (REDE 1 e REDE 2) e fica com o primeiro que responder
 function Escolher-Base {
   $ultimo = $null
-  foreach ($b in $BASES) {
+  foreach ($r in $REDES) {
+    $b = $r.Base; $e = $r.Entrada
     try {
-      $null = Invoke-WebRequest -Uri ($b + $ENTRADA) -UseBasicParsing -TimeoutSec 15 -MaximumRedirection 10
-      if ($script:BASE -ne $b) { Info "Usando o SIR em $b" }
-      $script:BASE = $b; return
+      $null = Invoke-WebRequest -Uri ($b + $e) -UseBasicParsing -TimeoutSec 15 -MaximumRedirection 10
+      if ($script:BASE -ne $b -or $script:ENTRADA -ne $e) { Info "Usando o SIR ($($r.Nome)) em $b$e" }
+      $script:BASE = $b; $script:ENTRADA = $e; return
     } catch {
       $st = $null; try { $st = [int]$_.Exception.Response.StatusCode } catch {}
-      if ($st) { $script:BASE = $b; return }      # respondeu (mesmo com erro HTTP): o servidor existe
+      if ($st) { $script:BASE = $b; $script:ENTRADA = $e; return }   # respondeu (mesmo com erro HTTP): o servidor existe
       $ultimo = $_.Exception.Message
     }
   }
@@ -272,6 +282,7 @@ function Achar-Lista([string]$html, [string]$url, [int]$prof) {
 # link; o coletor abre esse link e lê as RECs listadas. Para não pesar no SIR,
 # relê a RAL quando a quantidade muda e, mesmo sem mudança, a cada 7 coletas (~14 min).
 $CFS_PAINEL = @('RT/VTA /MTN/FFA/FO','RT/VTA /MTS/FFA/FO','RT/VTA /NOR/FFA/FO','RT/VTA /SUL/FFA/FO',
+  'RC/VTA /MTP/NET/FO','RC/VTA /SUL/NET/FO','RC/VTA /NOR/NET/FO','RC/VTA /JM/NET/FO',
   'RT/RJO /SUF/NET/FO','RC/RJO /SUF/NET/FO','RT/RJO /SEF/NET/FO','RC/RJO /SEF/NET/FO','RT/RJO /NOF/NET/FO','RC/RJO /NOF/NET/FO',
   'RT/RJO /LGS/NET/FO','RC/RJO /LGS/NET/FO','RT/RJO /BX1/NET/FO','RC/RJO /BX1/NET/FO','RT/RJO /MTP/NET/FO','RC/RJO /MTP/NET/FO',
   'RT/RJO /NO1/NET/FO','RC/RJO /NO1/NET/FO','RT/RJO /NO2/NET/FO','RC/RJO /NO2/NET/FO','RT/RJO /NO3/PCS/FO','RC/RJO /NO3/NET/FO',
