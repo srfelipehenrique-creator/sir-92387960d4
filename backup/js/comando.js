@@ -61,7 +61,7 @@ const SirComando = (function () {
     if (typeof openSettings === 'function') c.push({ t: 'Escolher minhas áreas', s: 'Abre Minhas Áreas', f: () => openSettings() });
     if (typeof openPersonalizacao === 'function') c.push({ t: 'Abrir configurações', s: 'Tema, densidade, novidades', f: () => openPersonalizacao() });
     if (typeof cycleThemeMode === 'function') c.push({ t: 'Trocar tema', s: 'Escuro ou claro suave', f: () => cycleThemeMode() });
-    if (typeof playReconnectVideo === 'function') c.push({ t: 'Vídeo de reconexão (mingau)', s: 'Atalho Ctrl + mingau', f: () => playReconnectVideo('shortcut'), secreto: true });
+    if (typeof playReconnectVideo === 'function') c.push({ t: 'Vídeo de reconexão (mingau)', s: 'Atalho Alt + mingau', f: () => playReconnectVideo('shortcut'), secreto: true });
     return c.map(x => ({ tipo: 'Comando', ...x }));
   }
 

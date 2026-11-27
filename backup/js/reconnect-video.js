@@ -1,11 +1,11 @@
 /* ══════════════════════════════════════════════════════════════
-   Loading de reconexão após > 20 min fora + atalho Ctrl+mingau (v96)
+   Loading de reconexão após > 20 min fora + atalho Alt+mingau (v98)
    - Exibe assets/reconnect.mp4 (compactado) como tela de loading
      EXCLUSIVAMENTE quando o dashboard restabelece a conexão com o
      servidor após ficar mais de 20 minutos fora / sem resposta.
-   - Atalho manual: digitar "Ctrl + mingau" no teclado (segurando
-     Ctrl durante a palavra, segurando Ctrl+M e completando "ingau",
-     ou tocando Ctrl seguido de "mingau").
+   - Atalho manual: digitar "Alt + mingau" no teclado (segurando
+     Alt durante a palavra, segurando Alt+M e completando "ingau",
+     ou tocando Alt seguido de "mingau").
    - No celular: adaptado em tela cheia (retrato e paisagem) e
      acessível também digitando "mingau" na Busca rápida.
    ══════════════════════════════════════════════════════════════ */
@@ -200,14 +200,15 @@
     };
   }
 
-  /* ── 2. Atalho de teclado: Ctrl + mingau ──
+  /* ── 2. Atalho de teclado: Alt + mingau (v98) ──
      Aceita:
-       a) segurar Ctrl enquanto digita m-i-n-g-a-u;
-       b) apertar Ctrl+M e continuar digitando i-n-g-a-u;
-       c) apertar e soltar Ctrl e digitar m-i-n-g-a-u (fora de campos de texto). */
+       a) segurar Alt enquanto digita m-i-n-g-a-u (usa e.code para
+          funcionar mesmo se Alt gerar caractere especial);
+       b) apertar Alt+M e continuar digitando i-n-g-a-u;
+       c) apertar e soltar Alt e digitar m-i-n-g-a-u (fora de campos de texto). */
   let pos = 0;
   let seqTimer = null;
-  let ctrlArmadoAte = 0;
+  let altArmadoAte = 0;
 
   function resetSeq() {
     pos = 0;
@@ -223,15 +224,20 @@
     const tag = (el.tagName || '').toUpperCase();
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
   }
+  function letraTecla(e) {
+    if (typeof e.code === 'string' && /^Key[A-Z]$/.test(e.code)) return e.code[3].toLowerCase();
+    const k = String(e.key || '').toLowerCase();
+    return (k.length === 1 && k >= 'a' && k <= 'z') ? k : '';
+  }
 
   document.addEventListener('keydown', e => {
-    if (e.altKey || e.metaKey) { resetSeq(); return; }
-    if (e.key === 'Control') {
-      if (!e.repeat && !emCampoTexto(e.target)) ctrlArmadoAte = Date.now() + 4000;
+    if (e.ctrlKey || e.metaKey) { resetSeq(); return; }
+    if (e.key === 'Alt') {
+      if (!e.repeat && !emCampoTexto(e.target)) altArmadoAte = Date.now() + 4000;
       return;
     }
-    const k = String(e.key || '').toLowerCase();
-    if (k.length !== 1 || k < 'a' || k > 'z') {
+    const k = letraTecla(e);
+    if (!k) {
       if (pos > 0) resetSeq();
       return;
     }
@@ -240,17 +246,17 @@
     const esperado = SEQ[pos];
 
     if (pos === 0) {
-      if (k === esperado && (e.ctrlKey || (!editando && Date.now() <= ctrlArmadoAte))) {
-        if (e.ctrlKey) e.preventDefault();
+      if (k === esperado && (e.altKey || (!editando && Date.now() <= altArmadoAte))) {
+        if (e.altKey) e.preventDefault();
         pos = 1;
-        ctrlArmadoAte = 0;
+        altArmadoAte = 0;
         armarSeq();
       }
       return;
     }
 
     /* Já no meio da palavra "mingau" */
-    if (k === esperado && (e.ctrlKey || !editando)) {
+    if (k === esperado && (e.altKey || !editando)) {
       e.preventDefault();
       e.stopPropagation();
       pos++;
@@ -260,7 +266,7 @@
       } else {
         armarSeq();
       }
-    } else if (k === SEQ[0] && e.ctrlKey) {
+    } else if (k === SEQ[0] && e.altKey) {
       e.preventDefault();
       pos = 1;
       armarSeq();
