@@ -15,10 +15,14 @@
 <meta name="apple-mobile-web-app-title" content="SIR">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <script>
-  /* Gate — redireciona para lock.html se não autenticado */
-  if (localStorage.getItem('sir_auth_v1') !== 'granted') {
-    location.replace('pages/lock.html');
-  }
+  /* Porta de entrada (v104/v109): entra com sessão válida (e-mail + senha + código do autenticador)
+     ou, durante a transição, com a chave antiga (sir_auth_v1). Sem nenhum dos dois → tela de login. */
+  (function () {
+    var s = null, chave = false;
+    try { s = JSON.parse(localStorage.getItem('sir_sess_v1') || 'null'); chave = localStorage.getItem('sir_auth_v1') === 'granted'; } catch (e) {}
+    var sessao = !!(s && s.token && s.expira > Date.now());
+    if (!sessao && !chave) location.replace('pages/login.html');
+  })();
 </script>
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/layout-v2.css">
@@ -861,6 +865,10 @@
 <script src="js/rec-assoc.js"></script>
 <script src="js/offline-feed.js"></script>
 <script src="js/manual-tickets.js"></script>
+<script src="js/hfc.js"></script>
+<script src="js/sessao.js"></script>
+<script src="js/usuarios.js"></script>
+<script src="js/presenca.js"></script>
 <script src="js/lista-abas.js"></script>
 <script src="js/tickets-ui.js"></script>
 <script src="js/lixeira.js"></script>

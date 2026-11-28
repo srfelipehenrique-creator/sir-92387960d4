@@ -1,0 +1,133 @@
+/* ══════════════════════════════════════════════════════════════
+   v104 — Sessão e níveis de acesso no painel
+   - A porta de entrada (index.html) manda para pages/login.html quem não
+     tem sessão válida. Aqui: confere a sessão no servidor a cada 10 min,
+     marca o nível na página (html[data-papel]) e esconde o que o nível
+     não pode usar. Quem decide de verdade é o servidor.
+   - O token da sessão passa a ser a "chave" das rotas do servidor
+     (dados, notas, endereços…), com o nível de quem entrou.
+   - Menu: nome e nível de quem entrou, "Usuários" (Gestor para cima) e "Sair".
+   ══════════════════════════════════════════════════════════════ */
+
+const LS_SESS = 'sir_sess_v1';
+const SIR_NIVEIS = { dev: 'Desenvolvedor', gerencia: 'Gerência', gestor: 'Gestor', apoio: 'Apoio técnico' };
+
+function sirSessao() {
+  try { const s = JSON.parse(localStorage.getItem(LS_SESS) || 'null'); return s && s.token && s.expira > Date.now() ? s : null; } catch (e) { return null; }
+}
+function sirUsuario() { const s = sirSessao(); return s ? s.usuario : null; }
+function sirNivel() { const u = sirUsuario(); return u ? u.nivel : ''; }
+function sirPode(acao) {
+  const n = sirNivel();
+  const regras = {
+    inserirManual: ['dev', 'gerencia', 'gestor'],
+    usuarios:      ['dev', 'gerencia', 'gestor'],
+    tecnico:       ['dev'],                 /* coletor, servidor, chaves, versões */
+    editarNotaOutro: ['dev', 'gerencia'],
+    telefones:     ['dev', 'gerencia', 'gestor'],
+  };
+  return !!(regras[acao] && regras[acao].includes(n));
+}
+
+function sirSair(motivo) {
+  const s = sirSessao();
+  if (s && typeof SIR_PUSH_URL === 'string') {
+    try { fetch(SIR_PUSH_URL.replace(/\/+$/, '') + '/auth/sair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: s.token }), keepalive: true }); } catch (e) {}
+  }
+  try { localStorage.removeItem(LS_SESS); localStorage.removeItem('sir_auth_v1'); } catch (e) {}   /* Sair também tira o acesso pela chave */
+  location.replace('pages/login.html?sair=1' + (motivo ? '&motivo=' + encodeURIComponent(motivo) : ''));
+}
+
+/* Confere no servidor se a sessão continua valendo (bloqueio, troca de nível, saída) */
+async function sirConferirSessao() {
+  const s = sirSessao();
+  if (!s) {
+    /* Transição: quem entrou pela chave antiga continua; quem tinha sessão e ela venceu volta ao login */
+    let chave = false; try { chave = localStorage.getItem('sir_auth_v1') === 'granted'; } catch (e) {}
+    if (!chave) return sirSair('expirou');
+    return;
+  }
+  if (!navigator.onLine || typeof SIR_PUSH_URL !== 'string') return;
+  try {
+    const r = await fetch(SIR_PUSH_URL.replace(/\/+$/, '') + '/auth/eu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: s.token }) });
+    if (r.status === 401) return sirSair('expirou');
+    if (r.ok) {
+      const j = await r.json();
+      if (j.usuario) {
+        const mudou = j.usuario.nivel !== s.usuario.nivel;
+        s.usuario = j.usuario;
+        try { localStorage.setItem(LS_SESS, JSON.stringify(s)); } catch (e) {}
+        sirAplicarNivel();
+        if (mudou && typeof showActionToast === 'function') showActionToast(`Seu nível de acesso agora é ${SIR_NIVEIS[j.usuario.nivel]}`, 'info');
+      }
+    }
+  } catch (e) {}
+}
+
+function sirAplicarNivel() {
+  const u = sirUsuario();
+  document.documentElement.dataset.papel = u ? u.nivel : '';
+  _sirMenuConta();
+}
+
+function _sirMenuConta() {
+  const body = document.querySelector('#app-menu .app-menu-body');
+  if (!body) return;
+  let box = document.getElementById('menu-conta');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'menu-conta'; box.className = 'menu-layout menu-conta';
+    body.appendChild(box);
+  }
+  const u = sirUsuario();
+  if (!u) {
+    box.innerHTML = `<div class="menu-conta-id"><span class="menu-conta-nome">Acesso pela chave antiga</span>
+      <span class="menu-conta-ips">Por um tempo. Crie sua conta (convite ou cadastro) para entrar com e-mail, senha e autenticador.</span></div>
+      <button type="button" class="menu-layout-opt" onclick="location.href='pages/login.html'"><i data-lucide="log-in"></i><span>Entrar com conta</span></button>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: Array.from(box.querySelectorAll('[data-lucide]')) });
+    return;
+  }
+  box.innerHTML = `
+    <div class="menu-conta-id" title="${escapeHtml(u.email)}">
+      <span class="menu-conta-nome">${escapeHtml(u.nome)}</span>
+      <span class="menu-conta-nivel nivel-${escapeHtml(u.nivel)}">${escapeHtml(SIR_NIVEIS[u.nivel] || u.nivel)}</span>
+      ${Array.isArray(u.ipsAtivos) ? `<span class="menu-conta-ips" title="Você pode ficar conectado em até 2 redes (IPs) ao mesmo tempo">Conectado em ${u.ipsAtivos.length || 1} de 2 redes</span>` : ''}
+    </div>
+    ${sirPode('usuarios') ? `<button type="button" class="menu-layout-opt" onclick="closeAppMenu(); abrirUsuarios();"><i data-lucide="users"></i><span>Usuários e acessos</span></button>` : ''}
+    <button type="button" class="menu-layout-opt" onclick="sirSair()"><i data-lucide="log-out"></i><span>Sair</span></button>`;
+  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: Array.from(box.querySelectorAll('[data-lucide]')) });
+}
+
+/* O token da sessão vale como chave nas rotas do servidor */
+if (typeof _pushKey === 'function') {
+  const _chaveAntiga = _pushKey;
+  _pushKey = function () { const s = sirSessao(); return s ? s.token : _chaveAntiga(); };   /* eslint-disable-line no-global-assign */
+}
+/* Desenvolvedor e Gerência podem editar/excluir nota de outra pessoa (o servidor confere) */
+if (typeof canManageNote === 'function') {
+  const _cmn = canManageNote;
+  canManageNote = function (n) { return sirPode('editarNotaOutro') || _cmn(n); };   /* eslint-disable-line no-global-assign */
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const u = sirUsuario();
+  if (u) { try { localStorage.setItem('sir_user_name', u.nome); } catch (e) {} }
+  sirAplicarNivel();
+  /* v105: entrou de um 3º IP e a sessão mais antiga foi encerrada */
+  try {
+    if (sessionStorage.getItem('sir_aviso_ip')) {
+      sessionStorage.removeItem('sir_aviso_ip');
+      setTimeout(() => typeof showActionToast === 'function' && showActionToast('Você pode ficar conectado em até 2 redes (IPs) ao mesmo tempo: a sessão mais antiga foi encerrada.', 'info'), 1500);
+    }
+  } catch (e) {}
+  /* Coletor, servidor e chaves: só o Desenvolvedor */
+  if (typeof openColetor === 'function') {
+    const _oc = openColetor;
+    openColetor = function () { if (!sirPode('tecnico')) { if (typeof showActionToast === 'function') showActionToast('Só o Desenvolvedor configura o coletor', 'error'); return; } return _oc.apply(this, arguments); };   /* eslint-disable-line no-global-assign */
+  }
+  sirConferirSessao();
+  setInterval(sirConferirSessao, 10 * 60000);
+  /* Sessão vence no fim do turno (12 h): volta para o login */
+  const s = sirSessao();
+  if (s) setTimeout(() => sirSair('expirou'), Math.max(0, s.expira - Date.now()) + 1000);
+});

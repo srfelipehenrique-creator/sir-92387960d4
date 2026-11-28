@@ -122,6 +122,7 @@
     <button class="btn sec" type="button" id="volta-entrar">Voltar para Entrar</button>
   </section>
 
+  <p class="rodape" id="transicao"><a href="lock.html" style="color:var(--soft)">Ainda não tem conta? Entrar com a chave antiga (por um tempo)</a></p>
   <p class="rodape">Seus dados de acesso ficam no servidor do SIR. A senha é guardada cifrada (PBKDF2) e o segundo fator é obrigatório.</p>
 </main>
 
@@ -158,7 +159,6 @@
     try {
       localStorage.setItem('sir_sess_v1', JSON.stringify({ token: j.token, usuario: j.usuario, expira: j.expira }));
       localStorage.setItem('sir_user_name', j.usuario.nome);          /* autor das notas */
-      localStorage.setItem('sir_auth_v1', 'granted');                 /* compatibilidade com o restante do app */
       sessionStorage.setItem('sir_intro_skip', '1');
       if (j.encerrados) sessionStorage.setItem('sir_aviso_ip', '1');
     } catch (e) {}

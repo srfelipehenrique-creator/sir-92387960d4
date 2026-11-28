@@ -284,8 +284,12 @@ function _mtBotao() {
   if (!ref) return;
   const b = document.createElement('button');
   b.type = 'button'; b.id = 'btn-modal-manual'; b.className = 'modal-csv-btn btn-manual';
-  b.textContent = 'Inserir'; b.title = 'Inserir RAL ou REC manualmente (se já existir, atualiza as informações)';
-  b.addEventListener('click', e => { e.stopPropagation(); abrirInserirManual(); });
+  b.textContent = 'Inserir'; b.setAttribute('aria-label', 'Inserir ticket manualmente'); b.title = 'Inserir RAL ou REC manualmente (se já existir, atualiza as informações)';
+  b.addEventListener('click', e => {
+    e.stopPropagation();
+    if (typeof isHfcKey === 'function' && isHfcKey(appState.currentModalKey)) abrirInserirHfc();   /* v102 */
+    else abrirInserirManual();
+  });
   ref.insertAdjacentElement('afterend', b);
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(_mtBotao, 0));

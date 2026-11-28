@@ -15,11 +15,13 @@
 <meta name="apple-mobile-web-app-title" content="SIR">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <script>
-  /* Porta de entrada (v104): só entra com sessão válida (e-mail + senha + código do autenticador) */
+  /* Porta de entrada (v104/v109): entra com sessão válida (e-mail + senha + código do autenticador)
+     ou, durante a transição, com a chave antiga (sir_auth_v1). Sem nenhum dos dois → tela de login. */
   (function () {
-    var s = null;
-    try { s = JSON.parse(localStorage.getItem('sir_sess_v1') || 'null'); } catch (e) {}
-    if (!s || !s.token || !(s.expira > Date.now())) location.replace('pages/login.html');
+    var s = null, chave = false;
+    try { s = JSON.parse(localStorage.getItem('sir_sess_v1') || 'null'); chave = localStorage.getItem('sir_auth_v1') === 'granted'; } catch (e) {}
+    var sessao = !!(s && s.token && s.expira > Date.now());
+    if (!sessao && !chave) location.replace('pages/login.html');
   })();
 </script>
 <link rel="stylesheet" href="css/styles.css">

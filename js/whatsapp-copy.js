@@ -5,8 +5,8 @@
    Usa *negrito* do WhatsApp. SLA é calculado no momento da cópia.
    ══════════════════════════════════════════════════════════════ */
 
-function _waSla(abertura, isRal) {
-  const r = calcSla(abertura || '', isRal);
+function _waSla(abertura, isRal, horas) {
+  const r = calcSla(abertura || '', isRal, horas);
   if (!r) return '';
   const fmt = ms => {
     const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
@@ -15,7 +15,7 @@ function _waSla(abertura, isRal) {
   if (r.remaining <= 0) return `⛔ SLA PERDIDO (+${fmt(Math.abs(r.remaining))})`;
   /* Mesmas faixas de cor da lista: verde > 2h, amarelo < 2h, vermelho < 1h */
   const dot = r.remaining < 3600000 ? '🔴' : r.remaining < 7200000 ? '🟡' : '🟢';
-  return `${dot} ${fmt(r.remaining)} restantes (${isRal ? '6h' : '4h'})`;
+  return `${dot} ${fmt(r.remaining)} restantes (${+horas > 0 ? horas + 'h' : isRal ? '6h' : '4h'})`;
 }
 
 const _WA_STATUS_EMOJI = { 'sem-acesso': '🚫', 'area-de-risco': '⚠️', 'liberacao-noc': '📡' };
@@ -37,12 +37,13 @@ function formatTicketWA(item, isRal) {
   const lines = [
     ...(typeof getTicketTag === 'function' && getTicketTag(st.eventColor)
         ? [`${getTicketTag(st.eventColor).emoji} *${getTicketTag(st.eventColor).label}*`] : []),
-    `🏷️ *${_waTicketLabel(item.ticket, isRal)}* -📍 CF ${item.cfOrigem || 'N/D'}`,
+    `🏷️ *${item.hfc ? 'HFC · OUTAGE ' + item.ticket : _waTicketLabel(item.ticket, isRal)}* -📍 CF ${item.cfOrigem || 'N/D'}`,
+    ...(item.hfc ? [`📶 Tipo: ${item.extra}`] : []),
     `📋 Designação: ${item.designacao || 'N/D'}`,
   ];
   if (!isRal && item.extra && item.extra !== 'N/D') lines.push(`👤 Cliente: ${item.extra}`);
   if (item.abertura) lines.push(`📅 Abertura: ${item.abertura}`);
-  const sla = _waSla(item.abertura, isRal);
+  const sla = _waSla(item.abertura, isRal, item.slaH || 0);
   if (sla) lines.push(`⏳ SLA: ${sla}`);
   const notes = typeof getTicketNotes === 'function' ? getTicketNotes(makeIdentity(isRal ? 'ral' : 'rec', item))
               : (st.obs ? [{ t: st.obs }] : []);

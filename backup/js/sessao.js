@@ -34,14 +34,19 @@ function sirSair(motivo) {
   if (s && typeof SIR_PUSH_URL === 'string') {
     try { fetch(SIR_PUSH_URL.replace(/\/+$/, '') + '/auth/sair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: s.token }), keepalive: true }); } catch (e) {}
   }
-  try { localStorage.removeItem(LS_SESS); } catch (e) {}
+  try { localStorage.removeItem(LS_SESS); localStorage.removeItem('sir_auth_v1'); } catch (e) {}   /* Sair também tira o acesso pela chave */
   location.replace('pages/login.html?sair=1' + (motivo ? '&motivo=' + encodeURIComponent(motivo) : ''));
 }
 
 /* Confere no servidor se a sessão continua valendo (bloqueio, troca de nível, saída) */
 async function sirConferirSessao() {
   const s = sirSessao();
-  if (!s) return sirSair('expirou');
+  if (!s) {
+    /* Transição: quem entrou pela chave antiga continua; quem tinha sessão e ela venceu volta ao login */
+    let chave = false; try { chave = localStorage.getItem('sir_auth_v1') === 'granted'; } catch (e) {}
+    if (!chave) return sirSair('expirou');
+    return;
+  }
   if (!navigator.onLine || typeof SIR_PUSH_URL !== 'string') return;
   try {
     const r = await fetch(SIR_PUSH_URL.replace(/\/+$/, '') + '/auth/eu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: s.token }) });
@@ -75,7 +80,13 @@ function _sirMenuConta() {
     body.appendChild(box);
   }
   const u = sirUsuario();
-  if (!u) { box.innerHTML = ''; return; }
+  if (!u) {
+    box.innerHTML = `<div class="menu-conta-id"><span class="menu-conta-nome">Acesso pela chave antiga</span>
+      <span class="menu-conta-ips">Por um tempo. Crie sua conta (convite ou cadastro) para entrar com e-mail, senha e autenticador.</span></div>
+      <button type="button" class="menu-layout-opt" onclick="location.href='pages/login.html'"><i data-lucide="log-in"></i><span>Entrar com conta</span></button>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: Array.from(box.querySelectorAll('[data-lucide]')) });
+    return;
+  }
   box.innerHTML = `
     <div class="menu-conta-id" title="${escapeHtml(u.email)}">
       <span class="menu-conta-nome">${escapeHtml(u.nome)}</span>
