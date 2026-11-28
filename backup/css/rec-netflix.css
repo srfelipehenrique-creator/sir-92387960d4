@@ -253,14 +253,99 @@ html.rec-netflix .nf-hero::before {
   min-width: 0;
 }
 .nf-eyebrow {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+/* Indicador sutil de cidade e clima atual (v110) */
+.nf-clima-slot {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+}
+.nf-clima-slot:empty { display: none; }
+.nf-clima {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-soft);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.nf-clima:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--text-main);
+}
+.nf-clima:focus-visible {
+  outline: 2px solid var(--nf-red, #E50914);
+  outline-offset: 2px;
+}
+.nf-clima-ico {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+.nf-clima.is-sun .nf-clima-ico,
+.nf-clima.is-partly .nf-clima-ico { color: #F5B942; }
+.nf-clima.is-moon .nf-clima-ico { color: #A5B4FC; }
+.nf-clima.is-rain .nf-clima-ico,
+.nf-clima.is-storm .nf-clima-ico { color: #60A5FA; }
+.nf-clima.is-fog .nf-clima-ico,
+.nf-clima.is-cloud .nf-clima-ico { color: #CBD5E1; }
+.nf-clima-temp { font-weight: 700; color: var(--text-main); }
+.nf-clima-sep { opacity: 0.45; }
+.nf-clima-city {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-soft);
+}
+.nf-clima.is-prompt {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+.nf-clima.is-loading { opacity: 0.72; cursor: progress; }
+
+html.rec-netflix[data-mode="light"] .nf-clima {
+  background: rgba(54, 46, 38, 0.05);
+  border-color: rgba(54, 46, 38, 0.16);
+  color: var(--text-soft);
+}
+html.rec-netflix[data-mode="light"] .nf-clima:hover {
+  background: rgba(54, 46, 38, 0.10);
+  border-color: rgba(54, 46, 38, 0.28);
+  color: var(--text-main);
+}
+html.rec-netflix[data-mode="light"] .nf-clima.is-sun .nf-clima-ico,
+html.rec-netflix[data-mode="light"] .nf-clima.is-partly .nf-clima-ico { color: #B45309; }
+html.rec-netflix[data-mode="light"] .nf-clima.is-moon .nf-clima-ico { color: #4338CA; }
+html.rec-netflix[data-mode="light"] .nf-clima.is-rain .nf-clima-ico,
+html.rec-netflix[data-mode="light"] .nf-clima.is-storm .nf-clima-ico { color: #1D4ED8; }
+html.rec-netflix[data-mode="light"] .nf-clima.is-fog .nf-clima-ico,
+html.rec-netflix[data-mode="light"] .nf-clima.is-cloud .nf-clima-ico { color: #52525B; }
+
+@media (max-width: 640px) {
+  .nf-clima { min-height: 30px; padding: 3px 10px; font-size: 12px; }
+  .nf-clima-city { max-width: 130px; }
 }
 .nf-n-mark {
   display: inline-flex;

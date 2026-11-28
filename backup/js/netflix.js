@@ -118,6 +118,9 @@
           if (cmdBtn) cmdBtn.click();
           else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
         }
+        else if (act === 'clima' && typeof SirClima !== 'undefined') {
+          SirClima.atualizar();
+        }
       } catch (err) { console.warn('netflix act', err); }
     });
     return el;
@@ -176,12 +179,15 @@
         }).join('')
       : '<div class="nf-top-empty">Nenhuma área com tickets no momento.</div>';
 
+    const climaHTML = typeof SirClima !== 'undefined' ? SirClima.renderPillHTML() : '';
+
     el.innerHTML = `
       <div class="nf-hero-main">
         <div class="nf-eyebrow">
           <span class="nf-n-mark" aria-hidden="true">S</span>
           <span>COP REDE FIBRA · ${esc(escopoLbl)}</span>
           <span class="nf-live-pill">AO VIVO</span>
+          <span id="nf-clima-slot" class="nf-clima-slot">${climaHTML}</span>
         </div>
         <h2 class="nf-hero-title">${esc(titulo)}</h2>
         <p class="nf-hero-sub">${esc(sub)}</p>

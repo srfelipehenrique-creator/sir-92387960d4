@@ -1,7 +1,7 @@
 /* v70: a versão backup (pasta /backup/) usa caches próprios ('sir-backup-…'),
    e cada versão só apaga os caches antigos dela mesma */
 const CACHE_PREFIX = /\/backup\//.test(self.location.pathname) ? 'sir-backup-v' : 'sir-v';
-const CACHE_NAME   = CACHE_PREFIX + '109';
+const CACHE_NAME   = CACHE_PREFIX + '110';
 const SHELL_ASSETS = [
   './',
   'index.html',
@@ -75,6 +75,7 @@ const SHELL_ASSETS = [
   'js/recursos.js',
   'js/mini-grafico.js',
   'js/hud.js',
+  'js/clima.js',
   'js/netflix.js',
   'js/comando.js',
   'js/nav-celular.js',
@@ -150,6 +151,7 @@ self.addEventListener('fetch', e => {
   if (!url.startsWith('http')) return;
   if (url.includes('raw.githubusercontent.com')) return;
   if (url.includes('api.github.com') || url.includes('.workers.dev')) return;   /* sempre ao vivo (horário dos dados, servidor) */
+  if (url.includes('api.open-meteo.com') || url.includes('api.bigdatacloud.net')) return;   /* clima sempre ao vivo */
   if (url.includes('/coletor/')) return;                  /* coletor: sempre a versão mais nova */
 
   const sameOrigin = new URL(url).origin === self.location.origin;
