@@ -12,6 +12,8 @@
    - Chaves VAPID geradas no primeiro uso e guardadas no KV.
    ══════════════════════════════════════════════════════════════ */
 
+import { rotasAuth, usuarioDaSessao } from './auth.js';
+
 const CSV_URLS = {
   ral: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_ral.csv',
   rec: 'https://raw.githubusercontent.com/cpralonrj-pralon/embratel-sir/refs/heads/main/dados_rec.csv',
@@ -379,7 +381,8 @@ export class NotesStore {
         /* v58 — só o autor edita/exclui a própria nota (notas sem autor continuam livres) */
         const nn = v => String(v || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
         const n = cur.list.find(x => x.i === nid);
-        if (n && n.by && nn(n.by) !== nn(by)) return jsonPlain({ error: 'autor', note: notes[id] || null }, 409);
+        /* v104: Desenvolvedor, Gerência e o Gestor da área (marcados pelo servidor) podem mexer na nota de outra pessoa */
+        if (n && n.by && nn(n.by) !== nn(by) && body._admin !== true) return jsonPlain({ error: 'autor', note: notes[id] || null }, 409);
         if (op === 'edit') { if (n && txt) { n.t = txt; n.et = now; if (by) n.eb = by; } }
         else cur.list = cur.list.filter(x => x.i !== nid);
       } else if (op === 'meta' || !op) {
@@ -743,9 +746,20 @@ export class OtsStore {
 }
 
 /* ─────────────────────────── API ─────────────────────────── */
-async function authorized(env, key) {
+async function chaveCompartilhada(env, key) {
   if (!key || !env.KEY_HASH) return false;
   return (await sha256Hex(String(key).trim())) === env.KEY_HASH;
+}
+/* v104: vale a chave compartilhada OU o token de uma sessão ativa (login com 2 fatores) */
+async function authorized(env, key) {
+  if (await chaveCompartilhada(env, key)) return true;
+  return !!(await usuarioDaSessao(env, String(key || '').trim()));
+}
+/* Ações de administração: chave compartilhada ou sessão de um dos níveis indicados */
+async function authorizedNivel(env, key, niveis) {
+  if (await chaveCompartilhada(env, key)) return true;
+  const u = await usuarioDaSessao(env, String(key || '').trim());
+  return !!(u && niveis.includes(u.nivel));
 }
 
 export default {
@@ -760,6 +774,9 @@ export default {
     const h = cors(env, req);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
     const url = new URL(req.url);
+
+    /* v104: contas, níveis de acesso e 2 fatores */
+    if (url.pathname.startsWith('/auth/')) return rotasAuth(req, env, h, url, k => chaveCompartilhada(env, k));
 
     if (req.method === 'GET' && url.pathname === '/vapid') {
       const v = await getVapid(env);
@@ -792,7 +809,7 @@ export default {
        Só os hashes ficam guardados. */
     if (req.method === 'POST' && url.pathname === '/collector/token') {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
-      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      if (!(await authorizedNivel(env, body.key, ['dev']))) return json({ error: 'chave' }, 403, h);
       const token = b64u(crypto.getRandomValues(new Uint8Array(24)));
       /* Valem os 5 códigos mais recentes: baixar o coletor de novo não derruba o que já está rodando */
       const prev = await env.SIR_KV.get('ingest_tok', 'json');
@@ -803,7 +820,8 @@ export default {
 
     if (req.method === 'POST' && (url.pathname === '/data' || url.pathname === '/ingest')) {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
-      let allowed = await authorized(env, body.key);
+      /* v104: ler (/data) = qualquer acesso válido; gravar (/ingest) = chave, sessão de Desenvolvedor ou código do coletor */
+      let allowed = url.pathname === '/ingest' ? await authorizedNivel(env, body.key, ['dev']) : await authorized(env, body.key);
       if (!allowed && url.pathname === '/ingest' && typeof body.token === 'string' && body.token.length >= 20) {
         const tk = await env.SIR_KV.get('ingest_tok', 'json');
         const th = await sha256Hex(body.token);
@@ -857,6 +875,7 @@ export default {
         const rows = (await env.SIR_KV.get('nodes', 'json')) || [];
         return json({ at: meta.at, by: meta.by, count: rows.length, rows }, 200, h);
       }
+      if (!(await authorizedNivel(env, body.key, ['dev', 'gerencia']))) return json({ error: 'permissao' }, 403, h);   /* v104 */
       const rows = Array.isArray(body.rows) ? body.rows : null;
       if (!rows || !rows.length || rows.length > 30000) return json({ error: 'linhas' }, 400, h);
       const clean = rows.filter(r => Array.isArray(r) && r[0]).map(r => r.slice(0, 9).map(c => String(c ?? '').slice(0, 200)));
@@ -884,6 +903,14 @@ export default {
     if (req.method === 'POST' && (url.pathname === '/notes' || url.pathname === '/note')) {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      delete body._admin;
+      /* v104: com login, o autor é sempre o nome da conta (ninguém escreve em nome de outro) */
+      const sess = await usuarioDaSessao(env, String(body.key || '').trim());
+      if (sess) {
+        if (url.pathname === '/note' && body.op !== 'meta') body.by = sess.nome;
+        const cf = String(body.id || '').split('::')[2] || '';
+        if (sess.nivel === 'dev' || sess.nivel === 'gerencia' || (sess.nivel === 'gestor' && (sess.areas || []).includes(cf))) body._admin = true;
+      }
       const stub = env.NOTES.get(env.NOTES.idFromName('notes'));
       const r = await stub.fetch('https://notes' + url.pathname, { method: 'POST', body: JSON.stringify(body) });
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });

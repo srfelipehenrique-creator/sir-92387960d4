@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-mode="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141414">
+<meta name="robots" content="noindex">
+<title>SIR · Entrar</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="../assets/manifest.json">
+<!-- v104: login com e-mail, senha e código do Google/Microsoft Authenticator.
+     Cadastro por convite (link) ou pendente de aprovação do gestor/gerência. -->
+<style>
+  :root { --accent:#E50914; --bg:#141414; --panel:#1b1b1b; --elev:#242424; --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18);
+          --text:#e8e8e8; --soft:rgba(232,232,232,.74); --muted:rgba(232,232,232,.62); --ok:#34d27b; --warn:#fbbf24; --err:#f87171; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+         min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; max-width: 420px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px 22px; }
+  .marca { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .marca b { font: 800 22px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 2px; }
+  .marca .selo { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line2); color: var(--soft); }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .abas { display: flex; gap: 4px; padding: 4px; background: var(--elev); border-radius: 10px; margin-bottom: 18px; }
+  .abas button { flex: 1; background: none; border: 0; color: var(--soft); font: 600 14px/1 inherit; padding: 10px; border-radius: 8px; cursor: pointer; min-height: 40px; }
+  .abas button[aria-selected="true"] { background: var(--accent); color: #fff; }
+  form { display: flex; flex-direction: column; gap: 12px; }
+  label { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--soft); }
+  input, select { font: 500 15px/1.3 inherit; color: var(--text); background: var(--elev); border: 1px solid var(--line2); border-radius: 10px; padding: 11px 12px; min-height: 44px; width: 100%; }
+  input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  input.codigo { font: 800 26px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 8px; text-align: center; }
+  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 10px; font: 700 15px/1 inherit; padding: 14px; min-height: 46px; cursor: pointer; }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .btn.sec { background: var(--elev); color: var(--text); border: 1px solid var(--line2); }
+  .msg { font-size: 13px; padding: 10px 12px; border-radius: 10px; }
+  .msg:empty { display: none; }
+  .msg.err { background: rgba(248,113,113,.12); color: var(--err); border: 1px solid rgba(248,113,113,.35); }
+  .msg.ok { background: rgba(52,210,123,.10); color: var(--ok); border: 1px solid rgba(52,210,123,.35); }
+  .msg.info { background: rgba(251,191,36,.10); color: var(--warn); border: 1px solid rgba(251,191,36,.35); }
+  .areas { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; max-height: 190px; overflow: auto; padding: 2px; }
+  .areas label { flex-direction: row; align-items: center; gap: 6px; font: 600 12.5px/1 'JetBrains Mono', ui-monospace, monospace; color: var(--text);
+                 background: var(--elev); border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-height: 38px; cursor: pointer; }
+  .areas input { width: auto; min-height: 0; accent-color: var(--accent); }
+  .grupo-t { grid-column: 1 / -1; font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: .5px; }
+  details { border: 1px dashed var(--line2); border-radius: 10px; padding: 8px 12px; }
+  summary { cursor: pointer; font-size: 12.5px; color: var(--soft); }
+  details[open] summary { margin-bottom: 10px; }
+  .qr { background: #fff; border-radius: 12px; padding: 14px; width: 220px; height: 220px; margin: 4px auto 0; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+  .segredo { font: 700 13px/1.4 'JetBrains Mono', ui-monospace, monospace; word-break: break-all; text-align: center; color: var(--soft); user-select: all; }
+  ol { padding-left: 20px; font-size: 13.5px; color: var(--soft); display: flex; flex-direction: column; gap: 4px; }
+  .rodape { margin-top: 18px; font-size: 11.5px; color: var(--muted); text-align: center; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="card" aria-labelledby="titulo">
+  <div class="marca"><b>SIR</b><span class="selo" id="selo-versao">Acesso seguro</span></div>
+
+  <!-- ── Entrar / Cadastrar ── -->
+  <section id="tela-inicio">
+    <div class="abas" role="tablist" aria-label="Entrar ou cadastrar">
+      <button type="button" role="tab" id="aba-entrar" aria-selected="true" aria-controls="form-entrar">Entrar</button>
+      <button type="button" role="tab" id="aba-cad" aria-selected="false" aria-controls="form-cad">Cadastrar</button>
+    </div>
+
+    <form id="form-entrar" autocomplete="on">
+      <h1 id="titulo">Entrar no SIR</h1>
+      <p class="sub">E-mail, senha e o código de 6 dígitos do seu app autenticador.</p>
+      <label>E-mail<input type="email" id="en-email" autocomplete="username" required inputmode="email"></label>
+      <label>Senha<input type="password" id="en-senha" autocomplete="current-password" required></label>
+      <label>Código do autenticador<input class="codigo" id="en-codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000"></label>
+      <div class="msg" id="en-msg" role="alert" aria-live="polite"></div>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+
+    <form id="form-cad" hidden autocomplete="on">
+      <h1>Criar acesso</h1>
+      <p class="sub" id="cad-sub">Seu acesso fica pendente até o gestor da sua área (ou a gerência) aprovar. Todo cadastro entra como Apoio técnico.</p>
+      <div class="msg info" id="cad-convite" hidden></div>
+      <label>Nome<input id="cad-nome" autocomplete="name" required maxlength="60"></label>
+      <label>E-mail<input type="email" id="cad-email" autocomplete="username" required inputmode="email"></label>
+      <label>Senha (mínimo 10 caracteres)<input type="password" id="cad-senha" autocomplete="new-password" required minlength="10"></label>
+      <label>Repita a senha<input type="password" id="cad-senha2" autocomplete="new-password" required minlength="10"></label>
+      <div id="cad-areas-box">
+        <label style="margin-bottom:6px">Suas áreas (CFs em que você trabalha)</label>
+        <div class="areas" id="cad-areas" role="group" aria-label="Áreas"></div>
+      </div>
+      <details id="cad-dev">
+        <summary>Primeiro acesso do Desenvolvedor</summary>
+        <label>Chave de acesso atual do SIR<input type="password" id="cad-chave" autocomplete="off"></label>
+        <p class="sub" style="margin:6px 0 0">Só vale uma vez, enquanto ainda não existir nenhum Desenvolvedor.</p>
+      </details>
+      <div class="msg" id="cad-msg" role="alert" aria-live="polite"></div>
+      <button class="btn" type="submit">Continuar</button>
+    </form>
+  </section>
+
+  <!-- ── Ativar o autenticador ── -->
+  <section id="tela-2fa" hidden>
+    <h1>Ative o segundo fator</h1>
+    <p class="sub">Use o Google Authenticator ou o Microsoft Authenticator no celular.</p>
+    <ol>
+      <li>No app, toque em <b>+</b> e escolha <b>ler código QR</b>.</li>
+      <li>Aponte para o código abaixo (ou digite a chave).</li>
+      <li>Digite o código de 6 dígitos que aparecer.</li>
+    </ol>
+    <div class="qr" id="qr" role="img" aria-label="Código QR para o app autenticador"></div>
+    <p class="segredo" id="segredo"></p>
+    <form id="form-2fa" style="margin-top:12px">
+      <label>Código do autenticador<input class="codigo" id="fa-codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000"></label>
+      <div class="msg" id="fa-msg" role="alert" aria-live="polite"></div>
+      <button class="btn" type="submit">Ativar e concluir</button>
+    </form>
+  </section>
+
+  <!-- ── Aguardando aprovação ── -->
+  <section id="tela-pendente" hidden>
+    <h1>Cadastro enviado</h1>
+    <p class="sub">Seu acesso está <b>aguardando aprovação</b> do gestor da sua área ou da gerência. Quando aprovarem, entre com e-mail, senha e o código do autenticador.</p>
+    <button class="btn sec" type="button" id="volta-entrar">Voltar para Entrar</button>
+  </section>
+
+  <p class="rodape">Seus dados de acesso ficam no servidor do SIR. A senha é guardada cifrada (PBKDF2) e o segundo fator é obrigatório.</p>
+</main>
+
+<script src="../js/config.js"></script>
+<script src="../js/push-config.js"></script>
+<script src="../js/qrcode.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const URL_SRV = (typeof SIR_PUSH_URL === 'string' ? SIR_PUSH_URL : '').replace(/\/+$/, '');
+  const DESTINO = '../index.html';
+  const params = new URLSearchParams(location.search);
+  const convite = params.get('convite') || '';
+  let pend = null;   /* { email, senha } entre o cadastro e a ativação do 2º fator */
+  let regToken = '';  /* permite refazer o próprio cadastro antes de ativar o autenticador */
+
+  if (/\/backup\//.test(location.pathname)) { $('selo-versao').textContent = 'BACKUP · Acesso seguro'; document.title = 'BACKUP · ' + document.title; }
+
+  /* Já tem sessão válida: vai direto */
+  try { const s = JSON.parse(localStorage.getItem('sir_sess_v1') || 'null'); if (s && s.token && s.expira > Date.now() && !params.has('sair')) { location.replace(DESTINO); return; } } catch (e) {}
+  if (params.has('sair')) try { localStorage.removeItem('sir_sess_v1'); } catch (e) {}
+
+  async function api(rota, corpo) {
+    if (!URL_SRV) throw new Error('Servidor do SIR não configurado');
+    const r = await fetch(URL_SRV + '/auth/' + rota, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+    let j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(j.error === 'rota' ? 'Servidor ainda não atualizado. Tente de novo em alguns minutos.' : (j.error || 'Falha ' + r.status));
+    return j;
+  }
+  const msg = (el, txt, tipo) => { el.className = 'msg ' + (tipo || 'err'); el.textContent = txt || ''; };
+  const ocupado = (form, sim) => form.querySelectorAll('button[type="submit"]').forEach(b => { b.disabled = sim; });
+
+  function entrarCom(j) {
+    try {
+      localStorage.setItem('sir_sess_v1', JSON.stringify({ token: j.token, usuario: j.usuario, expira: j.expira }));
+      localStorage.setItem('sir_user_name', j.usuario.nome);          /* autor das notas */
+      localStorage.setItem('sir_auth_v1', 'granted');                 /* compatibilidade com o restante do app */
+      sessionStorage.setItem('sir_intro_skip', '1');
+    } catch (e) {}
+    location.replace(DESTINO);
+  }
+  function mostrar(tela) { ['tela-inicio', 'tela-2fa', 'tela-pendente'].forEach(t => { $(t).hidden = t !== tela; }); }
+  function aba(qual) {
+    const cad = qual === 'cad';
+    $('aba-entrar').setAttribute('aria-selected', String(!cad)); $('aba-cad').setAttribute('aria-selected', String(cad));
+    $('form-entrar').hidden = cad; $('form-cad').hidden = !cad;
+    (cad ? $('cad-nome') : $('en-email')).focus();
+  }
+  $('aba-entrar').onclick = () => aba('entrar');
+  $('aba-cad').onclick = () => aba('cad');
+  $('volta-entrar').onclick = () => { mostrar('tela-inicio'); aba('entrar'); };
+
+  /* Áreas para escolher no cadastro */
+  if (typeof REGIONS !== 'undefined') {
+    const box = $('cad-areas'), nomes = typeof CF_NAMES !== 'undefined' ? CF_NAMES : {};
+    for (const [rn, cfs] of Object.entries(REGIONS)) {
+      box.insertAdjacentHTML('beforeend', `<div class="grupo-t">${rn}</div>`);
+      for (const cf of Object.keys(cfs)) box.insertAdjacentHTML('beforeend', `<label title="${(nomes[cf] || cf).replace(/"/g, '')}"><input type="checkbox" value="${cf}">${cf}</label>`);
+    }
+  }
+
+  if (convite) {
+    aba('cad');
+    $('cad-convite').hidden = false;
+    $('cad-convite').textContent = 'Você recebeu um convite: o nível e as áreas já vêm definidos por quem convidou e o acesso fica liberado assim que você ativar o autenticador.';
+    $('cad-sub').hidden = true; $('cad-areas-box').hidden = true; $('cad-dev').hidden = true;
+  }
+
+  /* ── Entrar ── */
+  $('form-entrar').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.currentTarget; ocupado(f, true); msg($('en-msg'), '');
+    try {
+      const j = await api('entrar', { email: $('en-email').value, senha: $('en-senha').value, codigo: $('en-codigo').value });
+      if (j.pendente) { mostrar('tela-pendente'); return; }
+      entrarCom(j);
+    } catch (err) { msg($('en-msg'), err.message); $('en-codigo').value = ''; }
+    finally { ocupado(f, false); }
+  });
+
+  /* ── Cadastro (passo 1) ── */
+  $('form-cad').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    if ($('cad-senha').value !== $('cad-senha2').value) { msg($('cad-msg'), 'As senhas não são iguais'); $('cad-senha2').focus(); return; }
+    const areas = [...document.querySelectorAll('#cad-areas input:checked')].map(i => i.value);
+    const chave = $('cad-chave').value.trim();
+    if (!convite && !chave && !areas.length) { msg($('cad-msg'), 'Escolha pelo menos uma área'); return; }
+    ocupado(f, true); msg($('cad-msg'), '');
+    try {
+      const j = await api('cadastro', { nome: $('cad-nome').value, email: $('cad-email').value, senha: $('cad-senha').value, areas, convite: convite || undefined, chave: chave || undefined, regToken: regToken || undefined });
+      regToken = j.regToken || '';
+      pend = { email: $('cad-email').value, senha: $('cad-senha').value };
+      try { const q = qrcode(0, 'M'); q.addData(j.otpauth); q.make(); $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }
+      catch (err) { $('qr').textContent = 'QR indisponível — use a chave abaixo'; }
+      $('segredo').textContent = j.segredo.replace(/(.{4})/g, '$1 ').trim();
+      mostrar('tela-2fa'); $('fa-codigo').focus();
+    } catch (err) { msg($('cad-msg'), err.message); }
+    finally { ocupado(f, false); }
+  });
+
+  /* ── Cadastro (passo 2): ativa o autenticador ── */
+  $('form-2fa').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.currentTarget; ocupado(f, true); msg($('fa-msg'), '');
+    try {
+      const j = await api('confirmar', { email: pend.email, senha: pend.senha, codigo: $('fa-codigo').value });
+      pend = null;
+      if (j.pendente) { mostrar('tela-pendente'); return; }
+      entrarCom(j);
+    } catch (err) { msg($('fa-msg'), err.message); $('fa-codigo').value = ''; }
+    finally { ocupado(f, false); }
+  });
+
+  [$('en-codigo'), $('fa-codigo')].forEach(i => i.addEventListener('input', () => { i.value = i.value.replace(/\D/g, '').slice(0, 6); }));
+})();
+</script>
+</body>
+</html>

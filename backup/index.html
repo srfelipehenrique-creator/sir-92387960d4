@@ -15,10 +15,12 @@
 <meta name="apple-mobile-web-app-title" content="SIR">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <script>
-  /* Gate — redireciona para lock.html se não autenticado */
-  if (localStorage.getItem('sir_auth_v1') !== 'granted') {
-    location.replace('pages/lock.html');
-  }
+  /* Porta de entrada (v104): só entra com sessão válida (e-mail + senha + código do autenticador) */
+  (function () {
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('sir_sess_v1') || 'null'); } catch (e) {}
+    if (!s || !s.token || !(s.expira > Date.now())) location.replace('pages/login.html');
+  })();
 </script>
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/layout-v2.css">
@@ -862,6 +864,8 @@
 <script src="js/offline-feed.js"></script>
 <script src="js/manual-tickets.js"></script>
 <script src="js/hfc.js"></script>
+<script src="js/sessao.js"></script>
+<script src="js/usuarios.js"></script>
 <script src="js/lista-abas.js"></script>
 <script src="js/tickets-ui.js"></script>
 <script src="js/lixeira.js"></script>

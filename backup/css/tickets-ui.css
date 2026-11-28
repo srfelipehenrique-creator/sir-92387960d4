@@ -347,3 +347,44 @@ body.layout-v2 .v2-kpi-btn.v2-kpi-hfc { color: #5eead4 !important; background: r
 body.layout-v2 .v2-kpi-btn.v2-kpi-hfc .v2-kpi-type { color: #5eead4; }
 body.layout-v2 .v2-kpi-btn.v2-kpi-hfc.v2-zero { opacity: .6; }
 [data-mode="light"] body.layout-v2 .v2-kpi-btn.v2-kpi-hfc, [data-mode="light"] body.layout-v2 .v2-kpi-btn.v2-kpi-hfc .v2-kpi-type { color: #0f766e !important; }
+
+/* ── v104: níveis de acesso ── */
+html[data-papel="apoio"] #btn-modal-manual,
+html[data-papel="apoio"] .hfc-encerrar,
+html[data-papel="apoio"] .manual-badge { display: none !important; }
+html[data-papel="apoio"] .manual-badge.hfc-encerrar { display: none !important; }
+html:not([data-papel="dev"]) #stale-coletor,
+html:not([data-papel="dev"]) .cfg-action-btn[onclick*="openColetor"] { display: none !important; }
+.menu-conta { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+.menu-conta-id { display: flex; flex-direction: column; gap: 4px; padding: 4px 12px 8px; }
+.menu-conta-nome { font-weight: 700; color: var(--text-main); }
+.menu-conta-nivel { display: inline-flex; align-self: flex-start; font: 700 10.5px/18px var(--font-mono, monospace); padding: 0 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--text-soft); }
+.menu-conta-nivel.nivel-dev { color: #c4b5fd; border-color: rgba(167,139,250,.5); }
+.menu-conta-nivel.nivel-gerencia { color: #93c5fd; border-color: rgba(96,165,250,.5); }
+.menu-conta-nivel.nivel-gestor { color: #fcd34d; border-color: rgba(251,191,36,.5); }
+.menu-conta-nivel.nivel-apoio { color: #5eead4; border-color: rgba(45,212,191,.45); }
+[data-mode="light"] .menu-conta-nivel.nivel-dev { color: #6d28d9; } [data-mode="light"] .menu-conta-nivel.nivel-gerencia { color: #1d4ed8; }
+[data-mode="light"] .menu-conta-nivel.nivel-gestor { color: #a16207; } [data-mode="light"] .menu-conta-nivel.nivel-apoio { color: #0f766e; }
+.us-box { max-width: 720px; }
+.us-abas { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--line-strong); overflow-x: auto; }
+.us-abas button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 600; font-size: 13px; padding: 10px 10px; white-space: nowrap; cursor: pointer; min-height: 40px; }
+.us-abas button[aria-selected="true"] { color: var(--text-main); border-bottom-color: var(--accent); }
+.us-item { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.us-item.us-bloq { opacity: .7; border-style: dashed; }
+.us-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.us-mail, .us-quando, .us-meta { font-size: 12px; color: var(--text-muted); }
+.us-form label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.us-sel { width: auto; min-width: 150px; }
+.us-rot { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+.us-areas { display: flex; flex-wrap: wrap; gap: 5px; }
+.us-area { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px/1 var(--font-mono, monospace); padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; cursor: pointer; }
+.us-area:has(input:checked) { border-color: var(--accent); background: rgba(229,9,20,.10); }
+.us-area input { margin: 0; accent-color: var(--accent); }
+.us-tag-bloq { font-size: 10.5px; font-weight: 700; color: #f87171; border: 1px solid rgba(248,113,113,.45); border-radius: 999px; padding: 0 8px; line-height: 18px; }
+.us-gerir summary { cursor: pointer; font-size: 12.5px; color: var(--text-soft); }
+.us-gerir[open] { display: flex; flex-direction: column; gap: 8px; }
+.us-link { display: flex; gap: 8px; } .us-link input { flex: 1; font-size: 12px; }
+.us-reg { width: 100%; border-collapse: collapse; font-size: 12px; }
+.us-reg th, .us-reg td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.us-reg th { color: var(--text-muted); font-weight: 600; }
+@media (pointer: coarse) { .us-area, .us-sel { min-height: 44px; } }
