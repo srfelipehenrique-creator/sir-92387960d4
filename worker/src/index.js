@@ -923,9 +923,11 @@ export default {
       let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
       if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
       const sess = await usuarioDaSessao(env, String(body.key || '').trim());
-      const pl = { dev: body.dev, ver: body.ver, nome: sess ? sess.nome : body.nome, nivel: sess ? sess.nivel : '', conta: sess ? sess.email : '',
-        verNomes: !!body.verNomes && (sess ? ['dev', 'gerencia'].includes(sess.nivel) : await chaveCompartilhada(env, body.key)) };
+      /* v108: todos avisam; os números e a lista só voltam para quem entrou como Desenvolvedor */
+      const ehDev = !!(sess && sess.nivel === 'dev');
+      const pl = { dev: body.dev, ver: body.ver, nome: sess ? sess.nome : body.nome, nivel: sess ? sess.nivel : '', conta: sess ? sess.email : '', verNomes: ehDev && !!body.verNomes };
       const r = await env.NOTES.get(env.NOTES.idFromName('notes')).fetch('https://notes/presenca', { method: 'POST', body: JSON.stringify(pl) });
+      if (!ehDev) return json({ ok: true }, 200, h);
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 

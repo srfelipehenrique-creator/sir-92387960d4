@@ -3,8 +3,9 @@
    - Cada aparelho com o painel aberto avisa o servidor a cada 2 min
      (e ao voltar para a tela). O servidor conta quem avisou nos últimos
      5 min — só na memória, nada fica gravado.
-   - Rodapé: "N ativos agora" (principal e backup). Ao tocar, a lista de
-     nomes para Desenvolvedor/Gerência (backup) ou quem tem a chave (principal).
+   - Rodapé: "N ativos agora" (principal e backup) e, ao tocar, a lista de nomes.
+     v108: só aparece para quem entrou como Desenvolvedor (o servidor só devolve
+     os números para ele; os demais apenas avisam que estão ativos).
    ══════════════════════════════════════════════════════════════ */
 
 const PRES_MS = 120000;
@@ -28,7 +29,8 @@ async function presencaAvisar(verNomes) {
       body: JSON.stringify({ key: _pushKey(), dev: document.hidden ? '' : _presDev(), nome, ver: _presVer(), verNomes: !!verNomes })
     });
     if (!r.ok) return null;
-    _pres.dados = await r.json();
+    const j = await r.json();
+    _pres.dados = typeof j.pessoas === 'number' ? j : null;   /* só o Desenvolvedor recebe os números */
     _presRender();
     return _pres.dados;
   } catch (e) { return null; }
@@ -37,7 +39,7 @@ async function presencaAvisar(verNomes) {
 function _presRender() {
   const d = _pres.dados;
   let el = document.getElementById('presenca-ativos');
-  if (!d) { if (el) el.remove(); return; }
+  if (!d || typeof sirNivel !== 'function' || sirNivel() !== 'dev') { if (el) el.remove(); return; }
   if (!el) {
     const footer = document.querySelector('.page-footer');
     if (!footer) return;
@@ -54,11 +56,7 @@ function _presRender() {
 /* Toque no contador: lista de quem está ativo (se o nível permitir) */
 async function presencaLista() {
   const d = await presencaAvisar(true);
-  if (!d) return;
-  if (!d.lista) {
-    if (typeof showActionToast === 'function') showActionToast(`${d.pessoas} ativo(s) agora · principal ${d.principal} · backup ${d.backup}. A lista de nomes é só para Desenvolvedor e Gerência.`, 'info');
-    return;
-  }
+  if (!d || !d.lista) return;
   document.getElementById('presenca-pop')?.remove();
   const pop = document.createElement('div');
   pop.id = 'presenca-pop'; pop.className = 'presenca-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Pessoas ativas agora');
