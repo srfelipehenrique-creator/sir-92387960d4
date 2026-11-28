@@ -100,7 +100,8 @@
           const isRal = btn.dataset.nfRal !== '0';
           const title = btn.dataset.nfTitle || 'Chamados';
           if (typeof openModal === 'function') openModal(key, isRal, title);
-        } else if (act === 'torpedos' && typeof openTorpedos === 'function') openTorpedos();
+        } else if (act === 'enderecos' && typeof openNodes === 'function') openNodes();
+        else if (act === 'torpedos' && typeof openTorpedos === 'function') openTorpedos();
         else if (act === 'mascaras' && typeof openMascaras === 'function') openMascaras();
         else if (act === 'scripts' && typeof openScripts === 'function') openScripts();
         else if (act === 'siglas' && typeof openSiglas === 'function') openSiglas();
@@ -198,14 +199,11 @@
             <button type="button" class="nf-btn-play" data-nf-act="open-modal" data-nf-key="${esc(playKey)}" data-nf-ral="${playIsRal ? '1' : '0'}" data-nf-title="${esc(playTitle)}">
               <span aria-hidden="true">▶</span> ${esc(playLabel)}
             </button>
-            <button type="button" class="nf-btn-info" data-nf-act="torpedos">
-              <span aria-hidden="true">ⓘ</span> Torpedos
+            <button type="button" class="nf-btn-info" data-nf-act="enderecos" title="Endereços de node (o mesmo do menu)">
+              <span aria-hidden="true">📍</span> Endereços
             </button>
           </div>
           <div class="nf-hero-chips" aria-label="Atalhos rápidos">
-            <button type="button" class="nf-chip" data-nf-act="mascaras">Máscaras</button>
-            <button type="button" class="nf-chip" data-nf-act="scripts">Textos Prontos</button>
-            <button type="button" class="nf-chip" data-nf-act="siglas">Siglas</button>
             <button type="button" class="nf-chip" data-nf-act="areas">Minhas Áreas</button>
             <button type="button" class="nf-chip" data-nf-act="buscar">Buscar</button>
           </div>

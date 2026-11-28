@@ -1,16 +1,16 @@
 /* ── SLA ── */
 let slaInterval = null;
 
-function calcSla(aberturaStr, isRal) {
+function calcSla(aberturaStr, isRal, horas) {
   const opened = parseAbertura(aberturaStr);
   if (!opened) return null;
-  const limitMs  = (isRal ? 6 : 4) * 3600000;
+  const limitMs  = (+horas > 0 ? +horas : (isRal ? 6 : 4)) * 3600000;   /* v102: horas do item (HFC) */
   const deadline = opened + limitMs;
   return { remaining: deadline - Date.now(), deadline };
 }
 
-function buildSlaCellHTML(aberturaStr, isRal) {
-  const result = calcSla(aberturaStr, isRal);
+function buildSlaCellHTML(aberturaStr, isRal, horas) {
+  const result = calcSla(aberturaStr, isRal, horas);
   if (!result) return `<span class="sla-badge" style="color:#3d4754;">—</span>`;
   const { remaining } = result;
   if (remaining <= 0) {
@@ -34,7 +34,7 @@ function updateSlaCells() {
   const isRal = appState.currentModalType === 'ral';
   tbody.querySelectorAll('tr.ticket-row').forEach(row => {
     const cell = row.querySelector('td.sla-col');
-    if (cell) cell.innerHTML = buildSlaCellHTML(row.dataset.abertura || '', isRal);
+    if (cell) cell.innerHTML = buildSlaCellHTML(row.dataset.abertura || '', isRal, +row.dataset.slaH || 0);
   });
 }
 
@@ -449,14 +449,14 @@ function openModal(dataKey, isRal, titleOverride, highlightTicket = null) {
           data-ral-mae="${escapeHtml(mae)}"
           data-event-color="none"
           data-obs-status="none"
-          data-abertura="${escapeHtml(item.abertura || '')}"
+          data-abertura="${escapeHtml(item.abertura || '')}"${item.slaH ? ` data-sla-h="${+item.slaH}"` : ''}
           data-extra="${escapeHtml(item.extra || '')}">
         <td class="color-cycle-col"><span class="color-cycle-dot ev-none" onclick="cycleEventColor(this)" title="Clique para colorir"></span></td>
         <td><span class="cf-tag">${escapeHtml(item.cfOrigem)}</span></td>
-        <td>${makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}${typeof manualSeloHTML === 'function' ? manualSeloHTML(tk, item) : ''}${mae ? `<span class="ticket-mae-badge" title="Ticket mãe (associado no SIR): ${escapeHtml(mae)}">Mãe: ${escapeHtml(mae)}</span>` : ''}</td>
-        <td>${makeDesigHTML(item.designacao, isRal)}</td>
+        <td>${item.hfc && typeof hfcTicketHTML === 'function' ? hfcTicketHTML(item) : makeTicketHTML(item.ticket, isRal, item.designacao)}${isNew ? '<span class="new-badge">NOVO</span>' : ''}${typeof manualSeloHTML === 'function' ? manualSeloHTML(tk, item) : ''}${mae ? `<span class="ticket-mae-badge" title="Ticket mãe (associado no SIR): ${escapeHtml(mae)}">Mãe: ${escapeHtml(mae)}</span>` : ''}</td>
+        <td>${item.designacao ? makeDesigHTML(item.designacao, isRal) : '<span style="color:var(--text-muted)">—</span>'}</td>
         <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">${escapeHtml(item.abertura || '—')}</td>
-        <td class="sla-col">${buildSlaCellHTML(item.abertura || '', isRal)}</td>
+        <td class="sla-col">${buildSlaCellHTML(item.abertura || '', isRal, item.slaH || 0)}</td>
         <td>${escapeHtml(item.extra)}</td>
         <td class="obs-cell">${buildObsHTML('')}${typeof mapaBotaoHTML === 'function' ? mapaBotaoHTML(tk, item) : ''}</td>
         <td class="obs-status-col">${buildObsStatusHTML('none')}</td>

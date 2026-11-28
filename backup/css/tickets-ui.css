@@ -332,3 +332,12 @@ td.obs-cell .btn-ev-end { margin-left: 6px; vertical-align: middle; }
   --ti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
 }
 #modal-overlay.trash-ro #btn-modal-manual { display: none !important; }
+
+/* ── v102: HFC ── */
+.v2-tile-cells:has(.v2-hfc) { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+@media (min-width: 700px) { .v2-tiles:has(.v2-hfc) { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
+.v2-cell.v2-hfc { color: #5eead4; background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.40); }
+.v2-cell.v2-hfc .v2-cell-lbl { color: #5eead4; opacity: .9; }
+.v2-cell.v2-hfc.v2-zero { opacity: .55; }
+[data-mode="light"] .v2-cell.v2-hfc, [data-mode="light"] .v2-cell.v2-hfc .v2-cell-lbl { color: #0f766e; }
+.hfc-out { font-weight: 800; }

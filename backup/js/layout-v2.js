@@ -80,6 +80,10 @@ function qualCount(key) { return (modalData.ral[QKEY + key] || []).length; }
 
 /* Título da tela de tickets para cada tipo (ral | rec | qual) e área */
 function listTitle(kind, base) {
+  if (kind === 'hfc') {   /* v102 */
+    if (_isCfKey(base)) { const nm = CF_NAMES[base]; return `HFC em tela no CF ${base}${nm ? ' - ' + nm : ''}`; }
+    return `HFC · ${base === 'ALL' ? 'Total RRE' : base === 'MY_AREAS_V2' ? 'Minhas áreas' : base}`;
+  }
   if (_isCfKey(base)) {
     if (kind !== 'qual') return _cfTitle(kind, base);
     const name = CF_NAMES[base];
@@ -284,6 +288,7 @@ function renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas) {
 renderDashboard = function (ralRes, ralR, recRes, recR, userSavedAreas) {
   applyLayoutClass();
   buildQualModalData(userSavedAreas);
+  if (typeof buildHfcModalData === 'function') buildHfcModalData(userSavedAreas);   /* v102: HFC */
   if (getLayout() === 'classic')
     return _renderDashboardClassic(ralRes, ralR, recRes, recR, userSavedAreas);
   return renderDashboardV2(ralRes, ralR, recRes, recR, userSavedAreas);
@@ -339,7 +344,7 @@ function applyLayoutClass() {
 }
 
 /* Versão do app (aparece no rodapé — útil para conferir se o celular atualizou) */
-const SIR_APP_VERSION = 'v101';
+const SIR_APP_VERSION = 'v102';
 /* v70: mesma base de código nas duas versões; a de testes fica na pasta /backup/ */
 const SIR_IS_BACKUP = /\/backup\//.test(location.pathname);
 
