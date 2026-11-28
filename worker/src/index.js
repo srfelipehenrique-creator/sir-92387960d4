@@ -303,7 +303,29 @@ async function importNodesFromGithub(env, force) {
    importa o que existia no KV (versões anteriores). */
 const jsonPlain = (obj, status) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 export class NotesStore {
-  constructor(state, env) { this.state = state; this.env = env; }
+  constructor(state, env) { this.state = state; this.env = env; this.pres = new Map(); }
+  /* v107 — Pessoas ativas agora: só na memória (sem gravar nada). Cada aparelho avisa a cada 2 min;
+     conta quem avisou nos últimos 5 min. Se o objeto reiniciar, a lista se refaz em 2 min. */
+  async presenca(request) {
+    const b = await request.json();
+    const agora = Date.now(), lim = agora - 5 * 60000;
+    for (const [k, v] of this.pres) if (v.at < lim) this.pres.delete(k);
+    if (b.dev) {
+      const ver = b.ver === 'backup' ? 'backup' : 'principal';
+      const dev = String(b.dev).slice(0, 40) + ':' + ver;   /* principal e backup abertas no mesmo aparelho contam separado */
+      this.pres.delete(dev);                                 /* reinsere no fim: a ordem vira a do último aviso */
+      this.pres.set(dev, { nome: String(b.nome || '').trim().slice(0, 40), ver: b.ver === 'backup' ? 'backup' : 'principal', nivel: String(b.nivel || ''), conta: String(b.conta || ''), at: agora });
+      if (this.pres.size > 500) this.pres.delete(this.pres.keys().next().value);
+    }
+    const lista = [...this.pres.values()];
+    /* Pessoas = contas distintas (backup) ou nomes distintos; sem nome conta o aparelho */
+    const pessoa = v => v.conta || (v.nome ? 'n:' + v.nome.toLowerCase() : null);
+    const pessoas = new Set(lista.map(pessoa).filter(Boolean)).size + lista.filter(v => !pessoa(v)).length;
+    const por = ver => lista.filter(v => v.ver === ver).length;
+    const out = { pessoas, aparelhos: lista.length, principal: por('principal'), backup: por('backup'), at: agora };
+    if (b.verNomes) out.lista = lista.map(v => ({ nome: v.nome || '(sem nome)', ver: v.ver, nivel: v.nivel, at: v.at })).sort((a, c) => a.nome.localeCompare(c.nome));
+    return jsonPlain(out, 200);
+  }
   async load() {
     let notes = await this.state.storage.get('notesmap');
     if (!notes) {
@@ -315,6 +337,7 @@ export class NotesStore {
   async fetch(request) {
     const path = new URL(request.url).pathname;
     if (path === '/mapa') return this.mapa(request);
+    if (path === '/presenca') return this.presenca(request);
     if (path === '/status') { const n = await this.load(); return jsonPlain({ tickets: Object.keys(n).length, notas: Object.values(n).reduce((a, x) => a + (Array.isArray(x.list) ? x.list.length : (x.obs ? 1 : 0)), 0) }, 200); }
     const body = await request.json();
       const notes = await this.load();
@@ -892,6 +915,17 @@ export default {
       /* Sem chave da equipe: o acesso é por conta pessoal aprovada pelo administrador */
       const stub = env.OTS.get(env.OTS.idFromName('ots'));
       const r = await stub.fetch('https://ots/', { method: 'POST', body: JSON.stringify(body) });
+      return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
+    }
+
+    /* ── v107: pessoas ativas agora (aviso a cada 2 min; nomes só para Desenvolvedor/Gerência/chave) ── */
+    if (req.method === 'POST' && url.pathname === '/presenca') {
+      let body; try { body = await req.json(); } catch (e) { return json({ error: 'json' }, 400, h); }
+      if (!(await authorized(env, body.key))) return json({ error: 'chave' }, 403, h);
+      const sess = await usuarioDaSessao(env, String(body.key || '').trim());
+      const pl = { dev: body.dev, ver: body.ver, nome: sess ? sess.nome : body.nome, nivel: sess ? sess.nivel : '', conta: sess ? sess.email : '',
+        verNomes: !!body.verNomes && (sess ? ['dev', 'gerencia'].includes(sess.nivel) : await chaveCompartilhada(env, body.key)) };
+      const r = await env.NOTES.get(env.NOTES.idFromName('notes')).fetch('https://notes/presenca', { method: 'POST', body: JSON.stringify(pl) });
       return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', ...h } });
     }
 

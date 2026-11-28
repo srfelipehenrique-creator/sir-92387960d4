@@ -399,3 +399,22 @@ html:not([data-papel="dev"]) .cfg-action-btn[onclick*="openColetor"] { display: 
   #modal-overlay #btn-modal-assoc::before, #modal-overlay #btn-modal-manual::before { width: 20px; height: 20px; }
   #modal-overlay .modal-tools { gap: 6px; }
 }
+
+/* ── v107: pessoas ativas agora (rodapé) ── */
+.presenca-ativos { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  color: var(--text-soft); font-size: 12px; padding: 3px 10px; cursor: pointer; min-height: 28px; white-space: nowrap; flex: none; }
+.presenca-ativos:hover { border-color: var(--line-strong); color: var(--text-main); }
+.presenca-ativos b { color: var(--text-main); }
+.presenca-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d27b; box-shadow: 0 0 0 3px rgba(52,210,123,.18); }
+.presenca-pop { position: fixed; z-index: 1300; right: 16px; bottom: 56px; width: min(320px, calc(100vw - 32px)); max-height: 60vh; overflow: auto;
+  background: var(--bg-panel-2, #1b1b1b); border: 1px solid var(--line-strong); border-radius: 12px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.presenca-pop-h { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.presenca-pop-h span { font-size: 11.5px; color: var(--text-muted); flex: 1; }
+.presenca-x { background: none; border: 0; color: var(--text-soft); font-size: 20px; width: 32px; height: 32px; cursor: pointer; }
+.presenca-pop ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.presenca-pop li { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; border-top: 1px solid var(--line); }
+.presenca-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presenca-ver { font: 700 10px/16px var(--font-mono, monospace); padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--text-muted); }
+.presenca-ver.ver-backup { color: #fbbf24; border-color: rgba(251,191,36,.45); }
+.presenca-min { font-size: 11px; color: var(--text-muted); }
+@media (pointer: coarse) { .presenca-ativos { min-height: 40px; } }
