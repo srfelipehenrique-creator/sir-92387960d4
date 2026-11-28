@@ -334,10 +334,16 @@ td.obs-cell .btn-ev-end { margin-left: 6px; vertical-align: middle; }
 #modal-overlay.trash-ro #btn-modal-manual { display: none !important; }
 
 /* ── v102: HFC ── */
-.v2-tile-cells:has(.v2-hfc) { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+html.rec-netflix body.layout-v2 .v2-tile-cells:has(.v2-hfc), .v2-tile-cells:has(.v2-hfc) { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
 @media (min-width: 700px) { .v2-tiles:has(.v2-hfc) { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
 .v2-cell.v2-hfc { color: #5eead4; background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.40); }
 .v2-cell.v2-hfc .v2-cell-lbl { color: #5eead4; opacity: .9; }
 .v2-cell.v2-hfc.v2-zero { opacity: .55; }
 [data-mode="light"] .v2-cell.v2-hfc, [data-mode="light"] .v2-cell.v2-hfc .v2-cell-lbl { color: #0f766e; }
 .hfc-out { font-weight: 800; }
+/* v103: HFC nos cards de total */
+html.rec-netflix body.layout-v2 .v2-kpi-vals:has(.v2-kpi-hfc), .v2-kpi-vals:has(.v2-kpi-hfc) { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+body.layout-v2 .v2-kpi-btn.v2-kpi-hfc { color: #5eead4 !important; background: rgba(20,184,166,.12) !important; border-color: rgba(20,184,166,.40) !important; }
+body.layout-v2 .v2-kpi-btn.v2-kpi-hfc .v2-kpi-type { color: #5eead4; }
+body.layout-v2 .v2-kpi-btn.v2-kpi-hfc.v2-zero { opacity: .6; }
+[data-mode="light"] body.layout-v2 .v2-kpi-btn.v2-kpi-hfc, [data-mode="light"] body.layout-v2 .v2-kpi-btn.v2-kpi-hfc .v2-kpi-type { color: #0f766e !important; }

@@ -48,7 +48,7 @@ function _hfcAtualizarTela() {
   const areas = typeof getUserSavedAreas === 'function' ? getUserSavedAreas() : [];
   buildHfcModalData(areas);
   document.querySelectorAll('[data-hfc-cf]').forEach(b => {
-    const n = hfcCount(b.dataset.hfcCf), v = b.querySelector('.v2-cell-val');
+    const n = hfcCount(b.dataset.hfcCf), v = b.querySelector(".animate-num");
     if (v) { v.textContent = n; v.dataset.val = n; }
     b.classList.toggle('v2-zero', !n);
   });
@@ -196,6 +196,20 @@ if (window.SirUI) {
     const cel = SirUI.celulaHfc({ cf: p.cf, valor: hfcCount(p.cf), chave: HKEY + p.cf, titulo: listTitle('hfc', p.cf) });
     /* entra logo depois da célula QUAL */
     return html.replace(/(<button class="v2-cell v2-qual[\s\S]*?<\/button>)/, `$1\n      ${cel}`);
+  };
+}
+
+/* ── v103: HFC também nos cards de total (Minhas áreas, Total RRE, regiões) ── */
+if (window.SirUI && SirUI.cardTotal) {
+  const _tot = SirUI.cardTotal;
+  SirUI.cardTotal = function (p) {
+    const html = _tot.apply(this, arguments);
+    const chave = p.chave || '', n = hfcCount(chave), r = escapeHtml(p.rotulo || '');
+    const btn = `<button class="v2-kpi-btn v2-kpi-hfc${n ? '' : ' v2-zero'}" data-hfc-cf="${escapeHtml(chave)}" onclick="${SirUI.abrirLista(HKEY + chave, true, listTitle('hfc', chave))}" title="HFC" aria-label="HFC ${r}: ${n}">
+        <span class="v2-kpi-type">HFC</span><span class="animate-num" data-val="${n}">${n}</span>
+      </button>`;
+    return html.replace(/(<button class="v2-kpi-btn v2-kpi-qual"[\s\S]*?<\/button>)/, `$1
+      ${btn}`);
   };
 }
 
