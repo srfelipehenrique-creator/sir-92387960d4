@@ -388,3 +388,4 @@ html:not([data-papel="dev"]) .cfg-action-btn[onclick*="openColetor"] { display: 
 .us-reg th, .us-reg td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .us-reg th { color: var(--text-muted); font-weight: 600; }
 @media (pointer: coarse) { .us-area, .us-sel { min-height: 44px; } }
+.menu-conta-ips { font-size: 11px; color: var(--text-muted); }

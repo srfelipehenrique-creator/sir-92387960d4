@@ -80,6 +80,7 @@ function _sirMenuConta() {
     <div class="menu-conta-id" title="${escapeHtml(u.email)}">
       <span class="menu-conta-nome">${escapeHtml(u.nome)}</span>
       <span class="menu-conta-nivel nivel-${escapeHtml(u.nivel)}">${escapeHtml(SIR_NIVEIS[u.nivel] || u.nivel)}</span>
+      ${Array.isArray(u.ipsAtivos) ? `<span class="menu-conta-ips" title="Você pode ficar conectado em até 2 redes (IPs) ao mesmo tempo">Conectado em ${u.ipsAtivos.length || 1} de 2 redes</span>` : ''}
     </div>
     ${sirPode('usuarios') ? `<button type="button" class="menu-layout-opt" onclick="closeAppMenu(); abrirUsuarios();"><i data-lucide="users"></i><span>Usuários e acessos</span></button>` : ''}
     <button type="button" class="menu-layout-opt" onclick="sirSair()"><i data-lucide="log-out"></i><span>Sair</span></button>`;
@@ -101,6 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const u = sirUsuario();
   if (u) { try { localStorage.setItem('sir_user_name', u.nome); } catch (e) {} }
   sirAplicarNivel();
+  /* v105: entrou de um 3º IP e a sessão mais antiga foi encerrada */
+  try {
+    if (sessionStorage.getItem('sir_aviso_ip')) {
+      sessionStorage.removeItem('sir_aviso_ip');
+      setTimeout(() => typeof showActionToast === 'function' && showActionToast('Você pode ficar conectado em até 2 redes (IPs) ao mesmo tempo: a sessão mais antiga foi encerrada.', 'info'), 1500);
+    }
+  } catch (e) {}
   /* Coletor, servidor e chaves: só o Desenvolvedor */
   if (typeof openColetor === 'function') {
     const _oc = openColetor;

@@ -160,6 +160,7 @@
       localStorage.setItem('sir_user_name', j.usuario.nome);          /* autor das notas */
       localStorage.setItem('sir_auth_v1', 'granted');                 /* compatibilidade com o restante do app */
       sessionStorage.setItem('sir_intro_skip', '1');
+      if (j.encerrados) sessionStorage.setItem('sir_aviso_ip', '1');
     } catch (e) {}
     location.replace(DESTINO);
   }

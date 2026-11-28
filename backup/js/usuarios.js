@@ -116,7 +116,7 @@ function _usRender() {
     c.innerHTML = lista.map(u => `<div class="us-item${u.status === 'bloqueado' ? ' us-bloq' : ''}" data-email="${escapeHtml(u.email)}">
         <div class="us-linha"><b>${escapeHtml(u.nome)}</b><span class="menu-conta-nivel nivel-${u.nivel}">${SIR_NIVEIS[u.nivel]}</span>${u.status === 'bloqueado' ? '<span class="us-tag-bloq">Bloqueado</span>' : ''}
           <span class="us-mail">${escapeHtml(u.email)}</span></div>
-        <div class="us-linha us-meta">Áreas: ${escapeHtml((u.areas || []).join(', ') || (u.nivel === 'dev' || u.nivel === 'gerencia' ? 'todas' : '—'))} · último acesso ${_usQuando(u.ultimoAcesso)}${u.aprovadoPor ? ' · aprovado por ' + escapeHtml(u.aprovadoPor) : ''}</div>
+        <div class="us-linha us-meta">Áreas: ${escapeHtml((u.areas || []).join(', ') || (u.nivel === 'dev' || u.nivel === 'gerencia' ? 'todas' : '—'))} · último acesso ${_usQuando(u.ultimoAcesso)}${(u.ipsAtivos || []).length ? ' · conectado em ' + escapeHtml(u.ipsAtivos.join(', ')) : ''}${u.aprovadoPor ? ' · aprovado por ' + escapeHtml(u.aprovadoPor) : ''}</div>
         ${u.podeGerir ? `<details class="us-gerir"><summary>Alterar</summary>
           <div class="us-linha us-form"><label>Nível ${_usSelNivel(u.nivel, 'data-campo="nivel"')}</label></div>
           <div class="us-rot">Áreas</div>${_usChipsAreas(u.areas, 'eq')}

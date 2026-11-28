@@ -19,6 +19,8 @@ const SESS_TTL = 12 * 3600;            /* segundos */
 const INV_TTL = 48 * 3600;
 const MAX_TENT = 5, BLOQ_S = 15 * 60;  /* 5 erros → 15 min parado */
 const SAL_FALSO = '00112233445566778899aabbccddeeff';
+const MAX_TENT_IP = 50;                /* v105: 50 erros do mesmo IP (qualquer e-mail) → 15 min parado; alto porque a rede da empresa pode sair por um IP só */
+const MAX_IPS = 2;                     /* v105: cada pessoa fica conectada em até 2 IPs ao mesmo tempo */
 
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 async function sha256Hex(s) { return hex(await crypto.subtle.digest('SHA-256', enc.encode(s))); }
@@ -85,14 +87,38 @@ async function auditar(env, quem, acao, alvo, extra) {
   } catch (e) {}
 }
 const publico = u => ({ email: u.email, nome: u.nome, nivel: u.nivel, nomeNivel: NOME_NIVEL[u.nivel], areas: u.areas || [],
-  status: u.status, criado: u.criado, aprovadoPor: u.aprovadoPor || '', ultimoAcesso: u.ultimoAcesso || 0, totpAtivo: !!u.totpAtivo });
+  status: u.status, criado: u.criado, aprovadoPor: u.aprovadoPor || '', ultimoAcesso: u.ultimoAcesso || 0, totpAtivo: !!u.totpAtivo,
+  ipsAtivos: ipsAtivos(u).map(mascaraIp) });
 
 /* ── Sessão ── */
-async function criarSessao(env, u) {
-  const token = 'S1.' + b64u(rand(32));
-  await env.SIR_KV.put('sess:' + await sha256Hex(token), JSON.stringify({ email: u.email, at: now() }), { expirationTtl: SESS_TTL });
-  return token;
+/* Cria a sessão e mantém a pessoa em até MAX_IPS IPs: entrando de um 3º IP,
+   as sessões do IP usado há mais tempo são encerradas. Devolve { token, encerrados } */
+async function criarSessao(env, u, ipReq) {
+  const token = 'S1.' + b64u(rand(32)), hTok = await sha256Hex(token), ip = ipReq || '?';
+  const lim = now() - SESS_TTL * 1000;
+  let ses = (u.sessoes || []).filter(s => s.at > lim);
+  const ips = [...new Set(ses.map(s => s.ip))].filter(x => x !== ip);
+  const encerrados = [];
+  while (ips.length >= MAX_IPS) {
+    /* IP com o acesso mais antigo */
+    const ultimo = x => Math.max(...ses.filter(s => s.ip === x).map(s => s.at));
+    ips.sort((a, b) => ultimo(a) - ultimo(b));
+    const sai = ips.shift();
+    for (const s of ses.filter(s => s.ip === sai)) await env.SIR_KV.delete('sess:' + s.h);
+    ses = ses.filter(s => s.ip !== sai);
+    encerrados.push(sai);
+  }
+  ses.push({ h: hTok, ip, at: now() });
+  /* guarda as 10 mais novas; as que saem da lista são encerradas também */
+  for (const s of ses.slice(0, Math.max(0, ses.length - 10))) await env.SIR_KV.delete('sess:' + s.h);
+  u.sessoes = ses.slice(-10);
+  await env.SIR_KV.put('sess:' + hTok, JSON.stringify({ email: u.email, ip, at: now() }), { expirationTtl: SESS_TTL });
+  await putU(env, u);
+  if (encerrados.length) await auditar(env, u.email, 'sessão encerrada (limite de 2 IPs)', u.email, encerrados.map(mascaraIp).join(', '));
+  return { token, encerrados: encerrados.length };
 }
+const mascaraIp = ip => String(ip).includes(':') ? String(ip).split(':').slice(0, 3).join(':') + ':…' : String(ip).replace(/\.\d+$/, '.x');
+const ipsAtivos = u => [...new Set((u.sessoes || []).filter(s => s.at > now() - SESS_TTL * 1000).map(s => s.ip))];
 export async function usuarioDaSessao(env, token) {
   if (typeof token !== 'string' || !token.startsWith('S1.')) return null;
   const s = await env.SIR_KV.get('sess:' + await sha256Hex(token), 'json');
@@ -129,18 +155,28 @@ const areasPermitidas = (quem, areas) => vêTodos(quem) ? areas : areas.filter(a
 /* ── Respostas ── */
 function resp(h) { return (obj, st = 200) => new Response(JSON.stringify(obj), { status: st, headers: { ...h, 'Content-Type': 'application/json' } }); }
 
-async function tentativa(env, email, ok) {
-  const k = 'tent:' + email;
+async function _conta(env, k, ok) {
   if (ok) { await env.SIR_KV.delete(k); return; }
   const t = (await env.SIR_KV.get(k, 'json')) || { n: 0 };
   t.n++; t.at = now();
   await env.SIR_KV.put(k, JSON.stringify(t), { expirationTtl: BLOQ_S });
 }
-async function bloqueado(env, email) { const t = await env.SIR_KV.get('tent:' + email, 'json'); return !!(t && t.n >= MAX_TENT); }
+async function tentativa(env, email, ok, ip) {
+  await _conta(env, 'tent:' + email, ok);
+  if (ip && !ok) await _conta(env, 'tentip:' + ip, false);   /* o contador do IP só zera sozinho (15 min) */
+}
+async function bloqueado(env, email, ip) {
+  const t = await env.SIR_KV.get('tent:' + email, 'json');
+  if (t && t.n >= MAX_TENT) return true;
+  if (!ip) return false;
+  const ti = await env.SIR_KV.get('tentip:' + ip, 'json');
+  return !!(ti && ti.n >= MAX_TENT_IP);
+}
 
 /* ══════════════════════ Rotas /auth/* ══════════════════════ */
-export async function rotasAuth(req, env, h, url, chaveValida) {
+export async function rotasAuth(req, env, h, url, chaveValida, ip) {
   const J = resp(h);
+  ip = String(ip || '').slice(0, 64);
   if (req.method !== 'POST') return J({ error: 'metodo' }, 405);
   let b; try { b = await req.json(); } catch (e) { return J({ error: 'json' }, 400); }
   const rota = url.pathname.slice('/auth/'.length);
@@ -190,38 +226,40 @@ export async function rotasAuth(req, env, h, url, chaveValida) {
   /* ── Cadastro (passo 2): confirma o 1º código do autenticador ── */
   if (rota === 'confirmar') {
     const email = normEmail(b.email);
-    if (await bloqueado(env, email)) return J({ error: 'Muitas tentativas. Aguarde 15 minutos.' }, 429);
+    if (await bloqueado(env, email, ip)) return J({ error: 'Muitas tentativas. Aguarde 15 minutos.' }, 429);
     const u = await getU(env, email);
     const hs = await pbkdf2(String(b.senha || ''), u ? u.sal : SAL_FALSO);
-    if (!u || u.totpAtivo || !igual(hs, u.senha)) { await tentativa(env, email, false); return J({ error: 'Dados não conferem' }, 403); }
-    if (!(await totpOk(u, b.codigo))) { await tentativa(env, email, false); return J({ error: 'Código incorreto. Confira o horário do celular e tente o código novo.' }, 403); }
+    if (!u || u.totpAtivo || !igual(hs, u.senha)) { await tentativa(env, email, false, ip); return J({ error: 'Dados não conferem' }, 403); }
+    if (!(await totpOk(u, b.codigo))) { await tentativa(env, email, false, ip); return J({ error: 'Código incorreto. Confira o horário do celular e tente o código novo.' }, 403); }
     u.totpAtivo = true;
-    await putU(env, u); await tentativa(env, email, true);
+    await putU(env, u); await tentativa(env, email, true, ip);
     if (u.origem === 'primeiro-dev') await env.SIR_KV.put('auth:dev', email);
     await auditar(env, email, 'cadastro', email, `${u.origem} · ${NOME_NIVEL[u.nivel]} · ${u.status}`);
     if (u.status !== 'ativo') return J({ ok: true, pendente: true });
-    u.ultimoAcesso = now(); await putU(env, u);
-    return J({ ok: true, token: await criarSessao(env, u), usuario: publico(u), expira: now() + SESS_TTL * 1000 });
+    u.ultimoAcesso = now();
+    const ss = await criarSessao(env, u, ip);
+    return J({ ok: true, token: ss.token, encerrados: ss.encerrados, usuario: publico(u), expira: now() + SESS_TTL * 1000 });
   }
 
   /* ── Entrar ── */
   if (rota === 'entrar') {
     const email = normEmail(b.email);
-    if (await bloqueado(env, email)) return J({ error: 'Muitas tentativas. Aguarde 15 minutos.' }, 429);
+    if (await bloqueado(env, email, ip)) return J({ error: 'Muitas tentativas. Aguarde 15 minutos.' }, 429);
     if (String(b.senha || '').length > 200) return J({ error: 'E-mail ou senha incorretos' }, 403);
     const u = await getU(env, email);
     const hs = await pbkdf2(String(b.senha || ''), u ? u.sal : SAL_FALSO);   /* mesmo tempo com ou sem conta */
     const senhaOk = !!u && igual(hs, u.senha);
-    if (!senhaOk) { await tentativa(env, email, false); return J({ error: 'E-mail ou senha incorretos' }, 403); }
+    if (!senhaOk) { await tentativa(env, email, false, ip); return J({ error: 'E-mail ou senha incorretos' }, 403); }
     if (!u.totpAtivo) return J({ error: 'Cadastro incompleto: refaça o cadastro para ativar o autenticador.' }, 403);
-    if (!(await totpOk(u, b.codigo))) { await tentativa(env, email, false); return J({ error: 'Código do autenticador incorreto' }, 403); }
-    await tentativa(env, email, true);
+    if (!(await totpOk(u, b.codigo))) { await tentativa(env, email, false, ip); return J({ error: 'Código do autenticador incorreto' }, 403); }
+    await tentativa(env, email, true, ip);
     await putU(env, u);   /* guarda o último código usado */
     if (u.status === 'pendente') return J({ ok: true, pendente: true });
     if (u.status !== 'ativo') return J({ error: 'Acesso bloqueado. Fale com seu gestor.' }, 403);
-    u.ultimoAcesso = now(); await putU(env, u);
+    u.ultimoAcesso = now();
     await auditar(env, email, 'entrou', email);
-    return J({ ok: true, token: await criarSessao(env, u), usuario: publico(u), expira: now() + SESS_TTL * 1000 });
+    const ss = await criarSessao(env, u, ip);
+    return J({ ok: true, token: ss.token, encerrados: ss.encerrados, usuario: publico(u), expira: now() + SESS_TTL * 1000 });
   }
 
   /* Daqui para baixo: precisa de sessão */
@@ -231,7 +269,9 @@ export async function rotasAuth(req, env, h, url, chaveValida) {
   if (rota === 'eu') return J({ ok: true, usuario: publico(eu) });
 
   if (rota === 'sair') {
-    await env.SIR_KV.delete('sess:' + await sha256Hex(b.token));
+    const hTok = await sha256Hex(b.token);
+    await env.SIR_KV.delete('sess:' + hTok);
+    eu.sessoes = (eu.sessoes || []).filter(x => x.h !== hTok); await putU(env, eu);
     return J({ ok: true });
   }
 
@@ -272,6 +312,7 @@ export async function rotasAuth(req, env, h, url, chaveValida) {
     }
     if (Array.isArray(b.areas)) alvo.areas = areasPermitidas(eu, areasOk(b.areas));
     if (b.status === 'bloqueado' || b.status === 'ativo') alvo.status = b.status;
+    if (alvo.status === 'bloqueado') { for (const x of alvo.sessoes || []) await env.SIR_KV.delete('sess:' + x.h); alvo.sessoes = []; }
     await putU(env, alvo);
     await auditar(env, eu.email, 'alterou', alvo.email, [b.nivel && NOME_NIVEL[b.nivel], b.status, Array.isArray(b.areas) && 'áreas'].filter(Boolean).join(' · '));
     return J({ ok: true });

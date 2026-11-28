@@ -776,7 +776,7 @@ export default {
     const url = new URL(req.url);
 
     /* v104: contas, níveis de acesso e 2 fatores */
-    if (url.pathname.startsWith('/auth/')) return rotasAuth(req, env, h, url, k => chaveCompartilhada(env, k));
+    if (url.pathname.startsWith('/auth/')) return rotasAuth(req, env, h, url, k => chaveCompartilhada(env, k), req.headers.get('CF-Connecting-IP') || '');
 
     if (req.method === 'GET' && url.pathname === '/vapid') {
       const v = await getVapid(env);
@@ -907,7 +907,7 @@ export default {
       /* v104: com login, o autor é sempre o nome da conta (ninguém escreve em nome de outro) */
       const sess = await usuarioDaSessao(env, String(body.key || '').trim());
       if (sess) {
-        if (url.pathname === '/note' && body.op !== 'meta') body.by = sess.nome;
+        body.by = sess.nome;   /* v105: notas, classificações (meta) e eventos (evset) sempre com o nome da conta */
         const cf = String(body.id || '').split('::')[2] || '';
         if (sess.nivel === 'dev' || sess.nivel === 'gerencia' || (sess.nivel === 'gestor' && (sess.areas || []).includes(cf))) body._admin = true;
       }
